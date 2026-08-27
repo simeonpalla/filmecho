@@ -1,0 +1,6 @@
+google-cloud-aiplatform[agent_engines,adk]>=1.101.0
+google-adk
+google-genai
+parallel-web>=1.0.1
+google-api-python-client
+python-dotenv
