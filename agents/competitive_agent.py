@@ -17,6 +17,7 @@ from google.adk.tools import FunctionTool
 from parallel import Parallel
 
 from agents.entity_context import GEMINI_MODEL
+from agents.schemas import CompetitiveResult
 
 _client = Parallel(api_key=os.environ["PARALLEL_API_KEY"])
 
@@ -69,14 +70,13 @@ competitive_agent = Agent(
         "You have a tool, get_competitive_landscape, that searches the web "
         "for competing releases and franchise-fatigue signals. You will be "
         "given title, release_year, director, and session_id as key=value "
-        "pairs; parse them and call the tool exactly once. Then summarize: "
-        "(1) 2-4 named competing titles or events, with source URLs; "
-        "(2) whether commentary suggests audience attention is split, "
-        "concentrated, or unaffected; "
-        "(3) one sentence overall competitive risk assessment — low, "
-        "moderate, or high — grounded only in what the excerpts actually "
-        "say. If the excerpts don't support a clear read, say so rather "
-        "than guessing."
+        "pairs; parse them and call the tool exactly once. Then populate the "
+        "required output fields: competing_titles (2-4 named titles/events), "
+        "attention_assessment (whether audience attention is split, "
+        "concentrated, or unaffected), and risk, grounded only in what the "
+        "excerpts actually say. If the excerpts don't support a clear read, "
+        "set risk to 'unclear' rather than guessing."
     ),
     tools=[competitive_tool],
+    output_schema=CompetitiveResult,
 )

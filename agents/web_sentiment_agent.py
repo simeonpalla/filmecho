@@ -20,6 +20,7 @@ from google.adk.tools import FunctionTool
 from parallel import Parallel
 
 from agents.entity_context import GEMINI_MODEL
+from agents.schemas import WebSentimentResult
 
 _client = Parallel(api_key=os.environ["PARALLEL_API_KEY"])
 
@@ -69,15 +70,14 @@ web_sentiment_agent = Agent(
         "You have a tool, get_web_sentiment, that searches the live web for "
         "trailer reactions. You will be given title, release_year, director, "
         "and session_id as key=value pairs in the user message; parse them "
-        "and call the tool exactly once with those values. Then summarize the "
-        "tool's results into: "
-        "(1) an overall sentiment label — positive, mixed, or negative; "
-        "(2) 3-5 bullet points, each citing a specific piece of praise or "
-        "criticism and the source URL it came from; "
-        "(3) one sentence on tone/pacing/visual consensus, if one exists. "
-        "Only report opinions that are actually present in the search "
-        "excerpts. If excerpts are sparse or off-topic, say so explicitly "
-        "rather than filling gaps with your own judgment."
+        "and call the tool exactly once with those values. Then populate the "
+        "required output fields from the tool's results: an overall "
+        "sentiment label; praise_points and criticism_points as attributed "
+        "claims with source URLs (in your own words, not verbatim quotes); "
+        "and a one-sentence tone_consensus, or empty string if there isn't "
+        "one. Only report opinions that are actually present in the search "
+        "excerpts, never fill gaps with your own judgment."
     ),
     tools=[web_sentiment_tool],
+    output_schema=WebSentimentResult,
 )

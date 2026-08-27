@@ -1,43 +1,29 @@
 """Sentiment Synthesis Agent — combines the sentiment feeds into one read.
 
-Unlike web_sentiment_agent, competitive_agent, and news_cast_agent, this
-agent makes no external calls of its own. It only reasons over data the
-other agents already fetched: Web Sentiment Agent's synthesized text, and
-YouTube Data Agent's raw (unanalyzed) comments. A Reddit feed slots in the
-same way once reddit_sentiment_agent.py exists — this agent is written to
-degrade gracefully when a feed is missing, per the roadmap's explicit
-guidance to design it that way from the start, since YouTube or Reddit
-being unavailable during a live demo is a real risk, not a hypothetical.
+Takes the now-structured WebSentimentResult (a Pydantic object, not free
+text) and the raw YouTube comments, and produces a schema-enforced
+SentimentSynthesisResult. No external calls of its own; it only reasons
+over what web_sentiment_agent and youtube_data_agent already fetched.
 
-Because it has no tool, it's driven entirely by the prompt text the
-orchestration layer builds with build_sentiment_prompt() below — this
-module owns both the agent and its own prompt construction so the two
-stay in sync.
+Built to degrade per-source: each input can be missing, and the schema's
+sources_available field forces the model to say plainly which sources it
+actually had, rather than blending in a source that wasn't there.
 """
 
 from __future__ import annotations
 
+from typing import Optional
+
 from google.adk.agents import Agent
 
 from agents.entity_context import GEMINI_MODEL
+from agents.schemas import SentimentSynthesisResult, WebSentimentResult
 
 MAX_COMMENTS_PER_VIDEO = 15
 
 
-def _flatten_youtube_comments(youtube_data: dict | None, max_per_video: int = MAX_COMMENTS_PER_VIDEO) -> str:
-    """Turn the YouTube Data Agent's raw output into prompt-ready text.
-
-    Args:
-        youtube_data: Output of youtube_data_agent.collect_youtube_data,
-            or None/{} if that branch failed or found nothing.
-        max_per_video: Cap on comments included per video, to keep the
-            prompt a reasonable size when a video has thousands.
-
-    Returns:
-        A plain-text block, or an explicit "no data" marker string if
-        youtube_data is empty — the agent's instruction is written to
-        handle that marker rather than silently inventing YouTube signal.
-    """
+def _flatten_youtube_comments(youtube_data: Optional[dict], max_per_video: int = MAX_COMMENTS_PER_VIDEO) -> str:
+    """Turn the YouTube Data Agent's raw output into prompt-ready text."""
     if not youtube_data:
         return "NO YOUTUBE DATA AVAILABLE for this run."
 
@@ -56,30 +42,36 @@ def _flatten_youtube_comments(youtube_data: dict | None, max_per_video: int = MA
 
 
 def build_sentiment_prompt(
-    web_sentiment_text: str | None,
-    youtube_data: dict | None,
-    reddit_text: str | None = None,
+    web_sentiment: Optional[WebSentimentResult],
+    youtube_data: Optional[dict],
+    reddit_text: Optional[str] = None,
 ) -> str:
     """Build the full prompt for sentiment_synthesis_agent.
 
     Args:
-        web_sentiment_text: web_sentiment_agent's final synthesized text,
-            or None if that branch failed.
+        web_sentiment: web_sentiment_agent's structured result, or None if
+            that branch failed or didn't parse.
         youtube_data: youtube_data_agent.collect_youtube_data's raw output,
             or None/{} if that branch failed or found no videos.
         reddit_text: Reserved for reddit_sentiment_agent's output once
-            built; None until then, and the instruction already accounts
-            for its absence.
+            built; None until then.
 
     Returns:
-        A single prompt string ready to send to sentiment_synthesis_agent.
+        A single prompt string, with the web sentiment section serialized
+        from the validated Pydantic object (model_dump_json), not raw
+        prose, so this agent is reading structured data, not re-parsing
+        another model's free text.
     """
-    web_block = web_sentiment_text or "NO WEB SENTIMENT DATA AVAILABLE for this run."
+    web_block = (
+        web_sentiment.model_dump_json(indent=2)
+        if web_sentiment
+        else "NO WEB SENTIMENT DATA AVAILABLE for this run."
+    )
     youtube_block = _flatten_youtube_comments(youtube_data)
     reddit_block = reddit_text or "NO REDDIT DATA AVAILABLE (not yet built for this pipeline)."
 
     return (
-        "=== WEB SENTIMENT (Parallel + Gemini synthesis) ===\n"
+        "=== WEB SENTIMENT (structured, from Parallel + Gemini) ===\n"
         f"{web_block}\n\n"
         "=== YOUTUBE COMMENTS (raw, unanalyzed) ===\n"
         f"{youtube_block}\n\n"
@@ -95,21 +87,18 @@ sentiment_synthesis_agent = Agent(
     instruction=(
         "You will receive up to three labeled sections: WEB SENTIMENT, "
         "YOUTUBE COMMENTS, and REDDIT SENTIMENT. Any section may say data "
-        "is unavailable — if so, exclude that source from your synthesis "
-        "instead of guessing what it might have said, and note which "
-        "sources were actually available at the end of your answer.\n\n"
-        "Using only the sources that ARE available, produce:\n"
-        "1. An overall sentiment label (positive, mixed, or negative) "
-        "with one sentence justifying it.\n"
-        "2. A per-source breakdown: what each available source suggests, "
-        "in 1-2 sentences each.\n"
-        "3. 2-4 recurring themes mentioned across sources (e.g. praise for "
-        "visuals, complaints about pacing), each attributed to which "
-        "source(s) raised it.\n"
-        "4. A one-line note on whether sources agree or conflict with "
-        "each other.\n\n"
-        "Do not fabricate sentiment for a source that had no data, and do "
-        "not average YouTube like counts into a fake numeric sentiment "
-        "score, describe the comments qualitatively instead."
+        "is unavailable — if so, exclude that source from sources_available "
+        "and from your synthesis instead of guessing what it might have "
+        "said.\n\n"
+        "Using only the sources that ARE available, populate: "
+        "overall_sentiment; justification (one sentence); "
+        "per_source_breakdown (a short entry per available source); "
+        "recurring_themes (2-4 items, e.g. praise for visuals, pacing "
+        "complaints); agreement_note (do sources agree or conflict); and "
+        "sources_available (exactly which sources had real data this run). "
+        "Do not fabricate sentiment for a source with no data, and do not "
+        "average YouTube like counts into a fake numeric score, describe "
+        "the comments qualitatively instead."
     ),
+    output_schema=SentimentSynthesisResult,
 )

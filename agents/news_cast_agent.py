@@ -17,6 +17,7 @@ from google.adk.tools import FunctionTool
 from parallel import Parallel
 
 from agents.entity_context import GEMINI_MODEL
+from agents.schemas import NewsResult
 
 _client = Parallel(api_key=os.environ["PARALLEL_API_KEY"])
 
@@ -65,14 +66,14 @@ news_cast_agent = Agent(
         "You have a tool, get_production_news, that searches the web for "
         "production and cast news. You will be given title, release_year, "
         "director, and session_id as key=value pairs; parse them and call "
-        "the tool exactly once. Then extract facts only, as a bulleted "
-        "list, each bullet a single reported fact with its source URL and "
-        "publish date if the excerpt states one. Do not add interpretation, "
-        "predictions, or opinion, and do not editorialize about whether the "
-        "news is good or bad for the film. If an excerpt is rumor or "
-        "speculation rather than reported fact, label it as such instead "
-        "of omitting the distinction. If no relevant news is found, say so "
-        "plainly rather than inventing filler."
+        "the tool exactly once. Then populate facts with reported facts "
+        "only (each attributed to a source URL, in your own words), and "
+        "rumors with anything that's speculation rather than confirmed "
+        "reporting, don't merge the two lists or omit the distinction. Do "
+        "not add interpretation, predictions, or opinion about whether the "
+        "news is good or bad for the film. Leave both lists empty if "
+        "nothing relevant was found, don't invent filler."
     ),
     tools=[news_cast_tool],
+    output_schema=NewsResult,
 )

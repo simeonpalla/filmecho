@@ -386,8 +386,9 @@ async function runBrief() {
     marquee.textContent = `Now screening: ${entity.title || title}${entity.release_year ? ' (' + entity.release_year + ')' : ''}`;
     marquee.classList.add('visible');
 
-    if (result.parse_error) {
-      setStatus(`Synthesis returned unparsed output: ${result.parse_error}`, true);
+    if (result.entity_confidence && result.entity_confidence !== 'high') {
+      const note = result.disambiguation_note ? ` — ${result.disambiguation_note}` : '';
+      setStatus(`Title match confidence: ${result.entity_confidence}${note}`, true);
     } else {
       setStatus('', false);
     }
