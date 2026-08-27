@@ -30,6 +30,14 @@ class EntityResolution(BaseModel):
     release_year: Optional[int] = Field(default=None, description="Release year, or null if unknown.")
     director: Optional[str] = Field(default=None, description="Director's name, or null if unknown.")
     cast: list[str] = Field(default_factory=list, description="Up to 5 top-billed cast members.")
+    release_status: Literal["released", "upcoming", "unclear"] = Field(
+        description=(
+            "'released' if the title has already come out relative to today's "
+            "date (given in the prompt) — a re-release counts as released. "
+            "'upcoming' if it has a confirmed or expected future release. "
+            "'unclear' if the excerpts don't establish this."
+        )
+    )
     confidence: Literal["high", "medium", "low"] = Field(
         description=(
             "'high' only if excerpts clearly and consistently identify one title. "
@@ -82,12 +90,45 @@ class SentimentSynthesisResult(BaseModel):
     sources_available: list[str] = Field(description="Which of web/youtube/reddit actually had data this run.")
 
 
+class CastPerformanceNote(BaseModel):
+    actor: str = Field(description="Actor's name, matched to a role where the excerpts make that clear.")
+    note: str = Field(description="Specific reception of this actor's performance, in your own words.")
+    source_url: str = Field(default="", description="Source URL, empty string if not attributable to one.")
+
+
+class CastResult(BaseModel):
+    performances: list[CastPerformanceNote] = Field(default_factory=list)
+    standout_performance: str = Field(default="", description="Which actor got the most/strongest praise, if any.")
+    overall_cast_reception: str = Field(default="", description="One sentence on the cast as a whole.")
+
+
+class MarketingResult(BaseModel):
+    """Release-status-aware: for upcoming titles this covers the campaign
+    so far; for released titles it's a genuine retrospective with a
+    lessons_learned field, since there's an actual outcome to evaluate
+    the campaign against."""
+
+    strategies_observed: list[str] = Field(
+        default_factory=list, description="Named marketing tactics/channels actually used (trailers, posters, partnerships, social pushes, screenings, etc.)."
+    )
+    what_worked: list[SourceExcerpt] = Field(default_factory=list)
+    what_underperformed: list[SourceExcerpt] = Field(default_factory=list)
+    lessons_learned: list[str] = Field(
+        default_factory=list,
+        description="Only meaningful for released titles with a known outcome. Leave empty for upcoming titles, don't speculate.",
+    )
+
+
 class StudioBrief(BaseModel):
     headline: str
     sentiment_summary: str
     competitive_risk: Literal["low", "moderate", "high", "unclear"]
     notable_news: list[str] = Field(default_factory=list)
     recommendation: str
+    lessons_learned: list[str] = Field(
+        default_factory=list,
+        description="Only for released titles: concrete takeaways for future marketing/release decisions. Leave empty for upcoming titles.",
+    )
 
 
 class FanPulse(BaseModel):
@@ -95,6 +136,10 @@ class FanPulse(BaseModel):
     excitement_level: Literal["high", "mixed", "low", "unclear"]
     top_themes: list[str] = Field(default_factory=list)
     fun_fact_or_news: str = ""
+    worth_watching: str = Field(
+        default="",
+        description="Only for released titles: a brief, honest verdict on whether it's worth watching now. Leave empty for upcoming titles.",
+    )
 
 
 class FinalBrief(BaseModel):

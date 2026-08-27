@@ -24,6 +24,7 @@ from __future__ import annotations
 import os
 import uuid
 from dataclasses import dataclass, field
+from datetime import date
 from typing import Optional
 
 from google import genai
@@ -48,6 +49,7 @@ class EntityContext:
     release_year: Optional[int] = None
     director: Optional[str] = None
     cast: list[str] = field(default_factory=list)
+    release_status: str = "unclear"
     confidence: str = "low"
     disambiguation_note: str = ""
     session_id: str = field(default_factory=lambda: f"filmecho_{uuid.uuid4().hex[:12]}")
@@ -58,6 +60,7 @@ class EntityContext:
             "release_year": self.release_year,
             "director": self.director,
             "cast": self.cast,
+            "release_status": self.release_status,
             "confidence": self.confidence,
             "disambiguation_note": self.disambiguation_note,
             "session_id": self.session_id,
@@ -69,8 +72,9 @@ _EXTRACTION_INSTRUCTION = (
     "user-provided title. If the excerpts describe more than one distinct "
     "real work sharing this title, you must set confidence to 'low' or "
     "'medium' and use disambiguation_note to say which one you picked and "
-    "why, don't silently resolve the ambiguity. If unsure about a field, "
-    "leave it null rather than guessing."
+    "why, don't silently resolve the ambiguity. Determine release_status by "
+    "comparing the title's release date to today's date, given below. If "
+    "unsure about a field, leave it null rather than guessing."
 )
 
 
@@ -104,7 +108,11 @@ def _extract(genai_client: genai.Client, title: str, excerpts: str) -> Optional[
     try:
         response = genai_client.models.generate_content(
             model=GEMINI_MODEL,
-            contents=f'Title the user gave: "{title}"\n\nWeb search excerpts:\n{excerpts}',
+            contents=(
+                f"Today's date: {date.today().isoformat()}\n"
+                f'Title the user gave: "{title}"\n\n'
+                f"Web search excerpts:\n{excerpts}"
+            ),
             config=genai_types.GenerateContentConfig(
                 system_instruction=_EXTRACTION_INSTRUCTION,
                 response_mime_type="application/json",
@@ -177,6 +185,7 @@ def resolve_entity(
     ctx.release_year = result.release_year
     ctx.director = result.director
     ctx.cast = result.cast
+    ctx.release_status = result.release_status
     ctx.confidence = result.confidence
     ctx.disambiguation_note = result.disambiguation_note
     return ctx
