@@ -106,9 +106,16 @@ def parse_main_synthesis_result(raw_text: str) -> dict:
         "parse_error": str(exc)} so the pipeline can still return
         something inspectable instead of crashing the whole run over a
         formatting slip in one LLM call.
+
+        Also normalizes a known drift: the model sometimes nests
+        "sources_used" inside "fan_pulse" or "studio_brief" instead of at
+        the top level the schema asks for. If it's missing at the top
+        level but present in either nested dict, it's hoisted up so
+        downstream code can rely on result["sources_used"] existing
+        whenever parsing succeeded at all.
     """
     try:
-        return json.loads(_strip_json_fences(raw_text))
+        parsed = json.loads(_strip_json_fences(raw_text))
     except Exception as exc:  # noqa: BLE001
         return {
             "studio_brief": None,
@@ -116,6 +123,17 @@ def parse_main_synthesis_result(raw_text: str) -> dict:
             "raw": raw_text,
             "parse_error": str(exc),
         }
+
+    if "sources_used" not in parsed:
+        for nested_key in ("fan_pulse", "studio_brief"):
+            nested = parsed.get(nested_key) or {}
+            if isinstance(nested, dict) and "sources_used" in nested:
+                parsed["sources_used"] = nested.pop("sources_used")
+                break
+        else:
+            parsed.setdefault("sources_used", [])
+
+    return parsed
 
 
 main_synthesis_agent = Agent(

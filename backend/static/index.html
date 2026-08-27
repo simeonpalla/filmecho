@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Filmecho</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0e0d10;
+    --surface: #17151a;
+    --surface-raised: #201d24;
+    --border: #322e37;
+    --text: #ede9e0;
+    --text-muted: #9b968d;
+    --gold: #d9a94e;
+    --gold-dim: #7a6431;
+    --studio: #3fa9a0;
+    --studio-dim: #1f544f;
+    --fan: #e2637a;
+    --fan-dim: #6f2e3a;
+    --font-display: "Fraunces", Georgia, serif;
+    --font-body: "Inter", system-ui, sans-serif;
+    --font-mono: "IBM Plex Mono", monospace;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    line-height: 1.55;
+    min-height: 100vh;
+  }
+
+  .wrap {
+    max-width: 780px;
+    margin: 0 auto;
+    padding: 48px 24px 96px;
+  }
+
+  header {
+    text-align: center;
+    margin-bottom: 40px;
+  }
+
+  .brand {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: clamp(2.2rem, 5vw, 3.2rem);
+    letter-spacing: -0.01em;
+    margin: 0 0 6px;
+  }
+
+  .brand span { color: var(--gold); }
+
+  .tagline {
+    color: var(--text-muted);
+    font-size: 0.95rem;
+    margin: 0;
+  }
+
+  .search-row {
+    display: flex;
+    gap: 10px;
+    margin: 36px 0 0;
+  }
+
+  #title-input {
+    flex: 1;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 1rem;
+    padding: 14px 16px;
+    border-radius: 6px;
+    outline: none;
+    transition: border-color 0.15s ease;
+  }
+
+  #title-input:focus {
+    border-color: var(--gold);
+  }
+
+  #title-input::placeholder { color: var(--text-muted); }
+
+  #search-btn {
+    background: var(--gold);
+    color: #1a1408;
+    border: none;
+    font-family: var(--font-body);
+    font-weight: 600;
+    font-size: 0.95rem;
+    padding: 0 26px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: opacity 0.15s ease;
+  }
+
+  #search-btn:hover { opacity: 0.88; }
+  #search-btn:disabled { opacity: 0.5; cursor: default; }
+  #search-btn:focus-visible, #title-input:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+
+  .marquee {
+    display: none;
+    margin: 32px 0 0;
+    border: 1px solid var(--gold-dim);
+    border-radius: 6px;
+    padding: 10px 18px;
+    text-align: center;
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--gold);
+  }
+
+  .marquee.visible { display: block; }
+
+  .status {
+    text-align: center;
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    margin-top: 28px;
+    display: none;
+  }
+
+  .status.visible { display: block; }
+
+  .status.error { color: var(--fan); }
+
+  .toggle {
+    display: none;
+    margin: 32px 0 0;
+    gap: 8px;
+  }
+
+  .toggle.visible { display: flex; }
+
+  .toggle button {
+    flex: 1;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    font-family: var(--font-body);
+    font-weight: 600;
+    font-size: 0.9rem;
+    padding: 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .toggle button[data-active="true"][data-view="studio"] {
+    border-color: var(--studio);
+    color: var(--studio);
+    background: var(--studio-dim);
+  }
+
+  .toggle button[data-active="true"][data-view="fan"] {
+    border-color: var(--fan);
+    color: var(--fan);
+    background: var(--fan-dim);
+  }
+
+  .brief {
+    display: none;
+    margin-top: 20px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 28px 26px;
+    border-left-width: 3px;
+  }
+
+  .brief.visible { display: block; }
+  .brief.studio { border-left-color: var(--studio); }
+  .brief.fan { border-left-color: var(--fan); }
+
+  .brief h2 {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 1.35rem;
+    margin: 0 0 18px;
+    line-height: 1.35;
+  }
+
+  .brief.studio h2 { color: var(--studio); }
+  .brief.fan h2 { color: var(--fan); }
+
+  .field { margin-bottom: 18px; }
+  .field:last-child { margin-bottom: 0; }
+
+  .field-label {
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+  }
+
+  .field-value { font-size: 0.98rem; }
+
+  .pill {
+    display: inline-block;
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    padding: 3px 10px;
+    border-radius: 20px;
+    border: 1px solid currentColor;
+  }
+
+  .pill.risk-high, .pill.excite-low { color: var(--fan); }
+  .pill.risk-moderate, .pill.excite-mixed { color: var(--gold); }
+  .pill.risk-low, .pill.excite-high { color: var(--studio); }
+  .pill.risk-unclear, .pill.excite-unclear { color: var(--text-muted); }
+
+  ul.plain {
+    margin: 0;
+    padding-left: 18px;
+  }
+
+  ul.plain li { margin-bottom: 6px; }
+
+  .sources {
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    letter-spacing: 0.04em;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .brief, .marquee { animation: rise 0.25s ease; }
+  }
+
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1 class="brand">Film<span>echo</span></h1>
+      <p class="tagline">Trailer sentiment, competitive read, and production news, in one brief.</p>
+    </header>
+
+    <div class="search-row">
+      <input id="title-input" type="text" placeholder="Enter a film or show title..." autocomplete="off">
+      <button id="search-btn">Run brief</button>
+    </div>
+
+    <div id="marquee" class="marquee"></div>
+    <div id="status" class="status"></div>
+
+    <div id="toggle" class="toggle">
+      <button data-view="studio" data-active="true">Studio brief</button>
+      <button data-view="fan" data-active="false">Fan pulse</button>
+    </div>
+
+    <div id="studio-brief" class="brief studio"></div>
+    <div id="fan-brief" class="brief fan"></div>
+  </div>
+
+<script>
+const titleInput = document.getElementById('title-input');
+const searchBtn = document.getElementById('search-btn');
+const marquee = document.getElementById('marquee');
+const status = document.getElementById('status');
+const toggle = document.getElementById('toggle');
+const studioEl = document.getElementById('studio-brief');
+const fanEl = document.getElementById('fan-brief');
+
+let currentView = 'studio';
+
+function setStatus(text, isError) {
+  status.textContent = text || '';
+  status.classList.toggle('visible', !!text);
+  status.classList.toggle('error', !!isError);
+}
+
+function riskPillClass(prefix, value) {
+  const v = (value || 'unclear').toLowerCase();
+  return `pill ${prefix}-${v}`;
+}
+
+function renderStudio(brief) {
+  if (!brief) {
+    studioEl.innerHTML = '<p class="field-value">No studio brief was returned for this run.</p>';
+    return;
+  }
+  const news = (brief.notable_news || []).map(n => `<li>${n}</li>`).join('') || '<li>No recent news surfaced.</li>';
+  studioEl.innerHTML = `
+    <h2>${brief.headline || ''}</h2>
+    <div class="field">
+      <div class="field-label">Sentiment</div>
+      <div class="field-value">${brief.sentiment_summary || ''}</div>
+    </div>
+    <div class="field">
+      <div class="field-label">Competitive risk</div>
+      <div class="field-value"><span class="${riskPillClass('risk', brief.competitive_risk)}">${brief.competitive_risk || 'unclear'}</span></div>
+    </div>
+    <div class="field">
+      <div class="field-label">Notable news</div>
+      <ul class="plain">${news}</ul>
+    </div>
+    <div class="field">
+      <div class="field-label">Recommendation</div>
+      <div class="field-value">${brief.recommendation || ''}</div>
+    </div>
+  `;
+}
+
+function renderFan(brief) {
+  if (!brief) {
+    fanEl.innerHTML = '<p class="field-value">No fan pulse was returned for this run.</p>';
+    return;
+  }
+  const themes = (brief.top_themes || []).map(t => `<li>${t}</li>`).join('') || '<li>No recurring themes surfaced.</li>';
+  fanEl.innerHTML = `
+    <h2>${brief.headline || ''}</h2>
+    <div class="field">
+      <div class="field-label">Excitement level</div>
+      <div class="field-value"><span class="${riskPillClass('excite', brief.excitement_level)}">${brief.excitement_level || 'unclear'}</span></div>
+    </div>
+    <div class="field">
+      <div class="field-label">What fans are talking about</div>
+      <ul class="plain">${themes}</ul>
+    </div>
+    <div class="field">
+      <div class="field-label">Fun fact</div>
+      <div class="field-value">${brief.fun_fact_or_news || '\u2014'}</div>
+    </div>
+  `;
+}
+
+function showView(view) {
+  currentView = view;
+  toggle.querySelectorAll('button').forEach(btn => {
+    btn.dataset.active = String(btn.dataset.view === view);
+  });
+  studioEl.classList.toggle('visible', view === 'studio');
+  fanEl.classList.toggle('visible', view === 'fan');
+}
+
+toggle.addEventListener('click', (e) => {
+  const btn = e.target.closest('button[data-view]');
+  if (btn) showView(btn.dataset.view);
+});
+
+async function runBrief() {
+  const title = titleInput.value.trim();
+  if (!title) {
+    setStatus('Enter a title first.', true);
+    return;
+  }
+
+  searchBtn.disabled = true;
+  marquee.classList.remove('visible');
+  toggle.classList.remove('visible');
+  studioEl.classList.remove('visible');
+  fanEl.classList.remove('visible');
+  setStatus('Running the pipeline, this calls five agents and can take 20-40 seconds...', false);
+
+  try {
+    const res = await fetch(`/api/brief?title=${encodeURIComponent(title)}`);
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body.detail || `Request failed (${res.status})`);
+    }
+    const data = await res.json();
+    const entity = data.entity || {};
+    const result = data.result || {};
+
+    marquee.textContent = `Now screening: ${entity.title || title}${entity.release_year ? ' (' + entity.release_year + ')' : ''}`;
+    marquee.classList.add('visible');
+
+    if (result.parse_error) {
+      setStatus(`Synthesis returned unparsed output: ${result.parse_error}`, true);
+    } else {
+      setStatus('', false);
+    }
+
+    renderStudio(result.studio_brief);
+    renderFan(result.fan_pulse);
+    toggle.classList.add('visible');
+    showView(currentView);
+
+  } catch (err) {
+    setStatus(`Something went wrong: ${err.message}`, true);
+  } finally {
+    searchBtn.disabled = false;
+  }
+}
+
+searchBtn.addEventListener('click', runBrief);
+titleInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') runBrief();
+});
+</script>
+</body>
+</html>
