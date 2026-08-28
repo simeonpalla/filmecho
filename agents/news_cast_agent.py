@@ -10,6 +10,8 @@ needs to be exactly right, not just plausible-sounding.
 
 from __future__ import annotations
 
+import asyncio
+
 import os
 
 from google.adk.agents import Agent
@@ -22,7 +24,7 @@ from agents.schemas import NewsResult
 _client = Parallel(api_key=os.environ["PARALLEL_API_KEY"])
 
 
-def get_production_news(title: str, release_year: str, director: str, session_id: str) -> dict:
+async def get_production_news(title: str, release_year: str, director: str, session_id: str) -> dict:
     """Search the web for recent production/cast/release news about a title.
 
     Args:
@@ -42,7 +44,8 @@ def get_production_news(title: str, release_year: str, director: str, session_id
         + "? Only factual reporting — casting announcements, filming "
         "updates, distributor decisions, confirmed date changes."
     )
-    search = _client.search(
+    search = await asyncio.to_thread(
+        _client.search,
         objective=objective,
         search_queries=[f"{title} production news", f"{title} cast news"],
         session_id=session_id or None,

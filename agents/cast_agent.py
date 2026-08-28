@@ -9,6 +9,8 @@ released title it picks up actual performance reviews.
 
 from __future__ import annotations
 
+import asyncio
+
 import os
 
 from google.adk.agents import Agent
@@ -21,7 +23,7 @@ from agents.schemas import CastResult
 _client = Parallel(api_key=os.environ["PARALLEL_API_KEY"])
 
 
-def get_cast_reception(title: str, release_year: str, cast: str, session_id: str, release_status: str) -> dict:
+async def get_cast_reception(title: str, release_year: str, cast: str, session_id: str, release_status: str) -> dict:
     """Search the web for reception of specific cast members' performances.
 
     Args:
@@ -56,7 +58,8 @@ def get_cast_reception(title: str, release_year: str, cast: str, session_id: str
             "praise or skepticism about individual performers."
         )
 
-    search = _client.search(
+    search = await asyncio.to_thread(
+        _client.search,
         objective=objective,
         search_queries=[f"{title} cast performance reviews", f"{title} acting reactions"],
         session_id=session_id or None,

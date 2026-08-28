@@ -10,6 +10,8 @@ proving the integration is real rather than a single lucky example.
 
 from __future__ import annotations
 
+import asyncio
+
 import os
 
 from google.adk.agents import Agent
@@ -22,7 +24,7 @@ from agents.schemas import CompetitiveResult
 _client = Parallel(api_key=os.environ["PARALLEL_API_KEY"])
 
 
-def get_competitive_landscape(title: str, release_year: str, director: str, session_id: str, release_status: str) -> dict:
+async def get_competitive_landscape(title: str, release_year: str, director: str, session_id: str, release_status: str) -> dict:
     """Search the web for what a title competes/competed against for attention.
 
     Args:
@@ -58,7 +60,8 @@ def get_competitive_landscape(title: str, release_year: str, director: str, sess
         )
         search_queries = [f"{title} box office competition", f"films releasing same weekend as {title}"]
 
-    search = _client.search(
+    search = await asyncio.to_thread(
+        _client.search,
         objective=objective,
         search_queries=search_queries,
         session_id=session_id or None,

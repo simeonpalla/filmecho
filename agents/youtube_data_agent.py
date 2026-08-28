@@ -43,11 +43,15 @@ def get_video_stats(video_ids: list[str]) -> dict[str, dict]:
     stats = {}
     for item in response.get("items", []):
         statistics = item.get("statistics", {})
+        snippet = item.get("snippet", {})
+        thumbnails = snippet.get("thumbnails", {})
+        thumb = thumbnails.get("high") or thumbnails.get("medium") or thumbnails.get("default") or {}
         stats[item["id"]] = {
-            "title": item.get("snippet", {}).get("title"),
+            "title": snippet.get("title"),
             "view_count": int(statistics.get("viewCount", 0)),
             "like_count": int(statistics.get("likeCount", 0)),
             "comment_count": int(statistics.get("commentCount", 0)),
+            "thumbnail_url": thumb.get("url", ""),
         }
     return stats
 

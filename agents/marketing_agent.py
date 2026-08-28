@@ -17,6 +17,8 @@ field for the same principle applied to disambiguation).
 
 from __future__ import annotations
 
+import asyncio
+
 import os
 
 from google.adk.agents import Agent
@@ -29,7 +31,7 @@ from agents.schemas import MarketingResult
 _client = Parallel(api_key=os.environ["PARALLEL_API_KEY"])
 
 
-def get_marketing_analysis(title: str, release_year: str, session_id: str, release_status: str) -> dict:
+async def get_marketing_analysis(title: str, release_year: str, session_id: str, release_status: str) -> dict:
     """Search the web for marketing strategy and, for released titles, outcome.
 
     Args:
@@ -65,7 +67,8 @@ def get_marketing_analysis(title: str, release_year: str, session_id: str, relea
         )
         search_queries = [f"{title} marketing campaign", f"{title} promotion strategy"]
 
-    search = _client.search(
+    search = await asyncio.to_thread(
+        _client.search,
         objective=objective,
         search_queries=search_queries,
         session_id=session_id or None,

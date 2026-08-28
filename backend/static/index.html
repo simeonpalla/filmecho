@@ -10,18 +10,34 @@
 <style>
   :root {
     --bg: #0e0d10;
-    --bg-vignette: radial-gradient(ellipse 900px 500px at 50% -10%, rgba(217,169,78,0.08), transparent 70%);
+    --bg-vignette: radial-gradient(ellipse 900px 500px at 50% -10%, rgba(217,169,78,0.10), transparent 70%);
     --surface: #17151a;
     --surface-raised: #201d24;
     --border: #322e37;
     --text: #ede9e0;
     --text-muted: #9b968d;
+
     --gold: #d9a94e;
     --gold-dim: #7a6431;
-    --studio: #3fa9a0;
-    --studio-dim: #1f544f;
-    --fan: #e2637a;
-    --fan-dim: #6f2e3a;
+
+    /* Sentiment-driven accents — these are chosen by CONTENT, not fixed
+       per card. See riskTone()/excitementTone() in the script below. */
+    --positive: #4cbb74;
+    --positive-dim: #234a30;
+    --negative: #e5484d;
+    --negative-dim: #5c2224;
+    --neutral: #f0a83e;
+    --neutral-dim: #5c4520;
+    --unclear: #8b8880;
+    --unclear-dim: #3a3834;
+
+    /* Fixed-identity accents for sub-sections, distinct from the
+       dynamic sentiment colors above so a reader can tell "this is the
+       Marketing section" apart from "this section is positive." */
+    --marketing-accent: #a78bfa;
+    --cast-accent: #5fa8e0;
+    --news-accent: #e2637a;
+
     --font-display: "Fraunces", Georgia, serif;
     --font-body: "Inter", system-ui, sans-serif;
     --font-mono: "IBM Plex Mono", monospace;
@@ -47,17 +63,8 @@
     background-position: center;
   }
 
-  .page {
-    max-width: 1180px;
-    margin: 0 auto;
-    padding: 40px 24px 100px;
-  }
-
-  .hero {
-    max-width: 640px;
-    margin: 0 auto;
-    text-align: center;
-  }
+  .page { max-width: 1180px; margin: 0 auto; padding: 40px 24px 100px; }
+  .hero { max-width: 640px; margin: 0 auto; text-align: center; }
 
   .brand {
     font-family: var(--font-display);
@@ -68,18 +75,9 @@
   }
 
   .brand span { color: var(--gold); }
+  .tagline { color: var(--text-muted); font-size: 0.95rem; margin: 0; }
 
-  .tagline {
-    color: var(--text-muted);
-    font-size: 0.95rem;
-    margin: 0;
-  }
-
-  .search-row {
-    display: flex;
-    gap: 10px;
-    margin: 32px 0 0;
-  }
+  .search-row { display: flex; gap: 10px; margin: 32px 0 0; }
 
   #title-input {
     flex: 1;
@@ -94,11 +92,7 @@
     transition: border-color 0.15s ease, box-shadow 0.15s ease;
   }
 
-  #title-input:focus {
-    border-color: var(--gold);
-    box-shadow: 0 0 0 3px rgba(217,169,78,0.15);
-  }
-
+  #title-input:focus { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(217,169,78,0.15); }
   #title-input::placeholder { color: var(--text-muted); }
 
   #search-btn {
@@ -135,14 +129,7 @@
 
   .marquee.visible { display: block; }
 
-  .meta-bar {
-    display: none;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 8px;
-    margin-top: 16px;
-  }
-
+  .meta-bar { display: none; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 16px; }
   .meta-bar.visible { display: flex; }
 
   .meta-pill {
@@ -155,9 +142,24 @@
     color: var(--text-muted);
   }
 
-  .meta-pill.confidence-high { border-color: var(--studio); color: var(--studio); }
-  .meta-pill.confidence-medium { border-color: var(--gold); color: var(--gold); }
-  .meta-pill.confidence-low { border-color: var(--fan); color: var(--fan); }
+  .meta-pill.info { border-color: var(--cast-accent); color: var(--cast-accent); }
+  .meta-pill.confidence-high { border-color: var(--positive); color: var(--positive); }
+  .meta-pill.confidence-medium { border-color: var(--neutral); color: var(--neutral); }
+  .meta-pill.confidence-low { border-color: var(--negative); color: var(--negative); }
+
+  .poster {
+    display: none;
+    margin-top: 28px;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    max-width: 640px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .poster.visible { display: block; }
+  .poster img { width: 100%; height: auto; display: block; aspect-ratio: 16/9; object-fit: cover; }
 
   .status {
     text-align: center;
@@ -172,12 +174,10 @@
   }
 
   .status.visible { display: flex; }
-  .status.error { color: var(--fan); }
+  .status.error { color: var(--negative); }
 
   .spinner {
-    width: 14px;
-    height: 14px;
-    flex-shrink: 0;
+    width: 14px; height: 14px; flex-shrink: 0;
     border-radius: 50%;
     border: 2px solid var(--border);
     border-top-color: var(--gold);
@@ -185,22 +185,14 @@
 
   @media (prefers-reduced-motion: no-preference) {
     .spinner { animation: spin 0.8s linear infinite; }
-    .brief, .marquee { animation: rise 0.3s ease; }
+    .brief, .marquee, .poster { animation: rise 0.3s ease; }
   }
 
   @keyframes spin { to { transform: rotate(360deg); } }
   @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 
-  .results-grid {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 20px;
-    margin-top: 36px;
-  }
-
-  @media (min-width: 780px) {
-    .results-grid { grid-template-columns: 1fr 1fr; }
-  }
+  .results-grid { display: grid; grid-template-columns: 1fr; gap: 20px; margin-top: 36px; }
+  @media (min-width: 860px) { .results-grid { grid-template-columns: 1fr 1fr; } }
 
   .brief {
     display: none;
@@ -208,16 +200,21 @@
     border: 1px solid var(--border);
     border-radius: 10px;
     padding: 26px 24px;
-    border-left-width: 3px;
+    border-left-width: 4px;
+    border-left-color: var(--unclear);
     transition: border-color 0.2s ease, transform 0.2s ease;
   }
 
   .brief.visible { display: block; }
   .brief:hover { transform: translateY(-2px); }
-  .brief.studio { border-left-color: var(--studio); }
-  .brief.fan { border-left-color: var(--fan); }
-  .brief.cast { border-left-color: var(--gold); }
-  .brief.marketing { border-left-color: var(--gold); }
+
+  /* Dynamic tone classes — applied by JS based on the card's actual
+     content (competitive_risk for Studio, excitement_level for Fan),
+     not a fixed color per card. */
+  .brief.tone-positive { border-left-color: var(--positive); }
+  .brief.tone-negative { border-left-color: var(--negative); }
+  .brief.tone-neutral { border-left-color: var(--neutral); }
+  .brief.tone-unclear { border-left-color: var(--unclear); }
 
   .brief-eyebrow {
     font-family: var(--font-mono);
@@ -227,9 +224,10 @@
     margin-bottom: 10px;
   }
 
-  .brief.studio .brief-eyebrow { color: var(--studio); }
-  .brief.fan .brief-eyebrow { color: var(--fan); }
-  .brief.cast .brief-eyebrow, .brief.marketing .brief-eyebrow { color: var(--gold); }
+  .tone-positive .brief-eyebrow { color: var(--positive); }
+  .tone-negative .brief-eyebrow { color: var(--negative); }
+  .tone-neutral .brief-eyebrow { color: var(--neutral); }
+  .tone-unclear .brief-eyebrow { color: var(--unclear); }
 
   .brief h2 {
     font-family: var(--font-display);
@@ -263,18 +261,33 @@
     border: 1px solid currentColor;
   }
 
-  .pill.risk-high, .pill.excite-low { color: var(--fan); }
-  .pill.risk-moderate, .pill.excite-mixed { color: var(--gold); }
-  .pill.risk-low, .pill.excite-high { color: var(--studio); }
-  .pill.risk-unclear, .pill.excite-unclear { color: var(--text-muted); }
+  .pill.tone-positive { color: var(--positive); }
+  .pill.tone-negative { color: var(--negative); }
+  .pill.tone-neutral { color: var(--neutral); }
+  .pill.tone-unclear { color: var(--unclear); }
 
   ul.plain { margin: 0; padding-left: 18px; }
   ul.plain li { margin-bottom: 6px; }
 
-  .empty-state {
-    color: var(--text-muted);
-    font-size: 0.9rem;
+  .empty-state { color: var(--text-muted); font-size: 0.9rem; }
+
+  .subsection {
+    margin-top: 22px;
+    padding-top: 18px;
+    border-top: 1px solid var(--border);
   }
+
+  .subsection-title {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+
+  .subsection.marketing .subsection-title { color: var(--marketing-accent); }
+  .subsection.cast .subsection-title { color: var(--cast-accent); }
+  .subsection.news .subsection-title { color: var(--news-accent); }
 
   @media (max-width: 520px) {
     .search-row { flex-direction: column; }
@@ -297,14 +310,13 @@
 
       <div id="marquee" class="marquee"></div>
       <div id="meta-bar" class="meta-bar"></div>
+      <div id="poster" class="poster"><img id="poster-img" alt=""></div>
       <div id="status" class="status"><span id="status-spinner" class="spinner"></span><span id="status-text"></span></div>
     </div>
 
     <div class="results-grid">
-      <div id="studio-brief" class="brief studio"></div>
-      <div id="fan-brief" class="brief fan"></div>
-      <div id="cast-brief" class="brief cast"></div>
-      <div id="marketing-brief" class="brief marketing"></div>
+      <div id="studio-brief" class="brief tone-unclear"></div>
+      <div id="fan-brief" class="brief tone-unclear"></div>
     </div>
   </div>
   <div class="film-strip"></div>
@@ -314,13 +326,13 @@ const titleInput = document.getElementById('title-input');
 const searchBtn = document.getElementById('search-btn');
 const marquee = document.getElementById('marquee');
 const metaBar = document.getElementById('meta-bar');
+const poster = document.getElementById('poster');
+const posterImg = document.getElementById('poster-img');
 const status = document.getElementById('status');
 const statusSpinner = document.getElementById('status-spinner');
 const statusText = document.getElementById('status-text');
 const studioEl = document.getElementById('studio-brief');
 const fanEl = document.getElementById('fan-brief');
-const castEl = document.getElementById('cast-brief');
-const marketingEl = document.getElementById('marketing-brief');
 
 let activeSource = null;
 
@@ -331,16 +343,92 @@ function showStatus(text, isError, showSpinner) {
   statusSpinner.style.display = showSpinner ? '' : 'none';
 }
 
-function riskPillClass(prefix, value) {
-  const v = (value || 'unclear').toLowerCase();
-  return `pill ${prefix}-${v}`;
+// Content-driven color, not a fixed palette per card.
+function riskTone(risk) {
+  switch ((risk || 'unclear').toLowerCase()) {
+    case 'low': return 'positive';
+    case 'moderate': return 'neutral';
+    case 'high': return 'negative';
+    default: return 'unclear';
+  }
 }
 
-function renderStudio(brief) {
+function excitementTone(level) {
+  switch ((level || 'unclear').toLowerCase()) {
+    case 'high': return 'positive';
+    case 'mixed': return 'neutral';
+    case 'low': return 'negative';
+    default: return 'unclear';
+  }
+}
+
+function setCardTone(el, tone) {
+  el.classList.remove('tone-positive', 'tone-negative', 'tone-neutral', 'tone-unclear');
+  el.classList.add(`tone-${tone}`);
+}
+
+function renderMarketingSubsection(marketing) {
+  if (!marketing) {
+    return '<div class="subsection marketing"><div class="subsection-title">Marketing</div><p class="empty-state">No marketing coverage surfaced for this run.</p></div>';
+  }
+  const strategies = (marketing.strategies_observed || []).map(s => `<li>${s}</li>`).join('') || '<li>None surfaced.</li>';
+  const worked = (marketing.what_worked || []).map(w => `<li>${w.claim}</li>`).join('') || '<li>None surfaced.</li>';
+  const underperformed = (marketing.what_underperformed || []).map(w => `<li>${w.claim}</li>`).join('') || '<li>None surfaced.</li>';
+  const lessons = (marketing.lessons_learned && marketing.lessons_learned.length)
+    ? `<div class="field"><div class="field-label">Lessons learned</div><ul class="plain">${marketing.lessons_learned.map(l => `<li>${l}</li>`).join('')}</ul></div>`
+    : '';
+  return `
+    <div class="subsection marketing">
+      <div class="subsection-title">Marketing</div>
+      <div class="field"><div class="field-label">Strategies observed</div><ul class="plain">${strategies}</ul></div>
+      <div class="field"><div class="field-label">What worked</div><ul class="plain">${worked}</ul></div>
+      <div class="field"><div class="field-label">What underperformed</div><ul class="plain">${underperformed}</ul></div>
+      ${lessons}
+    </div>
+  `;
+}
+
+function renderCastSubsection(cast) {
+  if (!cast || !cast.performances || !cast.performances.length) {
+    return '<div class="subsection cast"><div class="subsection-title">Cast reception</div><p class="empty-state">No cast-specific coverage surfaced for this run.</p></div>';
+  }
+  const rows = cast.performances.map(p => `
+    <div class="field">
+      <div class="field-label">${p.actor}</div>
+      <div class="field-value">${p.note}${p.source_url ? ` <a href="${p.source_url}" target="_blank" rel="noopener">source</a>` : ''}</div>
+    </div>
+  `).join('');
+  return `
+    <div class="subsection cast">
+      <div class="subsection-title">Cast reception</div>
+      ${cast.standout_performance ? `<div class="field"><div class="field-label">Standout</div><div class="field-value">${cast.standout_performance}</div></div>` : ''}
+      ${cast.overall_cast_reception ? `<div class="field"><div class="field-label">Overall</div><div class="field-value">${cast.overall_cast_reception}</div></div>` : ''}
+      ${rows}
+    </div>
+  `;
+}
+
+function renderNewsSubsection(news) {
+  if (!news || (!news.facts?.length && !news.rumors?.length)) {
+    return '<div class="subsection news"><div class="subsection-title">Cast &amp; production news</div><p class="empty-state">No news surfaced for this run.</p></div>';
+  }
+  const facts = (news.facts || []).map(f => `<li>${f.claim}</li>`).join('');
+  const rumors = (news.rumors || []).map(r => `<li>${r.claim} <span style="color:var(--text-muted)">(rumor)</span></li>`).join('');
+  return `
+    <div class="subsection news">
+      <div class="subsection-title">Cast &amp; production news</div>
+      <ul class="plain">${facts}${rumors}</ul>
+    </div>
+  `;
+}
+
+function renderStudio(brief, cast, marketing) {
   if (!brief) {
     studioEl.innerHTML = '<div class="brief-eyebrow">Studio brief</div><p class="empty-state">No studio brief was returned for this run.</p>';
+    setCardTone(studioEl, 'unclear');
     return;
   }
+  setCardTone(studioEl, riskTone(brief.competitive_risk));
   const news = (brief.notable_news || []).map(n => `<li>${n}</li>`).join('') || '<li>No recent news surfaced.</li>';
   const lessonsBlock = (brief.lessons_learned && brief.lessons_learned.length)
     ? `<div class="field"><div class="field-label">Lessons learned</div><ul class="plain">${brief.lessons_learned.map(l => `<li>${l}</li>`).join('')}</ul></div>`
@@ -354,7 +442,7 @@ function renderStudio(brief) {
     </div>
     <div class="field">
       <div class="field-label">Competitive risk</div>
-      <div class="field-value"><span class="${riskPillClass('risk', brief.competitive_risk)}">${brief.competitive_risk || 'unclear'}</span></div>
+      <div class="field-value"><span class="pill tone-${riskTone(brief.competitive_risk)}">${brief.competitive_risk || 'unclear'}</span></div>
     </div>
     <div class="field">
       <div class="field-label">Notable news</div>
@@ -365,14 +453,18 @@ function renderStudio(brief) {
       <div class="field-label">Recommendation</div>
       <div class="field-value">${brief.recommendation || ''}</div>
     </div>
+    ${renderMarketingSubsection(marketing)}
+    ${renderCastSubsection(cast)}
   `;
 }
 
-function renderFan(brief) {
+function renderFan(brief, news) {
   if (!brief) {
     fanEl.innerHTML = '<div class="brief-eyebrow">Fan pulse</div><p class="empty-state">No fan pulse was returned for this run.</p>';
+    setCardTone(fanEl, 'unclear');
     return;
   }
+  setCardTone(fanEl, excitementTone(brief.excitement_level));
   const themes = (brief.top_themes || []).map(t => `<li>${t}</li>`).join('') || '<li>No recurring themes surfaced.</li>';
   const worthBlock = brief.worth_watching
     ? `<div class="field"><div class="field-label">Worth watching?</div><div class="field-value">${brief.worth_watching}</div></div>`
@@ -382,7 +474,7 @@ function renderFan(brief) {
     <h2>${brief.headline || ''}</h2>
     <div class="field">
       <div class="field-label">Excitement level</div>
-      <div class="field-value"><span class="${riskPillClass('excite', brief.excitement_level)}">${brief.excitement_level || 'unclear'}</span></div>
+      <div class="field-value"><span class="pill tone-${excitementTone(brief.excitement_level)}">${brief.excitement_level || 'unclear'}</span></div>
     </div>
     <div class="field">
       <div class="field-label">What fans are talking about</div>
@@ -393,71 +485,36 @@ function renderFan(brief) {
       <div class="field-label">Fun fact</div>
       <div class="field-value">${brief.fun_fact_or_news || '\u2014'}</div>
     </div>
-  `;
-}
-
-function renderCast(cast) {
-  if (!cast || !cast.performances || !cast.performances.length) {
-    castEl.innerHTML = '<div class="brief-eyebrow">Cast reception</div><p class="empty-state">No cast-specific coverage surfaced for this run.</p>';
-    return;
-  }
-  const rows = cast.performances.map(p => `
-    <div class="field">
-      <div class="field-label">${p.actor}</div>
-      <div class="field-value">${p.note}${p.source_url ? ` <a href="${p.source_url}" target="_blank" rel="noopener">source</a>` : ''}</div>
-    </div>
-  `).join('');
-  castEl.innerHTML = `
-    <div class="brief-eyebrow">Cast reception</div>
-    <h2>How the cast landed</h2>
-    ${cast.standout_performance ? `<div class="field"><div class="field-label">Standout</div><div class="field-value">${cast.standout_performance}</div></div>` : ''}
-    ${cast.overall_cast_reception ? `<div class="field"><div class="field-label">Overall</div><div class="field-value">${cast.overall_cast_reception}</div></div>` : ''}
-    ${rows}
-  `;
-}
-
-function renderMarketing(marketing) {
-  if (!marketing) {
-    marketingEl.innerHTML = '<div class="brief-eyebrow">Marketing</div><p class="empty-state">No marketing coverage surfaced for this run.</p>';
-    return;
-  }
-  const strategies = (marketing.strategies_observed || []).map(s => `<li>${s}</li>`).join('') || '<li>None surfaced.</li>';
-  const worked = (marketing.what_worked || []).map(w => `<li>${w.claim}</li>`).join('') || '<li>None surfaced.</li>';
-  const underperformed = (marketing.what_underperformed || []).map(w => `<li>${w.claim}</li>`).join('') || '<li>None surfaced.</li>';
-  const lessonsBlock = (marketing.lessons_learned && marketing.lessons_learned.length)
-    ? `<div class="field"><div class="field-label">Lessons learned</div><ul class="plain">${marketing.lessons_learned.map(l => `<li>${l}</li>`).join('')}</ul></div>`
-    : '';
-  marketingEl.innerHTML = `
-    <div class="brief-eyebrow">Marketing</div>
-    <h2>Campaign read</h2>
-    <div class="field">
-      <div class="field-label">Strategies observed</div>
-      <ul class="plain">${strategies}</ul>
-    </div>
-    <div class="field">
-      <div class="field-label">What worked</div>
-      <ul class="plain">${worked}</ul>
-    </div>
-    <div class="field">
-      <div class="field-label">What underperformed</div>
-      <ul class="plain">${underperformed}</ul>
-    </div>
-    ${lessonsBlock}
+    ${renderNewsSubsection(news)}
   `;
 }
 
 function renderMetaBar(entity, result) {
   const pills = [];
-  if (entity.director) pills.push(`<span class="meta-pill">Dir. ${entity.director}</span>`);
-  if (entity.release_year) pills.push(`<span class="meta-pill">${entity.release_year}</span>`);
+  if (entity.director) pills.push(`<span class="meta-pill info">Dir. ${entity.director}</span>`);
+  if (entity.release_year) pills.push(`<span class="meta-pill info">${entity.release_year}</span>`);
   if (entity.release_status && entity.release_status !== 'unclear') {
-    pills.push(`<span class="meta-pill">${entity.release_status}</span>`);
+    pills.push(`<span class="meta-pill info">${entity.release_status}</span>`);
   }
   if (result.entity_confidence) {
     pills.push(`<span class="meta-pill confidence-${result.entity_confidence}">match: ${result.entity_confidence}</span>`);
   }
   metaBar.innerHTML = pills.join('');
   metaBar.classList.toggle('visible', pills.length > 0);
+}
+
+function renderPoster(youtubeData) {
+  const firstThumb = youtubeData
+    ? Object.values(youtubeData).map(v => v.thumbnail_url).find(u => u)
+    : null;
+  if (firstThumb) {
+    posterImg.src = firstThumb;
+    posterImg.alt = 'Trailer thumbnail';
+    poster.classList.add('visible');
+  } else {
+    poster.classList.remove('visible');
+    posterImg.src = '';
+  }
 }
 
 async function runBrief() {
@@ -475,7 +532,8 @@ async function runBrief() {
   searchBtn.disabled = true;
   marquee.classList.remove('visible');
   metaBar.classList.remove('visible');
-  [studioEl, fanEl, castEl, marketingEl].forEach(el => el.classList.remove('visible'));
+  poster.classList.remove('visible');
+  [studioEl, fanEl].forEach(el => el.classList.remove('visible'));
   showStatus('Connecting...', false, true);
 
   const source = new EventSource(`/api/brief/stream?title=${encodeURIComponent(title)}`);
@@ -517,6 +575,7 @@ async function runBrief() {
       marquee.textContent = `${statusLabel}: ${entity.title || title}${entity.release_year ? ' (' + entity.release_year + ')' : ''}`;
       marquee.classList.add('visible');
       renderMetaBar(entity, result);
+      renderPoster(data.youtube);
 
       if (result.entity_confidence && result.entity_confidence !== 'high') {
         const note = result.disambiguation_note ? ` — ${result.disambiguation_note}` : '';
@@ -525,11 +584,9 @@ async function runBrief() {
         showStatus('', false, false);
       }
 
-      renderStudio(result.studio_brief);
-      renderFan(result.fan_pulse);
-      renderCast(data.cast);
-      renderMarketing(data.marketing);
-      [studioEl, fanEl, castEl, marketingEl].forEach(el => el.classList.add('visible'));
+      renderStudio(result.studio_brief, data.cast, data.marketing);
+      renderFan(result.fan_pulse, data.news);
+      [studioEl, fanEl].forEach(el => el.classList.add('visible'));
     }
   };
 

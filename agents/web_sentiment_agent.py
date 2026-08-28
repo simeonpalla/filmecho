@@ -13,6 +13,8 @@ satisfies the Google Cloud AI requirement for this agent.
 
 from __future__ import annotations
 
+import asyncio
+
 import os
 
 from google.adk.agents import Agent
@@ -25,7 +27,7 @@ from agents.schemas import WebSentimentResult
 _client = Parallel(api_key=os.environ["PARALLEL_API_KEY"])
 
 
-def get_web_sentiment(title: str, release_year: str, director: str, session_id: str, release_status: str) -> dict:
+async def get_web_sentiment(title: str, release_year: str, director: str, session_id: str, release_status: str) -> dict:
     """Search the live web for critic/audience reactions to a film.
 
     Args:
@@ -63,7 +65,8 @@ def get_web_sentiment(title: str, release_year: str, director: str, session_id: 
         )
         search_queries = [f"{title} trailer reaction", f"{title} trailer review"]
 
-    search = _client.search(
+    search = await asyncio.to_thread(
+        _client.search,
         objective=objective,
         search_queries=search_queries,
         session_id=session_id or None,
