@@ -30,10 +30,17 @@ than inventing a substitute.
 Title: {title} ({release_year})
 Director: {director}
 Release status: {release_status}
+Title-match confidence: {confidence}{confidence_note}
 
 IMPORTANT: studio_brief.lessons_learned and fan_pulse.worth_watching must
 stay EMPTY unless release_status is "released" — there is no lesson or
 "worth watching" verdict to give for a title that hasn't come out yet.
+
+IMPORTANT: if title-match confidence is not "high", both headlines must
+make that uncertainty visible to the reader (e.g. "Note: match confidence
+is medium — {confidence_note_short}" prepended to the headline or folded
+into sentiment_summary/excitement context), don't present the brief with
+unwarranted certainty about which specific title this data describes.
 
 === SENTIMENT SYNTHESIS ===
 {sentiment_json}
@@ -76,11 +83,17 @@ def build_main_synthesis_prompt(
     """
     d = entity.as_dict()
     marketing_label = " (retrospective)" if d["release_status"] == "released" else " (in-progress)"
+    confidence = d.get("confidence", "unclear")
+    confidence_note = f" — {d['disambiguation_note']}" if confidence != "high" and d.get("disambiguation_note") else ""
+    confidence_note_short = d.get("disambiguation_note") or "the title may be ambiguous"
     return _PROMPT_TEMPLATE.format(
         title=d["title"],
         release_year=d["release_year"] or "unknown",
         director=d["director"] or "unknown",
         release_status=d["release_status"],
+        confidence=confidence,
+        confidence_note=confidence_note,
+        confidence_note_short=confidence_note_short,
         sentiment_json=sentiment.model_dump_json(indent=2) if sentiment else "UNAVAILABLE for this run.",
         competitive_json=competitive.model_dump_json(indent=2) if competitive else "UNAVAILABLE for this run.",
         news_json=news.model_dump_json(indent=2) if news else "UNAVAILABLE for this run.",

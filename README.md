@@ -80,6 +80,8 @@ filmecho/
 
 **Not built**: Reddit Sentiment Agent (lowest priority per original build order — the six agents above already cover trailer/critic sentiment, YouTube comments, competitive positioning, production news, cast reception, and marketing, which is a complete submission on its own).
 
+`SUBMISSION_TEXT.md` at repo root has the Devpost text description (features, tech, findings) pre-drafted for copy-paste into the submission form.
+
 ## Setup
 
 ```bash
@@ -114,6 +116,23 @@ python -m orchestration.pipeline
 ```
 
 (edit the hardcoded title in `pipeline.py`'s `__main__` block first)
+
+## Testing
+
+```bash
+python -m pytest tests/ -v
+```
+
+20 tests, no API keys or network access required — they exercise the Pydantic schemas directly (rejecting invalid enum values, confirming `sources_used` can't drift back under the wrong parent) and `entity_context.resolve_entity`'s degrade paths via injected mock clients (`parallel_client`/`genai_client` params exist specifically for this). This does **not** test the live agent pipeline end to end, that still needs real API keys and is what `python -m orchestration.pipeline` is for.
+
+## API call volume — know this before a live demo
+
+One full `run_pipeline()` call makes:
+- **13-14 Gemini calls**: five agents use tools (`web_sentiment`, `competitive`, `news_cast`, `cast`, `marketing`), and ADK's function-calling is a two-turn round trip per tool-using agent (decide to call the tool, then produce the final answer once the tool result is back) — 2 calls × 5 agents = 10, plus entity resolution (1, or 2 if a disambiguation retry fires), plus sentiment synthesis (1), plus main synthesis (1).
+- **6-7 Parallel searches**: one per tool-using agent, plus entity resolution's search (plus its retry, if triggered).
+- YouTube: 1 `search.list` + 1 `videos.list` + up to 5 `commentThreads.list` calls.
+
+Check actual per-call pricing on `platform.parallel.ai`'s dashboard and Vertex AI's billing page directly rather than assume, and budget test runs accordingly if you're demoing repeatedly against a limited credit.
 
 ## Deploy to Cloud Run
 
