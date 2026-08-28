@@ -47,7 +47,12 @@ async def get_cast_reception(title: str, release_year: str, cast: str, session_i
             + f" received by critics and audiences? Cast includes: {cast or 'unknown'}. "
             "Focus on specific praise or criticism of named performances, "
             "any standout or breakout performance, and any performances "
-            "singled out as weak or miscast."
+            "singled out as weak or miscast. SEPARATELY, also look for "
+            "behind-the-scenes or personal news about these specific cast "
+            "members: injuries during filming, remuneration or salary "
+            "disputes, on-set incidents, personal-life updates (travel, "
+            "relationships, controversies) connected to this production or "
+            "its promotion, not generic celebrity gossip unrelated to it."
         )
     else:
         objective = (
@@ -55,13 +60,21 @@ async def get_cast_reception(title: str, release_year: str, cast: str, session_i
             + (f" ({release_year})" if release_year else "")
             + f"? Cast includes: {cast or 'unknown'}. Focus on anticipation or "
             "buzz around specific actors, casting reactions, and any early "
-            "praise or skepticism about individual performers."
+            "praise or skepticism about individual performers. SEPARATELY, "
+            "also look for behind-the-scenes or personal news about these "
+            "specific cast members: injuries during filming, remuneration "
+            "or salary disputes, on-set incidents, personal-life updates "
+            "connected to this production or its promotion."
         )
 
     search = await asyncio.to_thread(
         _client.search,
         objective=objective,
-        search_queries=[f"{title} cast performance reviews", f"{title} acting reactions"],
+        search_queries=[
+            f"{title} cast performance reviews",
+            f"{title} acting reactions",
+            f"{title} cast injury controversy salary",
+        ],
         session_id=session_id or None,
         mode="fast",
     )
@@ -87,9 +100,15 @@ cast_agent = Agent(
         "performances with one entry per actor the excerpts actually "
         "discuss (actor name, a specific note on their reception, source "
         "URL), standout_performance naming whoever got the strongest praise "
-        "(empty string if none stood out), and overall_cast_reception as "
-        "one sentence. Do not invent a reception for an actor the excerpts "
-        "don't mention, leave performances covering only the actors you "
+        "(empty string if none stood out), overall_cast_reception as one "
+        "sentence, and personal_updates with any behind-the-scenes or "
+        "personal news the excerpts mention about specific cast members — "
+        "injuries, salary/remuneration disputes, on-set incidents, "
+        "personal-life updates connected to this production. Keep "
+        "performances (professional reception) and personal_updates "
+        "(behind-the-scenes news) strictly separate, don't mix them. Do "
+        "not invent a reception or personal update for an actor the "
+        "excerpts don't mention, leave both lists covering only what you "
         "actually found material on."
     ),
     tools=[cast_tool],

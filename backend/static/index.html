@@ -6,28 +6,33 @@
 <title>Filmecho</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #0e0d10;
-    --bg-vignette: radial-gradient(ellipse 900px 500px at 50% -10%, rgba(217,169,78,0.10), transparent 70%);
-    --surface: #17151a;
-    --surface-raised: #201d24;
-    --border: #322e37;
-    --text: #ede9e0;
-    --text-muted: #9b968d;
+    --bg: #0a0912;
+    --bg-wash: radial-gradient(ellipse 1000px 600px at 15% -10%, rgba(167,139,250,0.14), transparent 60%),
+                radial-gradient(ellipse 900px 600px at 90% 0%, rgba(226,99,122,0.12), transparent 55%),
+                radial-gradient(ellipse 800px 500px at 50% 100%, rgba(95,168,224,0.08), transparent 60%);
+    --surface: #161320;
+    --surface-raised: #1e1a2c;
+    --border: #2f2a42;
+    --text: #f0eef7;
+    --text-muted: #9791ab;
 
-    --gold: #d9a94e;
-    --gold-dim: #7a6431;
+    --brand-a: #ff8a65;
+    --brand-b: #e2637a;
+    --brand-c: #a78bfa;
 
-    --positive: #4cbb74;
-    --positive-dim: #234a30;
-    --negative: #e5484d;
-    --negative-dim: #5c2224;
-    --neutral: #f0a83e;
-    --neutral-dim: #5c4520;
-    --unclear: #6b6862;
-    --unclear-dim: #322e37;
+    --gold: #e0ab55;
+
+    --positive: #4cd68a;
+    --positive-dim: #17402c;
+    --negative: #ff5c6c;
+    --negative-dim: #4a1e26;
+    --neutral: #f5b64a;
+    --neutral-dim: #4a3a1a;
+    --unclear: #7a7690;
+    --unclear-dim: #2f2a42;
 
     --marketing-accent: #a78bfa;
     --cast-accent: #5fa8e0;
@@ -42,7 +47,8 @@
 
   body {
     margin: 0;
-    background: var(--bg) var(--bg-vignette);
+    background: var(--bg);
+    background-image: var(--bg-wash);
     background-attachment: fixed;
     color: var(--text);
     font-family: var(--font-body);
@@ -51,28 +57,32 @@
   }
 
   .film-strip {
-    height: 12px;
-    background-image: radial-gradient(circle, var(--border) 2.5px, transparent 3px);
-    background-size: 26px 12px;
+    height: 10px;
+    background-image: radial-gradient(circle, var(--border) 2px, transparent 2.5px);
+    background-size: 22px 10px;
     background-repeat: repeat-x;
     background-position: center;
+    opacity: 0.7;
   }
 
-  .page { max-width: 900px; margin: 0 auto; padding: 40px 24px 100px; }
-  .hero { max-width: 640px; margin: 0 auto; text-align: center; }
+  .page { max-width: 1320px; margin: 0 auto; padding: 44px 28px 110px; }
+  .hero { max-width: 660px; margin: 0 auto; text-align: center; }
 
   .brand {
     font-family: var(--font-display);
     font-weight: 700;
-    font-size: clamp(2.2rem, 5vw, 3.2rem);
+    font-size: clamp(2.3rem, 5vw, 3.4rem);
     letter-spacing: -0.01em;
-    margin: 28px 0 6px;
+    margin: 22px 0 6px;
+    background: linear-gradient(90deg, var(--brand-a), var(--brand-b) 55%, var(--brand-c));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
   }
 
-  .brand span { color: var(--gold); }
   .tagline { color: var(--text-muted); font-size: 0.95rem; margin: 0; }
 
-  .search-row { display: flex; gap: 10px; margin: 32px 0 0; }
+  .search-row { display: flex; gap: 10px; margin: 30px 0 0; }
 
   #title-input {
     flex: 1;
@@ -82,253 +92,214 @@
     font-family: var(--font-body);
     font-size: 1rem;
     padding: 14px 16px;
-    border-radius: 6px;
+    border-radius: 8px;
     outline: none;
     transition: border-color 0.15s ease, box-shadow 0.15s ease;
   }
 
-  #title-input:focus { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(217,169,78,0.15); }
+  #title-input:focus { border-color: var(--brand-c); box-shadow: 0 0 0 3px rgba(167,139,250,0.18); }
   #title-input::placeholder { color: var(--text-muted); }
 
   #search-btn {
-    background: var(--gold);
-    color: #1a1408;
+    background: linear-gradient(90deg, var(--brand-a), var(--brand-b));
+    color: #1a0f10;
     border: none;
     font-family: var(--font-body);
-    font-weight: 600;
+    font-weight: 700;
     font-size: 0.95rem;
-    padding: 0 26px;
-    border-radius: 6px;
+    padding: 0 28px;
+    border-radius: 8px;
     cursor: pointer;
     transition: opacity 0.15s ease, transform 0.15s ease;
   }
 
-  #search-btn:hover:not(:disabled) { opacity: 0.88; transform: translateY(-1px); }
+  #search-btn:hover:not(:disabled) { opacity: 0.9; transform: translateY(-1px); }
   #search-btn:disabled { opacity: 0.5; cursor: default; }
-  #search-btn:focus-visible, #title-input:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+  #search-btn:focus-visible, #title-input:focus-visible { outline: 2px solid var(--brand-c); outline-offset: 2px; }
 
-  .marquee {
-    display: none;
-    margin: 28px 0 0;
-    border: 1px solid var(--gold-dim);
-    border-radius: 6px;
-    padding: 12px 18px;
-    text-align: center;
-    font-family: var(--font-mono);
-    font-size: 0.8rem;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: var(--gold);
-    background: rgba(217,169,78,0.05);
-  }
-
-  .marquee.visible { display: block; }
-
-  .meta-bar { display: none; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 14px; }
-  .meta-bar.visible { display: flex; }
-
-  .meta-pill {
-    font-family: var(--font-mono);
-    font-size: 0.72rem;
-    letter-spacing: 0.04em;
-    padding: 5px 12px;
-    border-radius: 20px;
-    border: 1px solid var(--border);
-    color: var(--text-muted);
-  }
-
-  .meta-pill.info { border-color: var(--cast-accent); color: var(--cast-accent); }
-  .meta-pill.confidence-high { border-color: var(--positive); color: var(--positive); }
-  .meta-pill.confidence-medium { border-color: var(--neutral); color: var(--neutral); }
-  .meta-pill.confidence-low { border-color: var(--negative); color: var(--negative); }
-
-  .poster {
-    display: none;
-    margin-top: 22px;
-    border-radius: 10px;
-    overflow: hidden;
-    border: 1px solid var(--border);
-  }
-
-  .poster.visible { display: block; }
-  .poster img { width: 100%; height: auto; display: block; aspect-ratio: 16/7; object-fit: cover; }
-
-  /* --- Progress checklist: replaces a single fleeting status line with
-     a persistent list, so "what's happening" stays visible instead of
-     flashing past. --- */
+  /* --- Progress checklist --- */
   .progress {
     display: none;
-    margin-top: 24px;
+    margin: 28px auto 0;
+    max-width: 480px;
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: 10px;
     padding: 18px 20px;
     text-align: left;
   }
-
   .progress.visible { display: block; }
 
   .progress-title {
-    font-family: var(--font-mono);
-    font-size: 0.7rem;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--text-muted);
-    margin-bottom: 12px;
+    font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--text-muted); margin-bottom: 12px;
   }
 
-  .progress-item {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 5px 0;
-    font-size: 0.88rem;
-    color: var(--text-muted);
-  }
-
-  .progress-dot {
-    width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0;
-    background: var(--unclear-dim);
-    border: 1px solid var(--border);
-  }
-
+  .progress-item { display: flex; align-items: center; gap: 10px; padding: 5px 0; font-size: 0.88rem; color: var(--text-muted); }
+  .progress-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; background: var(--unclear-dim); border: 1px solid var(--border); }
   .progress-item.active { color: var(--text); }
-  .progress-item.active .progress-dot {
-    background: var(--gold);
-    border-color: var(--gold);
-  }
-  @media (prefers-reduced-motion: no-preference) {
-    .progress-item.active .progress-dot { animation: pulse 1s ease-in-out infinite; }
-  }
+  .progress-item.active .progress-dot { background: var(--gold); border-color: var(--gold); }
+  @media (prefers-reduced-motion: no-preference) { .progress-item.active .progress-dot { animation: pulse 1s ease-in-out infinite; } }
   @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
-
   .progress-item.done { color: var(--positive); }
   .progress-item.done .progress-dot { background: var(--positive); border-color: var(--positive); }
 
-  .status {
-    text-align: center;
-    color: var(--negative);
-    font-family: var(--font-mono);
-    font-size: 0.85rem;
-    margin-top: 18px;
-    display: none;
-  }
-
+  .status { text-align: center; color: var(--negative); font-family: var(--font-mono); font-size: 0.85rem; margin-top: 16px; display: none; }
   .status.visible { display: block; }
 
   @media (prefers-reduced-motion: no-preference) {
-    .panel, .marquee, .poster { animation: rise 0.3s ease; }
+    .hero-banner, .panel { animation: rise 0.35s ease; }
   }
-  @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-  /* --- Tabs --- */
-  .tabs { display: none; gap: 8px; margin-top: 32px; }
+  /* --- Full-bleed hero banner (poster + overlaid title/meta) --- */
+  .hero-banner {
+    display: none;
+    position: relative;
+    margin-top: 34px;
+    border-radius: 14px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    background: var(--surface);
+  }
+  .hero-banner.visible { display: block; }
+
+  .hero-banner img {
+    width: 100%;
+    display: block;
+    aspect-ratio: 21/8;
+    object-fit: cover;
+    min-height: 200px;
+  }
+
+  .hero-banner-overlay {
+    position: absolute; inset: 0;
+    background: linear-gradient(0deg, rgba(10,9,18,0.94) 0%, rgba(10,9,18,0.5) 45%, rgba(10,9,18,0.05) 75%);
+    display: flex; flex-direction: column; justify-content: flex-end;
+    padding: 24px 28px;
+  }
+
+  .hero-banner-title {
+    font-family: var(--font-mono); font-size: 0.78rem; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--gold); margin-bottom: 10px;
+  }
+
+  .hero-banner-meta { display: flex; flex-wrap: wrap; gap: 8px; }
+
+  .meta-pill {
+    font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.04em;
+    padding: 5px 12px; border-radius: 20px; border: 1px solid var(--border);
+    color: var(--text-muted); background: rgba(10,9,18,0.5);
+  }
+  .meta-pill.info { border-color: var(--cast-accent); color: var(--cast-accent); }
+  .meta-pill.confidence-high { border-color: var(--positive); color: var(--positive); }
+  .meta-pill.confidence-medium { border-color: var(--neutral); color: var(--neutral); }
+  .meta-pill.confidence-low { border-color: var(--negative); color: var(--negative); }
+
+  /* Fallback text-only banner when no poster image is available */
+  .marquee-fallback {
+    display: none;
+    margin-top: 34px;
+    text-align: center;
+    padding: 20px 18px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--surface);
+  }
+  .marquee-fallback.visible { display: block; }
+  .marquee-fallback .hero-banner-title { color: var(--gold); }
+  .marquee-fallback .hero-banner-meta { justify-content: center; }
+
+  /* --- Main tabs --- */
+  .tabs { display: none; gap: 8px; margin-top: 28px; max-width: 640px; margin-left: auto; margin-right: auto; }
   .tabs.visible { display: flex; }
 
   .tab-btn {
-    flex: 1;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    color: var(--text-muted);
-    font-family: var(--font-body);
-    font-weight: 600;
-    font-size: 0.92rem;
-    padding: 13px;
-    border-radius: 8px 8px 0 0;
-    border-bottom: 3px solid var(--border);
-    cursor: pointer;
+    flex: 1; background: var(--surface); border: 1px solid var(--border); color: var(--text-muted);
+    font-family: var(--font-body); font-weight: 700; font-size: 0.95rem; padding: 14px;
+    border-radius: 10px 10px 0 0; border-bottom: 3px solid var(--border); cursor: pointer;
     transition: all 0.15s ease;
   }
-
   .tab-btn[data-tone="positive"] { border-bottom-color: var(--positive); }
   .tab-btn[data-tone="negative"] { border-bottom-color: var(--negative); }
   .tab-btn[data-tone="neutral"] { border-bottom-color: var(--neutral); }
   .tab-btn[data-tone="unclear"] { border-bottom-color: var(--unclear); }
+  .tab-btn[data-active="true"] { color: var(--text); background: var(--surface-raised); }
 
-  .tab-btn[data-active="true"] {
-    color: var(--text);
-    background: var(--surface-raised);
-  }
-  .tab-btn[data-active="true"][data-tone="positive"] { border-bottom-width: 4px; box-shadow: inset 0 -1px 0 var(--positive); }
-  .tab-btn[data-active="true"][data-tone="negative"] { border-bottom-width: 4px; box-shadow: inset 0 -1px 0 var(--negative); }
-  .tab-btn[data-active="true"][data-tone="neutral"] { border-bottom-width: 4px; box-shadow: inset 0 -1px 0 var(--neutral); }
-
-  .panel {
-    display: none;
-    background: var(--surface-raised);
-    border: 1px solid var(--border);
-    border-top: none;
-    border-radius: 0 0 10px 10px;
-    padding: 30px 28px;
-  }
-
+  .panel { display: none; max-width: 1180px; margin: 0 auto; background: var(--surface-raised); border: 1px solid var(--border); border-radius: 0 0 14px 14px; padding: 0; }
   .panel.visible { display: block; }
 
-  .panel h2 {
-    font-family: var(--font-display);
-    font-weight: 600;
-    font-size: 1.4rem;
-    margin: 0 0 20px;
-    line-height: 1.35;
+  /* --- Sub-tabs inside each panel --- */
+  .subtabs { display: flex; gap: 4px; padding: 14px 24px 0; border-bottom: 1px solid var(--border); }
+  .subtab-btn {
+    background: none; border: none; color: var(--text-muted); font-family: var(--font-body);
+    font-weight: 600; font-size: 0.85rem; padding: 10px 16px; cursor: pointer;
+    border-bottom: 2px solid transparent; transition: color 0.15s ease, border-color 0.15s ease;
   }
+  .subtab-btn[data-active="true"] { color: var(--text); }
+  .subtabs.tone-marketing .subtab-btn[data-active="true"] { border-color: var(--marketing-accent); }
+  .subtabs.tone-cast .subtab-btn[data-active="true"] { border-color: var(--cast-accent); }
+  .subtabs.tone-news .subtab-btn[data-active="true"] { border-color: var(--news-accent); }
+  .subtabs.tone-overview .subtab-btn[data-active="true"] { border-color: var(--gold); }
+
+  .subpanel { display: none; padding: 26px 28px 30px; }
+  .subpanel.visible { display: block; }
+
+  .subpanel h2 { font-family: var(--font-display); font-weight: 600; font-size: 1.35rem; margin: 0 0 20px; line-height: 1.35; }
+
+  /* --- Dashboard stat tiles --- */
+  .tile-row { display: grid; grid-template-columns: 1fr; gap: 14px; margin-bottom: 22px; }
+  @media (min-width: 640px) { .tile-row { grid-template-columns: 1fr 1fr; } }
+
+  .tile {
+    border-radius: 10px; padding: 18px 20px; border: 1px solid var(--border);
+    background: var(--surface);
+  }
+  .tile.tone-positive { border-color: var(--positive); background: linear-gradient(135deg, var(--positive-dim), var(--surface) 70%); }
+  .tile.tone-negative { border-color: var(--negative); background: linear-gradient(135deg, var(--negative-dim), var(--surface) 70%); }
+  .tile.tone-neutral { border-color: var(--neutral); background: linear-gradient(135deg, var(--neutral-dim), var(--surface) 70%); }
+  .tile.tone-unclear { border-color: var(--unclear); background: var(--surface); }
+
+  .tile-label { font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px; }
+  .tile-value { font-family: var(--font-display); font-weight: 600; font-size: 1.15rem; text-transform: capitalize; }
+  .tile.tone-positive .tile-value { color: var(--positive); }
+  .tile.tone-negative .tile-value { color: var(--negative); }
+  .tile.tone-neutral .tile-value { color: var(--neutral); }
+  .tile-sub { font-size: 0.88rem; color: var(--text-muted); margin-top: 6px; }
 
   .field { margin-bottom: 18px; }
   .field:last-child { margin-bottom: 0; }
-
-  .field-label {
-    font-family: var(--font-mono);
-    font-size: 0.68rem;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--text-muted);
-    margin-bottom: 6px;
-  }
-
-  .field-value { font-size: 0.98rem; }
+  .field-label { font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px; }
+  .field-value { font-size: 0.96rem; }
   .field-value a { color: inherit; }
 
-  .pill {
-    display: inline-block;
-    font-family: var(--font-mono);
-    font-size: 0.78rem;
-    padding: 3px 10px;
-    border-radius: 20px;
-    border: 1px solid currentColor;
+  .chip-row { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip {
+    font-size: 0.85rem; padding: 6px 14px; border-radius: 20px;
+    background: var(--surface); border: 1px solid var(--border); color: var(--text);
   }
 
-  .pill.tone-positive { color: var(--positive); }
-  .pill.tone-negative { color: var(--negative); }
-  .pill.tone-neutral { color: var(--neutral); }
-  .pill.tone-unclear { color: var(--unclear); }
-
-  ul.plain { margin: 0; padding-left: 18px; }
-  ul.plain li { margin-bottom: 6px; }
+  ul.plain { margin: 0; padding-left: 0; list-style: none; }
+  ul.plain li { margin-bottom: 10px; padding-left: 18px; position: relative; }
+  ul.plain li::before { content: "\2022"; position: absolute; left: 0; color: var(--brand-c); }
 
   .empty-state { color: var(--text-muted); font-size: 0.9rem; }
 
-  .subsection {
-    margin-top: 26px;
-    padding-top: 20px;
-    border-top: 1px solid var(--border);
-  }
+  .card-list { display: grid; grid-template-columns: 1fr; gap: 12px; }
+  @media (min-width: 720px) { .card-list { grid-template-columns: 1fr 1fr; } }
 
-  .subsection-title {
-    font-family: var(--font-mono);
-    font-size: 0.72rem;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    margin-bottom: 14px;
-  }
+  .mini-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; }
+  .mini-card-title { font-weight: 600; font-size: 0.92rem; margin-bottom: 4px; }
+  .mini-card.cast-accent { border-left: 3px solid var(--cast-accent); }
+  .mini-card.news-accent { border-left: 3px solid var(--news-accent); }
+  .mini-card.marketing-accent { border-left: 3px solid var(--marketing-accent); }
 
-  .subsection.marketing .subsection-title { color: var(--marketing-accent); }
-  .subsection.cast .subsection-title { color: var(--cast-accent); }
-  .subsection.news .subsection-title { color: var(--news-accent); }
-
-  @media (max-width: 520px) {
+  @media (max-width: 560px) {
     .search-row { flex-direction: column; }
     #search-btn { padding: 14px; }
-    .page { padding: 28px 16px 80px; }
-    .tab-btn { font-size: 0.82rem; padding: 11px 6px; }
+    .page { padding: 30px 16px 90px; }
+    .tab-btn { font-size: 0.82rem; padding: 12px 6px; }
+    .subtabs { overflow-x: auto; }
   }
 </style>
 </head>
@@ -336,17 +307,13 @@
   <div class="film-strip"></div>
   <div class="page">
     <div class="hero">
-      <h1 class="brand">Film<span>echo</span></h1>
+      <h1 class="brand">Filmecho</h1>
       <p class="tagline">Trailer sentiment, competitive read, cast reception, and marketing analysis, in one brief.</p>
 
       <div class="search-row">
         <input id="title-input" type="text" placeholder="Enter a film or show title..." autocomplete="off">
         <button id="search-btn">Run brief</button>
       </div>
-
-      <div id="marquee" class="marquee"></div>
-      <div id="meta-bar" class="meta-bar"></div>
-      <div id="poster" class="poster"><img id="poster-img" alt=""></div>
 
       <div id="progress" class="progress">
         <div class="progress-title">Pipeline progress</div>
@@ -355,25 +322,58 @@
       <div id="status" class="status"></div>
     </div>
 
+    <div id="hero-banner" class="hero-banner">
+      <img id="hero-banner-img" alt="">
+      <div class="hero-banner-overlay">
+        <div id="hero-banner-title" class="hero-banner-title"></div>
+        <div id="hero-banner-meta" class="hero-banner-meta"></div>
+      </div>
+    </div>
+    <div id="marquee-fallback" class="marquee-fallback">
+      <div id="marquee-fallback-title" class="hero-banner-title"></div>
+      <div id="marquee-fallback-meta" class="hero-banner-meta"></div>
+    </div>
+
     <div id="tabs" class="tabs">
       <button class="tab-btn" data-view="studio" data-active="true">Studio brief</button>
       <button class="tab-btn" data-view="fan" data-active="false">Fan pulse</button>
     </div>
-    <div id="studio-panel" class="panel"></div>
-    <div id="fan-panel" class="panel"></div>
+
+    <div id="studio-panel" class="panel">
+      <div class="subtabs tone-overview" data-group="studio">
+        <button class="subtab-btn" data-sub="studio-overview" data-active="true">Overview</button>
+        <button class="subtab-btn" data-sub="studio-marketing" data-active="false">Marketing</button>
+        <button class="subtab-btn" data-sub="studio-cast" data-active="false">Cast</button>
+      </div>
+      <div id="studio-overview" class="subpanel visible"></div>
+      <div id="studio-marketing" class="subpanel"></div>
+      <div id="studio-cast" class="subpanel"></div>
+    </div>
+
+    <div id="fan-panel" class="panel">
+      <div class="subtabs tone-overview" data-group="fan">
+        <button class="subtab-btn" data-sub="fan-overview" data-active="true">Overview</button>
+        <button class="subtab-btn" data-sub="fan-news" data-active="false">News</button>
+      </div>
+      <div id="fan-overview" class="subpanel visible"></div>
+      <div id="fan-news" class="subpanel"></div>
+    </div>
   </div>
   <div class="film-strip"></div>
 
 <script>
 const titleInput = document.getElementById('title-input');
 const searchBtn = document.getElementById('search-btn');
-const marquee = document.getElementById('marquee');
-const metaBar = document.getElementById('meta-bar');
-const poster = document.getElementById('poster');
-const posterImg = document.getElementById('poster-img');
 const progress = document.getElementById('progress');
 const progressList = document.getElementById('progress-list');
 const status = document.getElementById('status');
+const heroBanner = document.getElementById('hero-banner');
+const heroBannerImg = document.getElementById('hero-banner-img');
+const heroBannerTitle = document.getElementById('hero-banner-title');
+const heroBannerMeta = document.getElementById('hero-banner-meta');
+const marqueeFallback = document.getElementById('marquee-fallback');
+const marqueeFallbackTitle = document.getElementById('marquee-fallback-title');
+const marqueeFallbackMeta = document.getElementById('marquee-fallback-meta');
 const tabs = document.getElementById('tabs');
 const studioPanel = document.getElementById('studio-panel');
 const fanPanel = document.getElementById('fan-panel');
@@ -381,10 +381,6 @@ const fanPanel = document.getElementById('fan-panel');
 let activeSource = null;
 let currentView = 'studio';
 
-// Fixed display order for the checklist. Actual completion order (for
-// the 6 fetch agents) is unpredictable — as_completed() finishes them
-// whenever they finish — but the checklist itself stays in one place so
-// it's easy to scan, only each row's state changes.
 const STAGES = [
   { key: 'entity_resolution', label: 'Resolving title' },
   { key: 'web_sentiment', label: 'Web sentiment' },
@@ -396,11 +392,7 @@ const STAGES = [
   { key: 'sentiment_synthesis', label: 'Sentiment synthesis' },
   { key: 'main_synthesis', label: 'Final brief' },
 ];
-// Stages that get exactly one "started" event then one "finished" event
-// from the server (as opposed to the 6 fetch agents, which only ever
-// send a single completion event each).
 const TWO_PHASE = new Set(['entity_resolution', 'sentiment_synthesis', 'main_synthesis']);
-
 let stageState = {};
 
 function resetProgress() {
@@ -418,7 +410,6 @@ function renderProgress() {
 
 function markStage(key) {
   if (key === 'fetch') {
-    // Meta-event: the four-agent-plus-YouTube fetch stage just started.
     ['web_sentiment', 'youtube', 'competitive', 'news', 'cast', 'marketing'].forEach(k => {
       if (stageState[k] === 'pending') stageState[k] = 'active';
     });
@@ -450,167 +441,153 @@ function excitementTone(level) {
 
 function releaseLabel(entity) {
   if (entity.release_status === 'released') return 'Retrospective';
-  if (entity.release_status === 'upcoming') {
-    return entity.release_year ? `Coming ${entity.release_year}` : 'Upcoming release';
-  }
+  if (entity.release_status === 'upcoming') return entity.release_year ? `Coming ${entity.release_year}` : 'Upcoming release';
   return 'Screening status unclear';
 }
 
-function renderMarketingSubsection(marketing) {
-  if (!marketing) {
-    return '<div class="subsection marketing"><div class="subsection-title">Marketing</div><p class="empty-state">No marketing coverage surfaced for this run.</p></div>';
-  }
-  const strategies = (marketing.strategies_observed || []).map(s => `<li>${s}</li>`).join('') || '<li>None surfaced.</li>';
-  const worked = (marketing.what_worked || []).map(w => `<li>${w.claim}</li>`).join('') || '<li>None surfaced.</li>';
-  const underperformed = (marketing.what_underperformed || []).map(w => `<li>${w.claim}</li>`).join('') || '<li>None surfaced.</li>';
-  const lessons = (marketing.lessons_learned && marketing.lessons_learned.length)
-    ? `<div class="field"><div class="field-label">Lessons learned</div><ul class="plain">${marketing.lessons_learned.map(l => `<li>${l}</li>`).join('')}</ul></div>`
-    : '';
-  return `
-    <div class="subsection marketing">
-      <div class="subsection-title">Marketing</div>
-      <div class="field"><div class="field-label">Strategies observed</div><ul class="plain">${strategies}</ul></div>
-      <div class="field"><div class="field-label">What worked</div><ul class="plain">${worked}</ul></div>
-      <div class="field"><div class="field-label">What underperformed</div><ul class="plain">${underperformed}</ul></div>
-      ${lessons}
-    </div>
-  `;
-}
-
-function renderCastSubsection(cast) {
-  if (!cast || !cast.performances || !cast.performances.length) {
-    return '<div class="subsection cast"><div class="subsection-title">Cast reception</div><p class="empty-state">No cast-specific coverage surfaced for this run.</p></div>';
-  }
-  const rows = cast.performances.map(p => `
-    <div class="field">
-      <div class="field-label">${p.actor}</div>
-      <div class="field-value">${p.note}${p.source_url ? ` <a href="${p.source_url}" target="_blank" rel="noopener">source</a>` : ''}</div>
-    </div>
-  `).join('');
-  return `
-    <div class="subsection cast">
-      <div class="subsection-title">Cast reception</div>
-      ${cast.standout_performance ? `<div class="field"><div class="field-label">Standout</div><div class="field-value">${cast.standout_performance}</div></div>` : ''}
-      ${cast.overall_cast_reception ? `<div class="field"><div class="field-label">Overall</div><div class="field-value">${cast.overall_cast_reception}</div></div>` : ''}
-      ${rows}
-    </div>
-  `;
-}
-
-function renderNewsSubsection(news) {
-  if (!news || (!news.facts?.length && !news.rumors?.length)) {
-    return '<div class="subsection news"><div class="subsection-title">Cast &amp; production news</div><p class="empty-state">No news surfaced for this run.</p></div>';
-  }
-  const facts = (news.facts || []).map(f => `<li>${f.claim}</li>`).join('');
-  const rumors = (news.rumors || []).map(r => `<li>${r.claim} <span style="color:var(--text-muted)">(rumor)</span></li>`).join('');
-  return `
-    <div class="subsection news">
-      <div class="subsection-title">Cast &amp; production news</div>
-      <ul class="plain">${facts}${rumors}</ul>
-    </div>
-  `;
-}
-
-function renderStudio(brief, cast, marketing) {
-  const tone = riskTone(brief?.competitive_risk);
-  document.querySelector('.tab-btn[data-view="studio"]').dataset.tone = tone;
-
-  if (!brief) {
-    studioPanel.innerHTML = '<p class="empty-state">No studio brief was returned for this run.</p>';
-    return;
-  }
-  const news = (brief.notable_news || []).map(n => `<li>${n}</li>`).join('') || '<li>No recent news surfaced.</li>';
-  const lessonsBlock = (brief.lessons_learned && brief.lessons_learned.length)
-    ? `<div class="field"><div class="field-label">Lessons learned</div><ul class="plain">${brief.lessons_learned.map(l => `<li>${l}</li>`).join('')}</ul></div>`
-    : '';
-  studioPanel.innerHTML = `
-    <h2>${brief.headline || ''}</h2>
-    <div class="field">
-      <div class="field-label">Sentiment</div>
-      <div class="field-value">${brief.sentiment_summary || ''}</div>
-    </div>
-    <div class="field">
-      <div class="field-label">Competitive risk</div>
-      <div class="field-value"><span class="pill tone-${tone}">${brief.competitive_risk || 'unclear'}</span></div>
-    </div>
-    <div class="field">
-      <div class="field-label">Notable news</div>
-      <ul class="plain">${news}</ul>
-    </div>
-    ${lessonsBlock}
-    <div class="field">
-      <div class="field-label">Recommendation</div>
-      <div class="field-value">${brief.recommendation || ''}</div>
-    </div>
-    ${renderMarketingSubsection(marketing)}
-    ${renderCastSubsection(cast)}
-  `;
-}
-
-function renderFan(brief, news) {
-  const tone = excitementTone(brief?.excitement_level);
-  document.querySelector('.tab-btn[data-view="fan"]').dataset.tone = tone;
-
-  if (!brief) {
-    fanPanel.innerHTML = '<p class="empty-state">No fan pulse was returned for this run.</p>';
-    return;
-  }
-  const themes = (brief.top_themes || []).map(t => `<li>${t}</li>`).join('') || '<li>No recurring themes surfaced.</li>';
-  const worthBlock = brief.worth_watching
-    ? `<div class="field"><div class="field-label">Worth watching?</div><div class="field-value">${brief.worth_watching}</div></div>`
-    : '';
-  fanPanel.innerHTML = `
-    <h2>${brief.headline || ''}</h2>
-    <div class="field">
-      <div class="field-label">Excitement level</div>
-      <div class="field-value"><span class="pill tone-${tone}">${brief.excitement_level || 'unclear'}</span></div>
-    </div>
-    <div class="field">
-      <div class="field-label">What fans are talking about</div>
-      <ul class="plain">${themes}</ul>
-    </div>
-    ${worthBlock}
-    <div class="field">
-      <div class="field-label">Fun fact</div>
-      <div class="field-value">${brief.fun_fact_or_news || '\u2014'}</div>
-    </div>
-    ${renderNewsSubsection(news)}
-  `;
-}
-
-function renderMetaBar(entity, result) {
+function buildMetaPills(entity, result) {
   const pills = [];
   if (entity.director) pills.push(`<span class="meta-pill info">Dir. ${entity.director}</span>`);
   if (entity.release_year) pills.push(`<span class="meta-pill info">${entity.release_year}</span>`);
-  if (entity.release_status && entity.release_status !== 'unclear') {
-    pills.push(`<span class="meta-pill info">${entity.release_status}</span>`);
-  }
-  if (result.entity_confidence) {
-    pills.push(`<span class="meta-pill confidence-${result.entity_confidence}">match: ${result.entity_confidence}</span>`);
-  }
-  metaBar.innerHTML = pills.join('');
-  metaBar.classList.toggle('visible', pills.length > 0);
+  if (entity.release_status && entity.release_status !== 'unclear') pills.push(`<span class="meta-pill info">${entity.release_status}</span>`);
+  if (result.entity_confidence) pills.push(`<span class="meta-pill confidence-${result.entity_confidence}">match: ${result.entity_confidence}</span>`);
+  return pills.join('');
 }
 
-function renderPoster(youtubeData) {
-  const firstThumb = youtubeData
-    ? Object.values(youtubeData).map(v => v.thumbnail_url).find(u => u)
-    : null;
+// --- Sub-tab wiring (generic, used for both Studio and Fan panels) ---
+document.querySelectorAll('.subtabs').forEach(group => {
+  group.addEventListener('click', (e) => {
+    const btn = e.target.closest('.subtab-btn');
+    if (!btn) return;
+    group.querySelectorAll('.subtab-btn').forEach(b => b.dataset.active = String(b === btn));
+    const panelSet = group.parentElement.querySelectorAll('.subpanel');
+    panelSet.forEach(p => p.classList.toggle('visible', p.id === btn.dataset.sub));
+  });
+});
+
+function renderStudioOverview(brief) {
+  const el = document.getElementById('studio-overview');
+  if (!brief) { el.innerHTML = '<p class="empty-state">No studio brief was returned for this run.</p>'; return; }
+  const tone = riskTone(brief.competitive_risk);
+  const news = (brief.notable_news || []).map(n => `<li>${n}</li>`).join('') || '<li>No recent news surfaced.</li>';
+  const lessons = (brief.lessons_learned && brief.lessons_learned.length)
+    ? `<div class="field"><div class="field-label">Lessons learned</div><ul class="plain">${brief.lessons_learned.map(l => `<li>${l}</li>`).join('')}</ul></div>` : '';
+  el.innerHTML = `
+    <h2>${brief.headline || ''}</h2>
+    <div class="tile-row">
+      <div class="tile tone-${tone}"><div class="tile-label">Competitive risk</div><div class="tile-value">${brief.competitive_risk || 'unclear'}</div></div>
+      <div class="tile tone-unclear"><div class="tile-label">Sentiment</div><div class="tile-sub">${brief.sentiment_summary || ''}</div></div>
+    </div>
+    <div class="field"><div class="field-label">Notable news</div><ul class="plain">${news}</ul></div>
+    ${lessons}
+    <div class="field"><div class="field-label">Recommendation</div><div class="field-value">${brief.recommendation || ''}</div></div>
+  `;
+}
+
+function marketingLabels(releaseStatus) {
+  if (releaseStatus === 'released') {
+    return { worked: 'What worked', under: 'What underperformed' };
+  }
+  return { worked: 'Positive signals so far', under: 'Concerns so far' };
+}
+
+function renderStudioMarketing(marketing, releaseStatus) {
+  const el = document.getElementById('studio-marketing');
+  if (!marketing) { el.innerHTML = '<h2>Marketing</h2><p class="empty-state">No marketing coverage surfaced for this run.</p>'; return; }
+  const labels = marketingLabels(releaseStatus);
+  const strategies = (marketing.strategies_observed || []).map(s => `<span class="chip">${s}</span>`).join('') || '<span class="empty-state">None surfaced.</span>';
+  const worked = (marketing.what_worked || []).map(w => `<li>${w.claim}</li>`).join('') || '<li class="empty-state" style="list-style:none">None surfaced.</li>';
+  const under = (marketing.what_underperformed || []).map(w => `<li>${w.claim}</li>`).join('') || '<li class="empty-state" style="list-style:none">None surfaced.</li>';
+  const lessons = (marketing.lessons_learned && marketing.lessons_learned.length)
+    ? `<div class="field"><div class="field-label">Lessons learned</div><ul class="plain">${marketing.lessons_learned.map(l => `<li>${l}</li>`).join('')}</ul></div>` : '';
+  el.innerHTML = `
+    <h2>Marketing ${releaseStatus === 'released' ? 'retrospective' : 'campaign, in progress'}</h2>
+    <div class="field"><div class="field-label">Strategies observed</div><div class="chip-row">${strategies}</div></div>
+    <div class="field"><div class="field-label">${labels.worked}</div><ul class="plain">${worked}</ul></div>
+    <div class="field"><div class="field-label">${labels.under}</div><ul class="plain">${under}</ul></div>
+    ${lessons}
+  `;
+}
+
+function renderStudioCast(cast) {
+  const el = document.getElementById('studio-cast');
+  if (!cast) { el.innerHTML = '<h2>Cast reception</h2><p class="empty-state">No cast-specific coverage surfaced for this run.</p>'; return; }
+  const perf = (cast.performances || []).map(p => `
+    <div class="mini-card cast-accent">
+      <div class="mini-card-title">${p.actor}</div>
+      <div class="field-value">${p.note}${p.source_url ? ` <a href="${p.source_url}" target="_blank" rel="noopener">source</a>` : ''}</div>
+    </div>
+  `).join('') || '<p class="empty-state">No per-actor reception surfaced.</p>';
+  const personal = (cast.personal_updates || []).map(p => `
+    <div class="mini-card marketing-accent">
+      <div class="mini-card-title">${p.actor} — ${p.headline}</div>
+      ${p.detail ? `<div class="field-value">${p.detail}</div>` : ''}
+      ${p.source_url ? `<div class="field-value"><a href="${p.source_url}" target="_blank" rel="noopener">source</a></div>` : ''}
+    </div>
+  `).join('');
+  el.innerHTML = `
+    <h2>Cast reception</h2>
+    ${cast.standout_performance ? `<div class="field"><div class="field-label">Standout</div><div class="field-value">${cast.standout_performance}</div></div>` : ''}
+    ${cast.overall_cast_reception ? `<div class="field"><div class="field-label">Overall</div><div class="field-value">${cast.overall_cast_reception}</div></div>` : ''}
+    <div class="field"><div class="field-label">Performances</div><div class="card-list">${perf}</div></div>
+    ${personal ? `<div class="field"><div class="field-label">Behind the scenes</div><div class="card-list">${personal}</div></div>` : ''}
+  `;
+}
+
+function renderFanOverview(brief) {
+  const el = document.getElementById('fan-overview');
+  if (!brief) { el.innerHTML = '<p class="empty-state">No fan pulse was returned for this run.</p>'; return; }
+  const tone = excitementTone(brief.excitement_level);
+  const themes = (brief.top_themes || []).map(t => `<span class="chip">${t}</span>`).join('') || '<span class="empty-state">None surfaced.</span>';
+  const worth = brief.worth_watching
+    ? `<div class="tile tone-unclear"><div class="tile-label">Worth watching?</div><div class="tile-sub">${brief.worth_watching}</div></div>`
+    : `<div class="tile tone-unclear"><div class="tile-label">Fun fact</div><div class="tile-sub">${brief.fun_fact_or_news || '\u2014'}</div></div>`;
+  el.innerHTML = `
+    <h2>${brief.headline || ''}</h2>
+    <div class="tile-row">
+      <div class="tile tone-${tone}"><div class="tile-label">Excitement level</div><div class="tile-value">${brief.excitement_level || 'unclear'}</div></div>
+      ${worth}
+    </div>
+    <div class="field"><div class="field-label">What fans are talking about</div><div class="chip-row">${themes}</div></div>
+  `;
+}
+
+function renderFanNews(news) {
+  const el = document.getElementById('fan-news');
+  if (!news || (!news.facts?.length && !news.rumors?.length)) {
+    el.innerHTML = '<h2>Cast &amp; production news</h2><p class="empty-state">No news surfaced for this run.</p>';
+    return;
+  }
+  const facts = (news.facts || []).map(f => `<div class="mini-card news-accent"><div class="field-value">${f.claim}</div></div>`).join('');
+  const rumors = (news.rumors || []).map(r => `<div class="mini-card news-accent"><div class="field-value">${r.claim} <span style="color:var(--text-muted)">(rumor)</span></div></div>`).join('');
+  el.innerHTML = `<h2>Cast &amp; production news</h2><div class="card-list">${facts}${rumors}</div>`;
+}
+
+function renderHero(entity, result, youtubeData) {
+  const label = releaseLabel(entity);
+  const titleHtml = `${label}: ${entity.title || ''}`;
+  const metaHtml = buildMetaPills(entity, result);
+
+  const firstThumb = youtubeData ? Object.values(youtubeData).map(v => v.thumbnail_url).find(u => u) : null;
+
   if (firstThumb) {
-    posterImg.src = firstThumb;
-    posterImg.alt = 'Trailer thumbnail';
-    poster.classList.add('visible');
+    heroBannerImg.src = firstThumb;
+    heroBannerImg.alt = entity.title || '';
+    heroBannerTitle.textContent = titleHtml;
+    heroBannerMeta.innerHTML = metaHtml;
+    heroBanner.classList.add('visible');
+    marqueeFallback.classList.remove('visible');
   } else {
-    poster.classList.remove('visible');
-    posterImg.src = '';
+    marqueeFallbackTitle.textContent = titleHtml;
+    marqueeFallbackMeta.innerHTML = metaHtml;
+    marqueeFallback.classList.add('visible');
+    heroBanner.classList.remove('visible');
   }
 }
 
 function showView(view) {
   currentView = view;
-  document.querySelectorAll('.tab-btn').forEach(btn => {
-    btn.dataset.active = String(btn.dataset.view === view);
-  });
+  document.querySelectorAll('.tab-btn').forEach(btn => { btn.dataset.active = String(btn.dataset.view === view); });
   studioPanel.classList.toggle('visible', view === 'studio');
   fanPanel.classList.toggle('visible', view === 'fan');
 }
@@ -622,21 +599,13 @@ tabs.addEventListener('click', (e) => {
 
 async function runBrief() {
   const title = titleInput.value.trim();
-  if (!title) {
-    status.textContent = 'Enter a title first.';
-    status.classList.add('visible');
-    return;
-  }
+  if (!title) { status.textContent = 'Enter a title first.'; status.classList.add('visible'); return; }
 
-  if (activeSource) {
-    activeSource.close();
-    activeSource = null;
-  }
+  if (activeSource) { activeSource.close(); activeSource = null; }
 
   searchBtn.disabled = true;
-  marquee.classList.remove('visible');
-  metaBar.classList.remove('visible');
-  poster.classList.remove('visible');
+  heroBanner.classList.remove('visible');
+  marqueeFallback.classList.remove('visible');
   tabs.classList.remove('visible');
   studioPanel.classList.remove('visible');
   fanPanel.classList.remove('visible');
@@ -649,41 +618,27 @@ async function runBrief() {
 
   source.onmessage = (raw) => {
     let payload;
-    try {
-      payload = JSON.parse(raw.data);
-    } catch {
-      return;
-    }
+    try { payload = JSON.parse(raw.data); } catch { return; }
 
-    if (payload.event === 'stage') {
-      markStage(payload.stage);
-      return;
-    }
+    if (payload.event === 'stage') { markStage(payload.stage); return; }
 
     if (payload.event === 'error') {
       progress.classList.remove('visible');
       status.textContent = `Something went wrong: ${payload.message}`;
       status.classList.add('visible');
-      source.close();
-      activeSource = null;
-      searchBtn.disabled = false;
+      source.close(); activeSource = null; searchBtn.disabled = false;
       return;
     }
 
     if (payload.event === 'result') {
-      source.close();
-      activeSource = null;
-      searchBtn.disabled = false;
+      source.close(); activeSource = null; searchBtn.disabled = false;
       progress.classList.remove('visible');
 
       const data = payload.data;
       const entity = data.entity || {};
       const result = data.result || {};
 
-      marquee.textContent = `${releaseLabel(entity)}: ${entity.title || title}`;
-      marquee.classList.add('visible');
-      renderMetaBar(entity, result);
-      renderPoster(data.youtube);
+      renderHero(entity, result, data.youtube);
 
       if (result.entity_confidence && result.entity_confidence !== 'high') {
         const note = result.disambiguation_note ? ` — ${result.disambiguation_note}` : '';
@@ -691,8 +646,12 @@ async function runBrief() {
         status.classList.add('visible');
       }
 
-      renderStudio(result.studio_brief, data.cast, data.marketing);
-      renderFan(result.fan_pulse, data.news);
+      renderStudioOverview(result.studio_brief);
+      renderStudioMarketing(data.marketing, entity.release_status);
+      renderStudioCast(data.cast);
+      renderFanOverview(result.fan_pulse);
+      renderFanNews(data.news);
+
       tabs.classList.add('visible');
       showView(currentView);
     }
@@ -700,8 +659,7 @@ async function runBrief() {
 
   source.onerror = () => {
     if (activeSource !== source) return;
-    source.close();
-    activeSource = null;
+    source.close(); activeSource = null;
     progress.classList.remove('visible');
     status.textContent = 'Connection lost while running the pipeline.';
     status.classList.add('visible');
@@ -710,9 +668,7 @@ async function runBrief() {
 }
 
 searchBtn.addEventListener('click', runBrief);
-titleInput.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') runBrief();
-});
+titleInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') runBrief(); });
 </script>
 </body>
 </html>

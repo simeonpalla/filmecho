@@ -96,10 +96,21 @@ class CastPerformanceNote(BaseModel):
     source_url: str = Field(default="", description="Source URL, empty string if not attributable to one.")
 
 
+class CastPersonalNote(BaseModel):
+    actor: str = Field(description="Actor's name.")
+    headline: str = Field(description="Short description of the update, e.g. 'Reported wrist injury during reshoots.'")
+    detail: str = Field(default="", description="Additional specifics if the excerpts give them.")
+    source_url: str = Field(default="", description="Source URL, empty string if not attributable to one.")
+
+
 class CastResult(BaseModel):
     performances: list[CastPerformanceNote] = Field(default_factory=list)
     standout_performance: str = Field(default="", description="Which actor got the most/strongest praise, if any.")
     overall_cast_reception: str = Field(default="", description="One sentence on the cast as a whole.")
+    personal_updates: list[CastPersonalNote] = Field(
+        default_factory=list,
+        description="Behind-the-scenes or personal news about specific cast members — injuries during filming, remuneration/salary disputes, personal-life updates, controversies, on-set incidents. NOT performance reviews, that's the `performances` field. Leave empty if nothing like this surfaced, don't invent filler.",
+    )
 
 
 class MarketingResult(BaseModel):
@@ -111,8 +122,14 @@ class MarketingResult(BaseModel):
     strategies_observed: list[str] = Field(
         default_factory=list, description="Named marketing tactics/channels actually used (trailers, posters, partnerships, social pushes, screenings, etc.)."
     )
-    what_worked: list[SourceExcerpt] = Field(default_factory=list)
-    what_underperformed: list[SourceExcerpt] = Field(default_factory=list)
+    what_worked: list[SourceExcerpt] = Field(
+        default_factory=list,
+        description="For released titles: tactics that demonstrably worked, judged against the actual outcome. For upcoming titles: do NOT use this for verdicts, there is no outcome yet — populate with genuinely positive early signals (strong trailer response, high anticipation) if the excerpts support one, otherwise leave empty.",
+    )
+    what_underperformed: list[SourceExcerpt] = Field(
+        default_factory=list,
+        description="For released titles: tactics that demonstrably underperformed. For upcoming titles: do NOT use this for verdicts — populate with genuine early concerns (lukewarm reception, criticized choices) if the excerpts support one, otherwise leave empty.",
+    )
     lessons_learned: list[str] = Field(
         default_factory=list,
         description="Only meaningful for released titles with a known outcome. Leave empty for upcoming titles, don't speculate.",
