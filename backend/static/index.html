@@ -68,17 +68,25 @@
   .page { max-width: 1320px; margin: 0 auto; padding: 44px 28px 110px; }
   .hero { max-width: 660px; margin: 0 auto; text-align: center; }
 
-  .brand {
-    font-family: var(--font-display);
-    font-weight: 700;
-    font-size: clamp(2.3rem, 5vw, 3.4rem);
-    letter-spacing: -0.01em;
+  /* --- Filmecho echo-trail logo --- */
+  .filmecho-logo {
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: clamp(2rem, 8vw, 3.5rem);
+    font-weight: 900;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    letter-spacing: -0.02em;
+    user-select: none;
     margin: 22px 0 6px;
-    background: linear-gradient(90deg, var(--brand-a), var(--brand-b) 55%, var(--brand-c));
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
   }
+  .logo-film { color: #ffffff; margin-right: 0.1em; z-index: 5; }
+  .logo-echo-wrapper { position: relative; display: inline-block; }
+  .logo-echo-main { color: #FA7C83; position: relative; z-index: 4; }
+  .echo-trail { position: absolute; top: 0; color: #FA7C83; }
+  .trail-1 { left: 0.2em; opacity: 0.4; z-index: 3; }
+  .trail-2 { left: 0.4em; opacity: 0.15; z-index: 2; }
+  .trail-3 { left: 0.6em; opacity: 0.05; z-index: 1; }
 
   .tagline { color: var(--text-muted); font-size: 0.95rem; margin: 0; }
 
@@ -307,7 +315,15 @@
   <div class="film-strip"></div>
   <div class="page">
     <div class="hero">
-      <h1 class="brand">Filmecho</h1>
+      <div class="filmecho-logo">
+        <span class="logo-film">FILM</span>
+        <div class="logo-echo-wrapper">
+          <span class="echo-trail trail-3">ECHO</span>
+          <span class="echo-trail trail-2">ECHO</span>
+          <span class="echo-trail trail-1">ECHO</span>
+          <span class="logo-echo-main">ECHO</span>
+        </div>
+      </div>
       <p class="tagline">Trailer sentiment, competitive read, cast reception, and marketing analysis, in one brief.</p>
 
       <div class="search-row">
