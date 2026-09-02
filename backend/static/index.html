@@ -143,6 +143,16 @@
     text-transform: uppercase; color: var(--text-muted); margin-bottom: 12px;
   }
 
+  .progress-bar-track {
+    height: 6px; border-radius: 3px; background: var(--unclear-dim);
+    overflow: hidden; margin-bottom: 16px;
+  }
+  .progress-bar-fill {
+    height: 100%; width: 0%; border-radius: 3px;
+    background: linear-gradient(90deg, var(--brand-a), var(--brand-b));
+    transition: width 0.4s ease;
+  }
+
   .progress-item { display: flex; align-items: center; gap: 10px; padding: 5px 0; font-size: 0.88rem; color: var(--text-muted); }
   .progress-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; background: var(--unclear-dim); border: 1px solid var(--border); }
   .progress-item.active { color: var(--text); }
@@ -340,6 +350,7 @@
 
       <div id="progress" class="progress">
         <div class="progress-title">Pipeline progress</div>
+        <div class="progress-bar-track"><div id="progress-bar-fill" class="progress-bar-fill"></div></div>
         <div id="progress-list"></div>
       </div>
       <div id="status" class="status"></div>
@@ -389,6 +400,7 @@ const titleInput = document.getElementById('title-input');
 const searchBtn = document.getElementById('search-btn');
 const progress = document.getElementById('progress');
 const progressList = document.getElementById('progress-list');
+const progressBarFill = document.getElementById('progress-bar-fill');
 const status = document.getElementById('status');
 const heroBanner = document.getElementById('hero-banner');
 const heroBannerImg = document.getElementById('hero-banner-img');
@@ -429,6 +441,12 @@ function renderProgress() {
     const state = stageState[s.key];
     return `<div class="progress-item ${state}"><span class="progress-dot"></span>${s.label}</div>`;
   }).join('');
+
+  const weight = { pending: 0, active: 0.5, done: 1 };
+  const total = STAGES.length;
+  const done = STAGES.reduce((sum, s) => sum + weight[stageState[s.key]], 0);
+  const pct = Math.round((done / total) * 100);
+  progressBarFill.style.width = `${pct}%`;
 }
 
 function markStage(key) {
@@ -492,13 +510,18 @@ function renderStudioOverview(brief, releaseStatus) {
   if (!brief) { el.innerHTML = '<p class="empty-state">No studio brief was returned for this run.</p>'; return; }
   const tone = riskTone(brief.competitive_risk);
   const riskLabel = releaseStatus === 'released' ? 'Competitive outcome' : 'Competitive risk';
-  const news = (brief.notable_news || []).map(n => `<li>${n}</li>`).join('') || '<li>No recent news surfaced.</li>';
+  const riskLegend = riskLegendText(releaseStatus, brief.competitive_risk);
+  const news = (brief.notable_news || []).map(n => `<li>${n.claim}${sourceLink(n.url)}</li>`).join('') || '<li>No recent news surfaced.</li>';
   const lessons = (brief.lessons_learned && brief.lessons_learned.length)
     ? `<div class="field"><div class="field-label">Lessons learned</div><ul class="plain">${brief.lessons_learned.map(l => `<li>${l}</li>`).join('')}</ul></div>` : '';
   el.innerHTML = `
     <h2>${brief.headline || ''}</h2>
     <div class="tile-row">
-      <div class="tile tone-${tone}"><div class="tile-label">${riskLabel}</div><div class="tile-value">${brief.competitive_risk || 'unclear'}</div></div>
+      <div class="tile tone-${tone}">
+        <div class="tile-label">${riskLabel}</div>
+        <div class="tile-value">${brief.competitive_risk || 'unclear'}</div>
+        <div class="tile-sub">${riskLegend}</div>
+      </div>
       <div class="tile tone-unclear"><div class="tile-label">Sentiment</div><div class="tile-sub">${brief.sentiment_summary || ''}</div></div>
     </div>
     <div class="field"><div class="field-label">Notable news</div><ul class="plain">${news}</ul></div>
@@ -514,18 +537,44 @@ function marketingLabels(releaseStatus) {
   return { worked: 'Positive signals so far', under: 'Concerns so far' };
 }
 
+function sourceLink(url) {
+  return url ? ` <a href="${url}" target="_blank" rel="noopener">source</a>` : '';
+}
+
+const RISK_LEGEND = {
+  upcoming: {
+    low: 'unlikely to have attention split by competing releases',
+    moderate: 'some competition, may share attention',
+    high: 'facing direct, high-profile competition in the same window',
+    unclear: 'not enough data to assess',
+  },
+  released: {
+    low: 'held its own or outperformed its competition',
+    moderate: 'mixed performance against competition',
+    high: 'was notably outcompeted at the box office',
+    unclear: 'not enough data to assess',
+  },
+};
+
+function riskLegendText(releaseStatus, level) {
+  const table = RISK_LEGEND[releaseStatus] || RISK_LEGEND.upcoming;
+  return table[(level || 'unclear').toLowerCase()] || table.unclear;
+}
+
 function renderStudioMarketing(marketing, releaseStatus) {
   const el = document.getElementById('studio-marketing');
   if (!marketing) { el.innerHTML = '<h2>Marketing</h2><p class="empty-state">No marketing coverage surfaced for this run.</p>'; return; }
   const labels = marketingLabels(releaseStatus);
-  const strategies = (marketing.strategies_observed || []).map(s => `<span class="chip">${s}</span>`).join('') || '<span class="empty-state">None surfaced.</span>';
-  const worked = (marketing.what_worked || []).map(w => `<li>${w.claim}</li>`).join('') || '<li class="empty-state" style="list-style:none">None surfaced.</li>';
-  const under = (marketing.what_underperformed || []).map(w => `<li>${w.claim}</li>`).join('') || '<li class="empty-state" style="list-style:none">None surfaced.</li>';
+  const strategies = (marketing.strategies_observed || []).map(s =>
+    `<div class="mini-card marketing-accent"><div class="field-value">${s.claim}${sourceLink(s.url)}</div></div>`
+  ).join('') || '<p class="empty-state">None surfaced.</p>';
+  const worked = (marketing.what_worked || []).map(w => `<li>${w.claim}${sourceLink(w.url)}</li>`).join('') || '<li class="empty-state" style="list-style:none">None surfaced.</li>';
+  const under = (marketing.what_underperformed || []).map(w => `<li>${w.claim}${sourceLink(w.url)}</li>`).join('') || '<li class="empty-state" style="list-style:none">None surfaced.</li>';
   const lessons = (marketing.lessons_learned && marketing.lessons_learned.length)
     ? `<div class="field"><div class="field-label">Lessons learned</div><ul class="plain">${marketing.lessons_learned.map(l => `<li>${l}</li>`).join('')}</ul></div>` : '';
   el.innerHTML = `
     <h2>Marketing ${releaseStatus === 'released' ? 'retrospective' : 'campaign, in progress'}</h2>
-    <div class="field"><div class="field-label">Strategies observed</div><div class="chip-row">${strategies}</div></div>
+    <div class="field"><div class="field-label">Strategies observed</div><div class="card-list">${strategies}</div></div>
     <div class="field"><div class="field-label">${labels.worked}</div><ul class="plain">${worked}</ul></div>
     <div class="field"><div class="field-label">${labels.under}</div><ul class="plain">${under}</ul></div>
     ${lessons}
@@ -568,7 +617,11 @@ function renderFanOverview(brief) {
   el.innerHTML = `
     <h2>${brief.headline || ''}</h2>
     <div class="tile-row">
-      <div class="tile tone-${tone}"><div class="tile-label">Excitement level</div><div class="tile-value">${brief.excitement_level || 'unclear'}</div></div>
+      <div class="tile tone-${tone}">
+        <div class="tile-label">Excitement level</div>
+        <div class="tile-value">${brief.excitement_level || 'unclear'}</div>
+        <div class="tile-sub">${brief.excitement_reason || ''}</div>
+      </div>
       ${worth}
     </div>
     <div class="field"><div class="field-label">What fans are talking about</div><div class="chip-row">${themes}</div></div>
@@ -581,8 +634,8 @@ function renderFanNews(news) {
     el.innerHTML = '<h2>Cast &amp; production news</h2><p class="empty-state">No news surfaced for this run.</p>';
     return;
   }
-  const facts = (news.facts || []).map(f => `<div class="mini-card news-accent"><div class="field-value">${f.claim}</div></div>`).join('');
-  const rumors = (news.rumors || []).map(r => `<div class="mini-card news-accent"><div class="field-value">${r.claim} <span style="color:var(--text-muted)">(rumor)</span></div></div>`).join('');
+  const facts = (news.facts || []).map(f => `<div class="mini-card news-accent"><div class="field-value">${f.claim}${sourceLink(f.url)}</div></div>`).join('');
+  const rumors = (news.rumors || []).map(r => `<div class="mini-card news-accent"><div class="field-value">${r.claim} <span style="color:var(--text-muted)">(rumor)</span>${sourceLink(r.url)}</div></div>`).join('');
   el.innerHTML = `<h2>Cast &amp; production news</h2><div class="card-list">${facts}${rumors}</div>`;
 }
 

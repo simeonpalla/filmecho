@@ -83,11 +83,19 @@ _EXTRACTION_INSTRUCTION = (
     "prominent one first, a person searching a bare title today is more "
     "often thinking of what's currently newsworthy than an old cult film "
     "that happens to share the name, though the excerpts' actual content "
-    "should still be what decides this, not an assumption. Determine "
-    "release_status and release_date by comparing to today's date, given "
-    "below — only fill release_date if the excerpts state one, don't "
-    "infer a specific date from just a year. If unsure about any field, "
-    "leave it null rather than guessing."
+    "should still be what decides this, not an assumption.\n\n"
+    "RELEASE DATES CHANGE: an announced release date for an upcoming film "
+    "is frequently pushed back or moved up after its initial announcement. "
+    "If excerpts show more than one date for the same title, trust the "
+    "one from the most recently published source, don't average or pick "
+    "arbitrarily, and if you can't tell which is more recent, lower your "
+    "confidence rather than presenting an uncertain date as settled. "
+    "Determine release_status by comparing your best release_date estimate "
+    "(or release_year if no exact date was found) against today's date, "
+    "given below — these two fields must agree with each other. Only fill "
+    "release_date if the excerpts state one, don't infer a specific date "
+    "from just a year. If unsure about any field, leave it null rather "
+    "than guessing."
 )
 
 
@@ -100,16 +108,25 @@ def _search_excerpts(parallel_client: Parallel, title: str, extra_hint: str = ""
     """
     objective = (
         f"Identify the film or TV title '{title}': confirm its exact "
-        "official title, release year, director, and top-billed cast."
+        "official title, release year, director, top-billed cast, and "
+        "current release date. Release dates for announced films "
+        "frequently get pushed back or moved up after initial "
+        "announcement — prioritize the most recently published source "
+        "for the release date specifically, and if sources disagree on "
+        "the date, note that explicitly rather than picking one silently."
     ) + (f" {extra_hint}" if extra_hint else "")
     search = parallel_client.search(
         objective=objective,
-        search_queries=[f"{title} release year director", f"{title} cast"],
+        search_queries=[
+            f"{title} release year director",
+            f"{title} cast",
+            f"{title} release date",
+        ],
         mode="fast",
     )
     excerpts = "\n\n".join(
         excerpt[:500]
-        for result in search.results[:5]
+        for result in search.results[:6]
         for excerpt in result.excerpts[:1]
     )
     return excerpts, (search.session_id or "")

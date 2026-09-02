@@ -153,22 +153,38 @@ class MarketingResult(BaseModel):
     """Release-status-aware: for upcoming titles this covers the campaign
     so far; for released titles it's a genuine retrospective with a
     lessons_learned field, since there's an actual outcome to evaluate
-    the campaign against."""
+    the campaign against.
 
-    strategies_observed: list[str] = Field(
-        default_factory=list, description="Named marketing tactics/channels actually used (trailers, posters, partnerships, social pushes, screenings, etc.)."
+    Every list here is capped and every item requires a source, on
+    purpose: an earlier version of this schema let the agent produce an
+    unbounded list of claims, and in testing it filled that space with
+    precise-sounding statistics (e.g. "34% higher conversion") that were
+    not actually in the source excerpts — invented numbers dressed up as
+    data. Bounding length and requiring a URL per claim doesn't fully
+    prevent fabrication on its own, but it removes the incentive to pad,
+    and the agent instruction pairs with this by explicitly forbidding
+    any number that doesn't trace to a specific excerpt.
+    """
+
+    strategies_observed: list[SourceExcerpt] = Field(
+        default_factory=list,
+        max_length=6,
+        description="Up to 6 named marketing tactics/channels actually used, each attributed to a source URL. Quality over quantity — 3 well-attributed tactics beats 6 vague ones.",
     )
     what_worked: list[SourceExcerpt] = Field(
         default_factory=list,
-        description="For released titles: tactics that demonstrably worked, judged against the actual outcome. For upcoming titles: do NOT use this for verdicts, there is no outcome yet — populate with genuinely positive early signals (strong trailer response, high anticipation) if the excerpts support one, otherwise leave empty.",
+        max_length=4,
+        description="Up to 4 items. For released titles: tactics that demonstrably worked, judged against the actual outcome. For upcoming titles: do NOT use this for verdicts, there is no outcome yet — populate with genuinely positive early signals if the excerpts support one, otherwise leave empty. NEVER include a specific number/percentage/statistic unless that exact figure appears in the source excerpt — describe qualitatively instead of inventing a figure.",
     )
     what_underperformed: list[SourceExcerpt] = Field(
         default_factory=list,
-        description="For released titles: tactics that demonstrably underperformed. For upcoming titles: do NOT use this for verdicts — populate with genuine early concerns (lukewarm reception, criticized choices) if the excerpts support one, otherwise leave empty.",
+        max_length=4,
+        description="Up to 4 items. For released titles: tactics that demonstrably underperformed. For upcoming titles: do NOT use this for verdicts — populate with genuine early concerns if the excerpts support one, otherwise leave empty. NEVER include a specific number/percentage/statistic unless that exact figure appears in the source excerpt.",
     )
     lessons_learned: list[str] = Field(
         default_factory=list,
-        description="Only meaningful for released titles with a known outcome. Leave empty for upcoming titles, don't speculate.",
+        max_length=4,
+        description="Up to 4 items. Only meaningful for released titles with a known outcome. Leave empty for upcoming titles, don't speculate.",
     )
 
 
@@ -176,18 +192,22 @@ class StudioBrief(BaseModel):
     headline: str
     sentiment_summary: str
     competitive_risk: Literal["low", "moderate", "high", "unclear"]
-    notable_news: list[str] = Field(default_factory=list)
+    notable_news: list[SourceExcerpt] = Field(default_factory=list, max_length=4)
     recommendation: str
     lessons_learned: list[str] = Field(
         default_factory=list,
-        description="Only for released titles: concrete takeaways for future marketing/release decisions. Leave empty for upcoming titles.",
+        max_length=4,
+        description="Up to 4 items. Only for released titles: concrete takeaways for future marketing/release decisions. Leave empty for upcoming titles.",
     )
 
 
 class FanPulse(BaseModel):
     headline: str
     excitement_level: Literal["high", "mixed", "low", "unclear"]
-    top_themes: list[str] = Field(default_factory=list)
+    excitement_reason: str = Field(
+        description="One or two sentences on WHY this excitement level was assigned — the specific thing driving it (a scene, a reunion, a controversy), not a restatement of the level itself."
+    )
+    top_themes: list[str] = Field(default_factory=list, max_length=4)
     fun_fact_or_news: str = ""
     worth_watching: str = Field(
         default="",
