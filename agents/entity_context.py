@@ -47,22 +47,26 @@ class EntityContext:
     title: str
     canonical_title: Optional[str] = None
     release_year: Optional[int] = None
+    release_date: Optional[str] = None
     director: Optional[str] = None
     cast: list[str] = field(default_factory=list)
     release_status: str = "unclear"
     confidence: str = "low"
     disambiguation_note: str = ""
+    candidates: list[dict] = field(default_factory=list)
     session_id: str = field(default_factory=lambda: f"filmecho_{uuid.uuid4().hex[:12]}")
 
     def as_dict(self) -> dict:
         return {
             "title": self.canonical_title or self.title,
             "release_year": self.release_year,
+            "release_date": self.release_date,
             "director": self.director,
             "cast": self.cast,
             "release_status": self.release_status,
             "confidence": self.confidence,
             "disambiguation_note": self.disambiguation_note,
+            "candidates": self.candidates,
             "session_id": self.session_id,
         }
 
@@ -71,10 +75,19 @@ _EXTRACTION_INSTRUCTION = (
     "Extract structured film/TV metadata from web search excerpts about a "
     "user-provided title. If the excerpts describe more than one distinct "
     "real work sharing this title, you must set confidence to 'low' or "
-    "'medium' and use disambiguation_note to say which one you picked and "
-    "why, don't silently resolve the ambiguity. Determine release_status by "
-    "comparing the title's release date to today's date, given below. If "
-    "unsure about a field, leave it null rather than guessing."
+    "'medium', populate candidates with each plausible option, and use "
+    "disambiguation_note to explain the ambiguity, don't silently resolve "
+    "it by picking one. When ambiguous, weight recency and current "
+    "prominence: if one candidate is a major upcoming release currently "
+    "in the news and the other is an obscure or much older work, list the "
+    "prominent one first, a person searching a bare title today is more "
+    "often thinking of what's currently newsworthy than an old cult film "
+    "that happens to share the name, though the excerpts' actual content "
+    "should still be what decides this, not an assumption. Determine "
+    "release_status and release_date by comparing to today's date, given "
+    "below — only fill release_date if the excerpts state one, don't "
+    "infer a specific date from just a year. If unsure about any field, "
+    "leave it null rather than guessing."
 )
 
 
@@ -183,9 +196,11 @@ def resolve_entity(
 
     ctx.canonical_title = result.canonical_title or title
     ctx.release_year = result.release_year
+    ctx.release_date = result.release_date
     ctx.director = result.director
     ctx.cast = result.cast
     ctx.release_status = result.release_status
     ctx.confidence = result.confidence
     ctx.disambiguation_note = result.disambiguation_note
+    ctx.candidates = [c.model_dump() for c in result.candidates]
     return ctx

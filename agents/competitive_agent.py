@@ -44,11 +44,16 @@ async def get_competitive_landscape(title: str, release_year: str, director: str
         objective = (
             f"What did {title}" + (f" ({release_year})" if release_year else "")
             + " compete against at the box office when it released, and how did "
-            "it perform relative to that competition (box office ranking, "
-            "opening weekend comparisons, whether it over- or under-performed "
-            "expectations)?"
+            "it perform relative to that competition? Find specific numbers if "
+            "available: opening weekend gross, box office ranking that weekend, "
+            "budget-vs-gross, whether it over- or under-performed pre-release "
+            "expectations. Prioritize sources with hard figures over vague "
+            "characterizations."
         )
-        search_queries = [f"{title} box office performance", f"{title} opening weekend competition"]
+        search_queries = [
+            f"{title} box office opening weekend numbers",
+            f"{title} box office performance vs competition",
+        ]
     else:
         objective = (
             f"What other films or shows are releasing in the same window as {title}"
@@ -85,13 +90,20 @@ competitive_agent = Agent(
         "You have a tool, get_competitive_landscape, that searches the web "
         "for competitive positioning. You will be given title, release_year, "
         "director, session_id, and release_status as key=value pairs; parse "
-        "them and call the tool exactly once. Then populate the required "
-        "output fields: competing_titles (2-4 named titles/events), "
-        "attention_assessment (for upcoming: split/concentrated/unaffected "
-        "attention; for released: how it actually performed against that "
-        "competition), and risk, grounded only in what the excerpts "
-        "actually say. If the excerpts don't support a clear read, set risk "
-        "to 'unclear' rather than guessing."
+        "them and call the tool exactly once. Then act as a box-office and "
+        "competitive-strategy analyst. Populate: competing_titles (2-4 named "
+        "titles/events), attention_assessment, and risk. "
+        "CRITICAL — risk means different things by release_status: for "
+        "'upcoming', it's forward-looking (will attention be split by "
+        "rivals). For 'released', it is NOT forward risk, it's a "
+        "backward-looking verdict on how the title actually performed "
+        "against its competition — high means it was notably outcompeted, "
+        "low means it held its own or won. For a released title, actively "
+        "look for box-office numbers in the excerpts and form a definitive "
+        "judgment from them; only fall back to 'unclear' if the excerpts "
+        "truly have nothing to go on, not just because the question is "
+        "hard. A vague 'unclear' when data exists is a worse answer than a "
+        "confident read with less-than-perfect data."
     ),
     tools=[competitive_tool],
     output_schema=CompetitiveResult,

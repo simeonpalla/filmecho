@@ -23,11 +23,23 @@ from typing import Literal, Optional
 from pydantic import BaseModel, Field
 
 
+class TitleCandidate(BaseModel):
+    """One possible match when a bare title is genuinely ambiguous."""
+
+    title: str = Field(description="The candidate's full, distinguishing title.")
+    year: Optional[int] = Field(default=None, description="Release year, or null if unknown.")
+    note: str = Field(description="One short phrase distinguishing this candidate, e.g. 'the 2008 action film' or 'the 2026 Marvel tentpole where this is a subtitle'.")
+
+
 class EntityResolution(BaseModel):
     """Structured output for entity_context.resolve_entity's Gemini call."""
 
     canonical_title: str = Field(description="The official, correctly disambiguated title.")
     release_year: Optional[int] = Field(default=None, description="Release year, or null if unknown.")
+    release_date: Optional[str] = Field(
+        default=None,
+        description="Full release date as reported (e.g. 'September 11, 2026'), or null if only a year or nothing is known. Do not guess a date that wasn't in the excerpts.",
+    )
     director: Optional[str] = Field(default=None, description="Director's name, or null if unknown.")
     cast: list[str] = Field(default_factory=list, description="Up to 5 top-billed cast members.")
     release_status: Literal["released", "upcoming", "unclear"] = Field(
@@ -54,6 +66,18 @@ class EntityResolution(BaseModel):
             "Empty string if the title was unambiguous."
         ),
     )
+    candidates: list[TitleCandidate] = Field(
+        default_factory=list,
+        description=(
+            "Populate ONLY when confidence is not 'high' AND the excerpts genuinely "
+            "support more than one distinct real work sharing this title — up to 3 "
+            "candidates, most-likely-intended first. When populated, prefer listing "
+            "the currently prominent/newsworthy candidate first if the excerpts "
+            "suggest one is more likely what a person searching today means (e.g. a "
+            "major upcoming tentpole vs. an obscure older film with the same name). "
+            "Leave empty if the title was unambiguous."
+        ),
+    )
 
 
 class SourceExcerpt(BaseModel):
@@ -73,7 +97,19 @@ class WebSentimentResult(BaseModel):
 class CompetitiveResult(BaseModel):
     competing_titles: list[str] = Field(default_factory=list)
     attention_assessment: str = Field(description="1-2 sentences: is attention split, concentrated, or unaffected.")
-    risk: Literal["low", "moderate", "high", "unclear"]
+    risk: Literal["low", "moderate", "high", "unclear"] = Field(
+        description=(
+            "For upcoming titles: forward-looking risk of audience attention being "
+            "split by competing releases (high = seriously threatened by direct "
+            "competition). For released titles: this is NOT a forward risk, it's a "
+            "backward-looking read on competitive OUTCOME — high = notably "
+            "outcompeted/underperformed against rivals, low = held its own or "
+            "outperformed, moderate = mixed. Only use 'unclear' if the excerpts "
+            "genuinely don't support even a rough read, not as a default when the "
+            "question feels hard — for a released title with any box-office or "
+            "reception data available, form a judgment from it."
+        )
+    )
 
 
 class NewsResult(BaseModel):

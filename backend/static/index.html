@@ -155,6 +155,13 @@
   .status { text-align: center; color: var(--negative); font-family: var(--font-mono); font-size: 0.85rem; margin-top: 16px; display: none; }
   .status.visible { display: block; }
 
+  .candidate-chip {
+    background: var(--surface-raised); border: 1px solid var(--negative); color: var(--text);
+    font-family: var(--font-mono); font-size: 0.78rem; padding: 5px 12px; border-radius: 20px;
+    cursor: pointer; margin: 2px;
+  }
+  .candidate-chip:hover { background: var(--negative-dim); }
+
   @media (prefers-reduced-motion: no-preference) {
     .hero-banner, .panel { animation: rise 0.35s ease; }
   }
@@ -461,12 +468,11 @@ function releaseLabel(entity) {
   return 'Screening status unclear';
 }
 
-function buildMetaPills(entity, result) {
+function buildMetaPills(entity) {
   const pills = [];
   if (entity.director) pills.push(`<span class="meta-pill info">Dir. ${entity.director}</span>`);
-  if (entity.release_year) pills.push(`<span class="meta-pill info">${entity.release_year}</span>`);
+  pills.push(`<span class="meta-pill info">${entity.release_date || entity.release_year || 'release date unknown'}</span>`);
   if (entity.release_status && entity.release_status !== 'unclear') pills.push(`<span class="meta-pill info">${entity.release_status}</span>`);
-  if (result.entity_confidence) pills.push(`<span class="meta-pill confidence-${result.entity_confidence}">match: ${result.entity_confidence}</span>`);
   return pills.join('');
 }
 
@@ -481,17 +487,18 @@ document.querySelectorAll('.subtabs').forEach(group => {
   });
 });
 
-function renderStudioOverview(brief) {
+function renderStudioOverview(brief, releaseStatus) {
   const el = document.getElementById('studio-overview');
   if (!brief) { el.innerHTML = '<p class="empty-state">No studio brief was returned for this run.</p>'; return; }
   const tone = riskTone(brief.competitive_risk);
+  const riskLabel = releaseStatus === 'released' ? 'Competitive outcome' : 'Competitive risk';
   const news = (brief.notable_news || []).map(n => `<li>${n}</li>`).join('') || '<li>No recent news surfaced.</li>';
   const lessons = (brief.lessons_learned && brief.lessons_learned.length)
     ? `<div class="field"><div class="field-label">Lessons learned</div><ul class="plain">${brief.lessons_learned.map(l => `<li>${l}</li>`).join('')}</ul></div>` : '';
   el.innerHTML = `
     <h2>${brief.headline || ''}</h2>
     <div class="tile-row">
-      <div class="tile tone-${tone}"><div class="tile-label">Competitive risk</div><div class="tile-value">${brief.competitive_risk || 'unclear'}</div></div>
+      <div class="tile tone-${tone}"><div class="tile-label">${riskLabel}</div><div class="tile-value">${brief.competitive_risk || 'unclear'}</div></div>
       <div class="tile tone-unclear"><div class="tile-label">Sentiment</div><div class="tile-sub">${brief.sentiment_summary || ''}</div></div>
     </div>
     <div class="field"><div class="field-label">Notable news</div><ul class="plain">${news}</ul></div>
@@ -579,10 +586,10 @@ function renderFanNews(news) {
   el.innerHTML = `<h2>Cast &amp; production news</h2><div class="card-list">${facts}${rumors}</div>`;
 }
 
-function renderHero(entity, result, youtubeData) {
+function renderHero(entity, youtubeData) {
   const label = releaseLabel(entity);
   const titleHtml = `${label}: ${entity.title || ''}`;
-  const metaHtml = buildMetaPills(entity, result);
+  const metaHtml = buildMetaPills(entity);
 
   const firstThumb = youtubeData ? Object.values(youtubeData).map(v => v.thumbnail_url).find(u => u) : null;
 
@@ -599,6 +606,27 @@ function renderHero(entity, result, youtubeData) {
     marqueeFallback.classList.add('visible');
     heroBanner.classList.remove('visible');
   }
+}
+
+function renderConfidenceNote(entity, result) {
+  if (!result.entity_confidence || result.entity_confidence === 'high') {
+    status.classList.remove('visible');
+    status.innerHTML = '';
+    return;
+  }
+  const note = result.disambiguation_note ? ` — ${result.disambiguation_note}` : '';
+  let html = `Title match confidence: ${result.entity_confidence}${note}`;
+
+  const candidates = entity.candidates || [];
+  if (candidates.length > 1) {
+    const chips = candidates.map(c =>
+      `<button class="candidate-chip" data-title="${c.title.replace(/"/g, '&quot;')}">${c.title}${c.year ? ' (' + c.year + ')' : ''}</button>`
+    ).join(' ');
+    html += `<div style="margin-top:10px">Did you mean: ${chips}</div>`;
+  }
+
+  status.innerHTML = html;
+  status.classList.add('visible');
 }
 
 function showView(view) {
@@ -654,15 +682,10 @@ async function runBrief() {
       const entity = data.entity || {};
       const result = data.result || {};
 
-      renderHero(entity, result, data.youtube);
+      renderHero(entity, data.youtube);
+      renderConfidenceNote(entity, result);
 
-      if (result.entity_confidence && result.entity_confidence !== 'high') {
-        const note = result.disambiguation_note ? ` — ${result.disambiguation_note}` : '';
-        status.textContent = `Title match confidence: ${result.entity_confidence}${note}`;
-        status.classList.add('visible');
-      }
-
-      renderStudioOverview(result.studio_brief);
+      renderStudioOverview(result.studio_brief, entity.release_status);
       renderStudioMarketing(data.marketing, entity.release_status);
       renderStudioCast(data.cast);
       renderFanOverview(result.fan_pulse);
@@ -685,6 +708,13 @@ async function runBrief() {
 
 searchBtn.addEventListener('click', runBrief);
 titleInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') runBrief(); });
+
+status.addEventListener('click', (e) => {
+  const chip = e.target.closest('.candidate-chip');
+  if (!chip) return;
+  titleInput.value = chip.dataset.title;
+  runBrief();
+});
 </script>
 </body>
 </html>

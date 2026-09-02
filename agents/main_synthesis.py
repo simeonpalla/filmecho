@@ -10,6 +10,14 @@ lessons_learned/worth_watching for released titles, there's no honest
 lesson or "worth watching" verdict to give for something that hasn't
 come out yet, and guessing one would be exactly the false-confidence
 problem this pipeline tries to avoid elsewhere.
+
+Two other things this instruction explicitly enforces, added after real
+generated output showed both failing:
+- studio_brief.recommendation must be genuinely actionable advice, not a
+  restatement of sentiment_summary in different words.
+- studio_brief.notable_news must stay strictly production/casting facts —
+  it was absorbing marketing-campaign facts that then also showed up,
+  redundantly, in the Marketing tab.
 """
 
 from __future__ import annotations
@@ -28,6 +36,7 @@ honestly (e.g. competitive_risk: "unclear", empty notable_news) rather
 than inventing a substitute.
 
 Title: {title} ({release_year})
+Release date: {release_date}
 Director: {director}
 Release status: {release_status}
 Title-match confidence: {confidence}{confidence_note}
@@ -89,6 +98,7 @@ def build_main_synthesis_prompt(
     return _PROMPT_TEMPLATE.format(
         title=d["title"],
         release_year=d["release_year"] or "unknown",
+        release_date=d.get("release_date") or "unknown",
         director=d["director"] or "unknown",
         release_status=d["release_status"],
         confidence=confidence,
@@ -109,10 +119,33 @@ main_synthesis_agent = Agent(
     description="Combines sentiment, competitive, news, cast, and marketing agents into the final studio/fan brief.",
     instruction=(
         "Follow the instructions and structured data given to you exactly "
-        "in the user message, including the release_status rule about "
-        "lessons_learned and worth_watching. Populate studio_brief and "
-        "fan_pulse from that material only, and sources_used with exactly "
-        "which of the five upstream sections actually had data."
+        "in the user message, including the release_status rules. You are "
+        "writing for two genuinely different readers, in two genuinely "
+        "different voices:\n\n"
+        "studio_brief is for a studio marketing/production executive making "
+        "a decision. Write like a strategy memo, not a summary. "
+        "sentiment_summary describes the reaction (what happened). "
+        "recommendation must be forward-looking, ACTIONABLE advice — a "
+        "specific move a studio could make (adjust the release window, "
+        "lean into a specific angle in advertising, address a specific "
+        "criticism before wide release) — not a restatement of "
+        "sentiment_summary with 'given the positive reaction...' bolted on "
+        "front. If your recommendation's first clause just repeats the "
+        "sentiment finding, rewrite it to lead with the action instead. "
+        "notable_news must be strictly production/casting/release facts "
+        "(dates, budget, crew, cast changes) — do not put marketing-"
+        "campaign facts here, that's the Marketing tab's job exclusively, "
+        "a fact should appear in exactly one place, not be echoed across "
+        "sections.\n\n"
+        "fan_pulse is for an actual fan browsing entertainment content, "
+        "not a business reader. Write with genuine energy and specificity, "
+        "not corporate paraphrase — pull directly from sentiment "
+        "synthesis's recurring_themes (which already favors real audience "
+        "language over generic description) rather than re-summarizing "
+        "into blander language. fun_fact_or_news should be something "
+        "genuinely interesting to read, not a filler fact.\n\n"
+        "Populate sources_used with exactly which of the five upstream "
+        "sections actually had data."
     ),
     output_schema=FinalBrief,
 )
