@@ -108,46 +108,47 @@ async def _run_adk_agent(
         return None
 
 
-def _entity_prompt(entity: EntityContext) -> str:
+def _entity_prompt(entity: EntityContext, region_hint: str = "") -> str:
     d = entity.as_dict()
     return (
         f"title={d['title']!r} release_year={d['release_year'] or ''!r} "
         f"director={d['director'] or ''!r} session_id={d['session_id']!r} "
-        f"release_status={d['release_status']!r} cast={', '.join(d['cast'])!r}"
+        f"release_status={d['release_status']!r} cast={', '.join(d['cast'])!r} "
+        f"region_hint={region_hint!r}"
     )
 
 
-async def _run_web_sentiment_branch(entity: EntityContext, user_id: str) -> Optional[WebSentimentResult]:
+async def _run_web_sentiment_branch(entity: EntityContext, user_id: str, region_hint: str) -> Optional[WebSentimentResult]:
     return await _run_adk_agent(
-        web_sentiment_agent, _entity_prompt(entity), user_id,
+        web_sentiment_agent, _entity_prompt(entity, region_hint), user_id,
         session_id=f"ws_{uuid.uuid4().hex[:8]}", output_model=WebSentimentResult,
     )
 
 
-async def _run_competitive_branch(entity: EntityContext, user_id: str) -> Optional[CompetitiveResult]:
+async def _run_competitive_branch(entity: EntityContext, user_id: str, region_hint: str) -> Optional[CompetitiveResult]:
     return await _run_adk_agent(
-        competitive_agent, _entity_prompt(entity), user_id,
+        competitive_agent, _entity_prompt(entity, region_hint), user_id,
         session_id=f"comp_{uuid.uuid4().hex[:8]}", output_model=CompetitiveResult,
     )
 
 
-async def _run_news_branch(entity: EntityContext, user_id: str) -> Optional[NewsResult]:
+async def _run_news_branch(entity: EntityContext, user_id: str, region_hint: str) -> Optional[NewsResult]:
     return await _run_adk_agent(
-        news_cast_agent, _entity_prompt(entity), user_id,
+        news_cast_agent, _entity_prompt(entity, region_hint), user_id,
         session_id=f"news_{uuid.uuid4().hex[:8]}", output_model=NewsResult,
     )
 
 
-async def _run_cast_branch(entity: EntityContext, user_id: str) -> Optional[CastResult]:
+async def _run_cast_branch(entity: EntityContext, user_id: str, region_hint: str) -> Optional[CastResult]:
     return await _run_adk_agent(
-        cast_agent, _entity_prompt(entity), user_id,
+        cast_agent, _entity_prompt(entity, region_hint), user_id,
         session_id=f"cast_{uuid.uuid4().hex[:8]}", output_model=CastResult,
     )
 
 
-async def _run_marketing_branch(entity: EntityContext, user_id: str) -> Optional[MarketingResult]:
+async def _run_marketing_branch(entity: EntityContext, user_id: str, region_hint: str) -> Optional[MarketingResult]:
     return await _run_adk_agent(
-        marketing_agent, _entity_prompt(entity), user_id,
+        marketing_agent, _entity_prompt(entity, region_hint), user_id,
         session_id=f"mktg_{uuid.uuid4().hex[:8]}", output_model=MarketingResult,
     )
 
@@ -178,12 +179,18 @@ async def _named(name: str, coro) -> tuple[str, object]:
     return name, result
 
 
-async def stream_pipeline(title: str, user_id: str = "filmecho_user") -> AsyncIterator[dict]:
+async def stream_pipeline(title: str, user_id: str = "filmecho_user", region_hint: str = "") -> AsyncIterator[dict]:
     """Run the full pipeline, yielding progress events as each stage completes.
 
     Args:
         title: Bare title as typed by the user, e.g. "Toxic".
         user_id: ADK session user id; any stable string works for a demo.
+        region_hint: Optional locale/timezone string from the requesting
+            browser (e.g. "Asia/Kolkata, en-IN"), threaded into every
+            fetch agent and main synthesis so the brief is framed for
+            that market rather than defaulting to US/UK. Empty string if
+            unavailable — every agent instruction treats that as "no
+            regional bias," not an error.
 
     Yields:
         dicts with an "event" key:
@@ -216,12 +223,12 @@ async def stream_pipeline(title: str, user_id: str = "filmecho_user") -> AsyncIt
            "message": "Running web sentiment, competitive, news, cast, marketing, and YouTube agents..."}
 
     branches = [
-        _named("web_sentiment", _run_web_sentiment_branch(entity, user_id)),
+        _named("web_sentiment", _run_web_sentiment_branch(entity, user_id, region_hint)),
         _named("youtube", _run_youtube_branch(entity)),
-        _named("competitive", _run_competitive_branch(entity, user_id)),
-        _named("news", _run_news_branch(entity, user_id)),
-        _named("cast", _run_cast_branch(entity, user_id)),
-        _named("marketing", _run_marketing_branch(entity, user_id)),
+        _named("competitive", _run_competitive_branch(entity, user_id, region_hint)),
+        _named("news", _run_news_branch(entity, user_id, region_hint)),
+        _named("cast", _run_cast_branch(entity, user_id, region_hint)),
+        _named("marketing", _run_marketing_branch(entity, user_id, region_hint)),
     ]
     branch_results: dict[str, object] = {}
     for coro in asyncio.as_completed(branches):
@@ -246,7 +253,7 @@ async def stream_pipeline(title: str, user_id: str = "filmecho_user") -> AsyncIt
     yield {"event": "stage", "stage": "sentiment_synthesis", "message": "Sentiment synthesis complete"}
 
     yield {"event": "stage", "stage": "main_synthesis", "message": "Writing the studio and fan briefs..."}
-    main_prompt = build_main_synthesis_prompt(entity, sentiment_synthesis, competitive, news, cast, marketing)
+    main_prompt = build_main_synthesis_prompt(entity, sentiment_synthesis, competitive, news, cast, marketing, region_hint)
     final_brief = await _run_adk_agent(
         main_synthesis_agent, main_prompt, user_id,
         session_id=f"main_{uuid.uuid4().hex[:8]}", output_model=FinalBrief,
@@ -273,7 +280,7 @@ async def stream_pipeline(title: str, user_id: str = "filmecho_user") -> AsyncIt
     yield {"event": "result", "data": payload}
 
 
-async def run_pipeline(title: str, user_id: str = "filmecho_user") -> dict:
+async def run_pipeline(title: str, user_id: str = "filmecho_user", region_hint: str = "") -> dict:
     """Non-streaming wrapper around stream_pipeline, for the CLI and tests.
 
     Returns:
@@ -284,7 +291,7 @@ async def run_pipeline(title: str, user_id: str = "filmecho_user") -> dict:
             without ever producing a result.
     """
     final_payload = None
-    async for event in stream_pipeline(title, user_id):
+    async for event in stream_pipeline(title, user_id, region_hint):
         if event["event"] == "result":
             final_payload = event["data"]
         elif event["event"] == "error":
