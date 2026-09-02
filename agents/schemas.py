@@ -85,6 +85,7 @@ class SourceExcerpt(BaseModel):
 
     url: str = Field(description="Source URL the claim came from.")
     claim: str = Field(description="The specific claim, in your own words, not a verbatim quote.")
+    date: Optional[str] = Field(default=None, description="Date this was reported, if the excerpt states one (e.g. 'March 2025'). Null if unknown, don't guess.")
 
 
 class WebSentimentResult(BaseModel):
@@ -94,8 +95,19 @@ class WebSentimentResult(BaseModel):
     tone_consensus: str = Field(description="One sentence on pacing/visual/tone consensus, or '' if none.")
 
 
+class CompetitorInfo(BaseModel):
+    """One competing title, with what edge it has over the searched title —
+    not just a name, so a reader can see WHY it's competition, not just
+    THAT it's competition."""
+
+    title: str = Field(description="The competing title's name.")
+    strength_vs_searched: str = Field(
+        description="One short phrase on this competitor's specific edge over the searched title (e.g. 'bigger established fanbase', 'earlier release date locks in the premium format slots', 'higher pre-release tracking'). Must come from the excerpts, not be invented."
+    )
+
+
 class CompetitiveResult(BaseModel):
-    competing_titles: list[str] = Field(default_factory=list)
+    competing_titles: list[CompetitorInfo] = Field(default_factory=list, max_length=5)
     attention_assessment: str = Field(description="1-2 sentences: is attention split, concentrated, or unaffected.")
     risk: Literal["low", "moderate", "high", "unclear"] = Field(
         description=(
@@ -112,9 +124,21 @@ class CompetitiveResult(BaseModel):
     )
 
 
+class NewsItem(BaseModel):
+    """One news item, categorized so the frontend can group related facts
+    together instead of showing one long undifferentiated list."""
+
+    url: str = Field(description="Source URL the claim came from.")
+    claim: str = Field(description="The specific claim, in your own words, not a verbatim quote.")
+    date: Optional[str] = Field(default=None, description="Date this was reported, if stated. Null if unknown.")
+    category: Literal["casting", "production", "release", "box_office", "other"] = Field(
+        description="'casting' = who's in it or cast changes. 'production' = filming, crew, budget, behind-the-scenes logistics. 'release' = dates, distribution, platform. 'box_office' = ticket sales, revenue figures. 'other' = doesn't fit the above."
+    )
+
+
 class NewsResult(BaseModel):
-    facts: list[SourceExcerpt] = Field(default_factory=list, description="Reported facts only, attributed.")
-    rumors: list[SourceExcerpt] = Field(default_factory=list, description="Explicitly labeled rumor/speculation.")
+    facts: list[NewsItem] = Field(default_factory=list, max_length=8, description="Reported facts only, attributed and categorized.")
+    rumors: list[NewsItem] = Field(default_factory=list, max_length=4, description="Explicitly labeled rumor/speculation, categorized.")
 
 
 class SentimentSynthesisResult(BaseModel):
@@ -193,7 +217,10 @@ class StudioBrief(BaseModel):
     sentiment_summary: str
     competitive_risk: Literal["low", "moderate", "high", "unclear"]
     notable_news: list[SourceExcerpt] = Field(default_factory=list, max_length=4)
-    recommendation: str
+    recommendation: str = Field(
+        default="",
+        description="ONLY for upcoming titles: forward-looking, actionable business advice. For released/retrospective titles, leave this EMPTY — a forward recommendation for something that already happened and can't be changed (e.g. 'consider a re-release') is not useful advice, that's what lessons_learned is for instead.",
+    )
     lessons_learned: list[str] = Field(
         default_factory=list,
         max_length=4,
@@ -206,6 +233,14 @@ class FanPulse(BaseModel):
     excitement_level: Literal["high", "mixed", "low", "unclear"]
     excitement_reason: str = Field(
         description="One or two sentences on WHY this excitement level was assigned — the specific thing driving it (a scene, a reunion, a controversy), not a restatement of the level itself."
+    )
+    standout_moment: str = Field(
+        default="",
+        description="One specific moment, scene, reveal, or beat fans keep mentioning by name — something concrete a browsing fan would want to see for themselves, not a generic descriptor like 'great action.' Empty string if nothing specific enough surfaced.",
+    )
+    hype_quote: str = Field(
+        default="",
+        description="A short, punchy paraphrase (NOT a verbatim quote) that captures the actual energy/vibe of how fans are talking about this — written like a pull-quote, not a summary sentence. Empty string if the available reactions don't support one.",
     )
     top_themes: list[str] = Field(default_factory=list, max_length=4)
     fun_fact_or_news: str = ""

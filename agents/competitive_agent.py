@@ -24,7 +24,9 @@ from agents.schemas import CompetitiveResult
 _client = Parallel(api_key=os.environ["PARALLEL_API_KEY"])
 
 
-async def get_competitive_landscape(title: str, release_year: str, director: str, session_id: str, release_status: str) -> dict:
+async def get_competitive_landscape(
+    title: str, release_year: str, director: str, session_id: str, release_status: str, region_hint: str = ""
+) -> dict:
     """Search the web for what a title competes/competed against for attention.
 
     Args:
@@ -36,10 +38,21 @@ async def get_competitive_landscape(title: str, release_year: str, director: str
         release_status: "released", "upcoming", or "unclear". An upcoming
             title has no box office outcome yet, released asks a
             fundamentally different, backward-looking question.
+        region_hint: Optional locale/timezone string from the requesting
+            browser (e.g. "Asia/Kolkata, en-IN"), used to bias the
+            competitive read toward a specific market rather than
+            defaulting to US/UK box office framing. Empty string if
+            unavailable.
 
     Returns:
         dict with key "results": a list of {url, title, excerpts}.
     """
+    region_clause = (
+        f" Frame this specifically for the {region_hint} market/region — "
+        "competing releases, box office context, and audience attention "
+        "should reflect that market, not assume a US/UK default."
+        if region_hint else ""
+    )
     if release_status == "released":
         objective = (
             f"What did {title}" + (f" ({release_year})" if release_year else "")
@@ -48,10 +61,10 @@ async def get_competitive_landscape(title: str, release_year: str, director: str
             "available: opening weekend gross, box office ranking that weekend, "
             "budget-vs-gross, whether it over- or under-performed pre-release "
             "expectations. Prioritize sources with hard figures over vague "
-            "characterizations."
+            "characterizations." + region_clause
         )
         search_queries = [
-            f"{title} box office opening weekend numbers",
+            f"{title} box office opening weekend numbers" + (f" {region_hint.split(',')[0]}" if region_hint else ""),
             f"{title} box office performance vs competition",
         ]
     else:
@@ -61,9 +74,12 @@ async def get_competitive_landscape(title: str, release_year: str, director: str
             + ", competing for audience attention? Focus on same-weekend "
             "releases, genre overlap, franchise fatigue commentary, and any "
             "direct comparisons critics or audiences are already drawing "
-            "between this title and its competition."
+            "between this title and its competition." + region_clause
         )
-        search_queries = [f"{title} box office competition", f"films releasing same weekend as {title}"]
+        search_queries = [
+            f"{title} box office competition" + (f" {region_hint.split(',')[0]}" if region_hint else ""),
+            f"films releasing same weekend as {title}",
+        ]
 
     search = await asyncio.to_thread(
         _client.search,
@@ -89,10 +105,15 @@ competitive_agent = Agent(
     instruction=(
         "You have a tool, get_competitive_landscape, that searches the web "
         "for competitive positioning. You will be given title, release_year, "
-        "director, session_id, and release_status as key=value pairs; parse "
-        "them and call the tool exactly once. Then act as a box-office and "
-        "competitive-strategy analyst. Populate: competing_titles (2-4 named "
-        "titles/events), attention_assessment, and risk. "
+        "director, session_id, release_status, and region_hint as key=value "
+        "pairs; parse them and call the tool exactly once (region_hint may "
+        "be an empty string, pass it through as given). Then act as a "
+        "box-office and competitive-strategy analyst. Populate: "
+        "competing_titles (up to 5 entries, each with the competitor's name "
+        "AND strength_vs_searched — its SPECIFIC edge over the searched "
+        "title, e.g. 'bigger established fanbase' or 'locks in premium "
+        "format screens with an earlier date', drawn from the excerpts, "
+        "not invented), attention_assessment, and risk. "
         "CRITICAL — risk means different things by release_status: for "
         "'upcoming', it's forward-looking (will attention be split by "
         "rivals). For 'released', it is NOT forward risk, it's a "

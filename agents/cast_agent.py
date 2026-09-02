@@ -23,7 +23,9 @@ from agents.schemas import CastResult
 _client = Parallel(api_key=os.environ["PARALLEL_API_KEY"])
 
 
-async def get_cast_reception(title: str, release_year: str, cast: str, session_id: str, release_status: str) -> dict:
+async def get_cast_reception(
+    title: str, release_year: str, cast: str, session_id: str, release_status: str, region_hint: str = ""
+) -> dict:
     """Search the web for reception of specific cast members' performances.
 
     Args:
@@ -36,10 +38,19 @@ async def get_cast_reception(title: str, release_year: str, cast: str, session_i
         release_status: "released", "upcoming", or "unclear". Changes
             whether this asks about actual performance reviews or
             early anticipation for specific actors.
+        region_hint: Optional locale/timezone string from the requesting
+            browser, used to prioritize region-relevant cast reception
+            (e.g. a regional star's local fanbase reaction). Empty string
+            if unavailable.
 
     Returns:
         dict with key "results": a list of {url, title, excerpts}.
     """
+    region_clause = (
+        f" Prioritize reception from the {region_hint} audience/press if "
+        "distinguishable."
+        if region_hint else ""
+    )
     if release_status == "released":
         objective = (
             f"How were the individual actors' performances in {title}"
@@ -53,6 +64,7 @@ async def get_cast_reception(title: str, release_year: str, cast: str, session_i
             "disputes, on-set incidents, personal-life updates (travel, "
             "relationships, controversies) connected to this production or "
             "its promotion, not generic celebrity gossip unrelated to it."
+            + region_clause
         )
     else:
         objective = (
@@ -64,7 +76,7 @@ async def get_cast_reception(title: str, release_year: str, cast: str, session_i
             "also look for behind-the-scenes or personal news about these "
             "specific cast members: injuries during filming, remuneration "
             "or salary disputes, on-set incidents, personal-life updates "
-            "connected to this production or its promotion."
+            "connected to this production or its promotion." + region_clause
         )
 
     search = await asyncio.to_thread(
@@ -95,9 +107,10 @@ cast_agent = Agent(
     instruction=(
         "You have a tool, get_cast_reception, that searches the web for "
         "reception of specific cast members. You will be given title, "
-        "release_year, cast, session_id, and release_status as key=value "
-        "pairs; parse them and call the tool exactly once. Then act as an "
-        "entertainment journalist who covers performance criticism and "
+        "release_year, cast, session_id, release_status, and region_hint as "
+        "key=value pairs; parse them and call the tool exactly once "
+        "(region_hint may be empty, pass it through as given). Then act as "
+        "an entertainment journalist who covers performance criticism and "
         "industry-insider reporting specifically — not a general news "
         "reporter. Populate performances with one entry per actor the "
         "excerpts actually discuss (actor name, a specific note on their "

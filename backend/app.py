@@ -28,7 +28,7 @@ _STATIC_DIR = os.path.join(os.path.dirname(__file__), "static")
 
 
 @app.get("/api/brief")
-async def get_brief(title: str):
+async def get_brief(title: str, region_hint: str = ""):
     """Run the full pipeline for a title and return the combined result.
 
     Non-streaming; kept for programmatic/API callers that just want one
@@ -39,18 +39,23 @@ async def get_brief(title: str):
     if not title:
         raise HTTPException(status_code=400, detail="title is required")
     try:
-        return await run_pipeline(title)
+        return await run_pipeline(title, region_hint=region_hint)
     except Exception as exc:  # noqa: BLE001
         raise HTTPException(status_code=500, detail=f"Pipeline failed: {exc}") from exc
 
 
 @app.get("/api/brief/stream")
-async def stream_brief(title: str):
+async def stream_brief(title: str, region_hint: str = ""):
     """Stream pipeline progress as Server-Sent Events.
 
     Each event is a JSON-encoded line in the SSE `data:` field, matching
     the dicts stream_pipeline() yields: {"event": "stage", ...},
     {"event": "error", ...}, or the final {"event": "result", ...}.
+
+    region_hint is an optional locale/timezone string the frontend
+    derives client-side (Intl.DateTimeFormat + navigator.language) and
+    passes through untouched — this backend does no IP geolocation or
+    server-side location inference of its own.
 
     Validation (missing title) happens before the stream opens, so it
     still returns a normal HTTP error rather than an SSE error event.
@@ -61,7 +66,7 @@ async def stream_brief(title: str):
 
     async def event_source():
         try:
-            async for event in stream_pipeline(title):
+            async for event in stream_pipeline(title, region_hint=region_hint):
                 yield f"data: {json.dumps(event)}\n\n"
         except Exception as exc:  # noqa: BLE001
             # Last-resort guard: stream_pipeline degrades individual

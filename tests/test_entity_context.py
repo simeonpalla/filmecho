@@ -146,3 +146,43 @@ class TestDisambiguationRetry:
 
         assert ctx.confidence == "low"
         assert ctx.canonical_title == "Toxic"  # first result still applied, not lost
+
+
+class TestCandidatesAndReleaseDate:
+    def test_candidates_carried_through_to_context(self):
+        payload = dict(LOW_CONFIDENCE_PAYLOAD)
+        payload["candidates"] = [
+            {"title": "Avengers: Doomsday", "year": 2026, "note": "upcoming Marvel tentpole"},
+            {"title": "Doomsday", "year": 2008, "note": "older action film"},
+        ]
+        parallel = _mock_parallel_client()
+        genai = _mock_genai_client(payload)
+        # Force the retry path to still return the same candidates, since
+        # confidence is low and resolve_entity will retry once.
+        genai.models.generate_content.side_effect = [
+            SimpleNamespace(text=json.dumps(payload)),
+            SimpleNamespace(text=json.dumps(payload)),
+        ]
+
+        ctx = resolve_entity("Doomsday", parallel_client=parallel, genai_client=genai)
+
+        assert len(ctx.candidates) == 2
+        assert ctx.candidates[0]["title"] == "Avengers: Doomsday"
+
+    def test_release_date_passed_through_when_present(self):
+        payload = dict(HIGH_CONFIDENCE_PAYLOAD)
+        payload["release_date"] = "September 11, 2026"
+        parallel = _mock_parallel_client()
+        genai = _mock_genai_client(payload)
+
+        ctx = resolve_entity("Haiwaan", parallel_client=parallel, genai_client=genai)
+
+        assert ctx.release_date == "September 11, 2026"
+
+    def test_release_date_defaults_none_when_absent(self):
+        parallel = _mock_parallel_client()
+        genai = _mock_genai_client(HIGH_CONFIDENCE_PAYLOAD)  # no release_date key
+
+        ctx = resolve_entity("Toxic", parallel_client=parallel, genai_client=genai)
+
+        assert ctx.release_date is None

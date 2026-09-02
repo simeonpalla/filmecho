@@ -27,7 +27,9 @@ from agents.schemas import WebSentimentResult
 _client = Parallel(api_key=os.environ["PARALLEL_API_KEY"])
 
 
-async def get_web_sentiment(title: str, release_year: str, director: str, session_id: str, release_status: str) -> dict:
+async def get_web_sentiment(
+    title: str, release_year: str, director: str, session_id: str, release_status: str, region_hint: str = ""
+) -> dict:
     """Search the live web for critic/audience reactions to a film.
 
     Args:
@@ -40,11 +42,21 @@ async def get_web_sentiment(title: str, release_year: str, director: str, sessio
             question gets asked: an upcoming title has no post-release
             reception to search for, and a released title's trailer
             reactions are stale compared to actual reviews.
+        region_hint: Optional locale/timezone string from the requesting
+            browser (e.g. "Asia/Kolkata, en-IN"), used to bias toward that
+            region's audience reaction rather than defaulting to US/UK
+            coverage. Empty string if unavailable.
 
     Returns:
         dict with key "results": a list of {url, title, excerpts}, one entry
         per matching page Parallel found.
     """
+    region_clause = (
+        f" Prioritize reactions from audiences/press in the {region_hint} "
+        "region if distinguishable, rather than defaulting to US/UK "
+        "coverage."
+        if region_hint else ""
+    )
     if release_status == "released":
         objective = (
             f"What did critics and audiences ultimately think of {title}"
@@ -53,6 +65,7 @@ async def get_web_sentiment(title: str, release_year: str, director: str, sessio
             + "? Focus on overall critical reception, audience reaction after "
             "release, and how opinion held up or shifted over time (initial "
             "reviews vs. later reappraisal), not just trailer reactions."
+            + region_clause
         )
         search_queries = [f"{title} movie review", f"{title} critical reception"]
     else:
@@ -61,7 +74,7 @@ async def get_web_sentiment(title: str, release_year: str, director: str, sessio
             + (f" ({release_year})" if release_year else "")
             + (f", directed by {director}" if director else "")
             + "? Focus on specific praise or criticism of pacing, cast "
-            "performance, visuals, and tone."
+            "performance, visuals, and tone." + region_clause
         )
         search_queries = [f"{title} trailer reaction", f"{title} trailer review"]
 
@@ -89,9 +102,10 @@ web_sentiment_agent = Agent(
     instruction=(
         "You have a tool, get_web_sentiment, that searches the live web for "
         "reactions to a film. You will be given title, release_year, "
-        "director, session_id, and release_status as key=value pairs in the "
-        "user message; parse them and call the tool exactly once with those "
-        "values. Then act as an experienced audience-response analyst: "
+        "director, session_id, release_status, and region_hint as key=value "
+        "pairs in the user message; parse them and call the tool exactly "
+        "once with those values (region_hint may be empty, pass it through "
+        "as given). Then act as an experienced audience-response analyst: "
         "populate an overall sentiment label; praise_points and "
         "criticism_points as attributed claims with source URLs, written as "
         "specific, substantive observations (not vague adjectives like "

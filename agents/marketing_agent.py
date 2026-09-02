@@ -31,7 +31,9 @@ from agents.schemas import MarketingResult
 _client = Parallel(api_key=os.environ["PARALLEL_API_KEY"])
 
 
-async def get_marketing_analysis(title: str, release_year: str, session_id: str, release_status: str) -> dict:
+async def get_marketing_analysis(
+    title: str, release_year: str, session_id: str, release_status: str, region_hint: str = ""
+) -> dict:
     """Search the web for marketing strategy and, for released titles, outcome.
 
     Args:
@@ -41,10 +43,20 @@ async def get_marketing_analysis(title: str, release_year: str, session_id: str,
         release_status: "released", "upcoming", or "unclear". Determines
             whether this asks about ongoing campaign tactics or a
             completed campaign's actual results.
+        region_hint: Optional locale/timezone string from the requesting
+            browser, used to bias toward region-specific campaign elements
+            (regional distributors, local promotional partners) rather
+            than a global/US-only default. Empty string if unavailable.
 
     Returns:
         dict with key "results": a list of {url, title, excerpts}.
     """
+    region_clause = (
+        f" Include any {region_hint}-specific marketing activity (regional "
+        "distributor campaigns, local promotional partnerships, market-"
+        "specific release strategy) alongside the global campaign."
+        if region_hint else ""
+    )
     if release_status == "released":
         objective = (
             f"What marketing and promotional strategies did {title}"
@@ -59,7 +71,7 @@ async def get_marketing_analysis(title: str, release_year: str, session_id: str,
             "releases), identify what promotional materials and approach "
             "the film actually used, from ordinary coverage of its trailer, "
             "poster, or release campaign, rather than requiring a formal "
-            "case study to exist."
+            "case study to exist." + region_clause
         )
         search_queries = [f"{title} marketing campaign analysis", f"{title} marketing strategy review"]
     else:
@@ -69,6 +81,7 @@ async def get_marketing_analysis(title: str, release_year: str, session_id: str,
             + " using so far (trailers, posters, social media, partnerships, "
             "promotional events)? Focus on what's been announced or observed, "
             "and any early commentary on whether the campaign is landing."
+            + region_clause
         )
         search_queries = [f"{title} marketing campaign", f"{title} promotion strategy"]
 
@@ -96,8 +109,10 @@ marketing_agent = Agent(
     instruction=(
         "You have a tool, get_marketing_analysis, that searches the web for "
         "marketing strategy and (for released titles) outcome. You will be "
-        "given title, release_year, session_id, and release_status as "
-        "key=value pairs; parse them and call the tool exactly once.\n\n"
+        "given title, release_year, session_id, release_status, and "
+        "region_hint as key=value pairs; parse them and call the tool "
+        "exactly once (region_hint may be empty, pass it through as "
+        "given).\n\n"
         "CRITICAL GROUNDING RULE, read this before writing anything: "
         "every claim you write must be something a specific source excerpt "
         "actually said. NEVER write a specific number, percentage, or "

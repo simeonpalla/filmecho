@@ -40,10 +40,18 @@ Release date: {release_date}
 Director: {director}
 Release status: {release_status}
 Title-match confidence: {confidence}{confidence_note}
+Region context: {region_hint}
 
 IMPORTANT: studio_brief.lessons_learned and fan_pulse.worth_watching must
 stay EMPTY unless release_status is "released" — there is no lesson or
 "worth watching" verdict to give for a title that hasn't come out yet.
+
+IMPORTANT: studio_brief.recommendation must stay EMPTY unless
+release_status is "upcoming". For a released/retrospective title, a
+forward-looking recommendation about something that already happened and
+can't be changed (e.g. suggesting a re-release strategy for an old flop)
+is not useful advice — the retrospective insight belongs in
+lessons_learned instead, not recommendation.
 
 IMPORTANT: if title-match confidence is not "high", both headlines must
 make that uncertainty visible to the reader (e.g. "Note: match confidence
@@ -75,6 +83,7 @@ def build_main_synthesis_prompt(
     news: Optional[NewsResult],
     cast: Optional[CastResult],
     marketing: Optional[MarketingResult],
+    region_hint: str = "",
 ) -> str:
     """Build the full prompt for main_synthesis_agent.
 
@@ -86,6 +95,10 @@ def build_main_synthesis_prompt(
         news: news_cast_agent's structured result, or None.
         cast: cast_agent's structured result, or None.
         marketing: marketing_agent's structured result, or None.
+        region_hint: Optional locale/timezone string from the requesting
+            browser, so studio_brief/fan_pulse framing reflects that
+            market rather than a US/UK default. Empty string if
+            unavailable.
 
     Returns:
         A single prompt string built from validated Pydantic objects.
@@ -104,6 +117,7 @@ def build_main_synthesis_prompt(
         confidence=confidence,
         confidence_note=confidence_note,
         confidence_note_short=confidence_note_short,
+        region_hint=region_hint or "not provided, no regional bias applied",
         sentiment_json=sentiment.model_dump_json(indent=2) if sentiment else "UNAVAILABLE for this run.",
         competitive_json=competitive.model_dump_json(indent=2) if competitive else "UNAVAILABLE for this run.",
         news_json=news.model_dump_json(indent=2) if news else "UNAVAILABLE for this run.",
@@ -126,24 +140,28 @@ main_synthesis_agent = Agent(
         "attributed to that section, but do not invent new ones or "
         "round/adjust existing ones to sound more precise. notable_news "
         "items need a source url (from the PRODUCTION / CAST NEWS section) "
-        "just like the upstream data does.\n\n"
+        "just like the upstream data does. If a Region context is given "
+        "and isn't 'not provided...', frame sentiment_summary, "
+        "recommendation, and fan_pulse with that market/region in mind "
+        "where the upstream data actually supports it — don't invent "
+        "region-specific claims the data doesn't have.\n\n"
         "You are writing for two genuinely different readers, in two "
         "genuinely different voices:\n\n"
         "studio_brief is for a studio marketing/production executive making "
         "a decision. Write like a strategy memo, not a summary. "
         "sentiment_summary describes the reaction (what happened). "
-        "recommendation must be forward-looking, ACTIONABLE advice — a "
-        "specific move a studio could make (adjust the release window, "
-        "lean into a specific angle in advertising, address a specific "
-        "criticism before wide release) — not a restatement of "
-        "sentiment_summary with 'given the positive reaction...' bolted on "
-        "front. If your recommendation's first clause just repeats the "
-        "sentiment finding, rewrite it to lead with the action instead. "
-        "notable_news must be strictly production/casting/release facts "
-        "(dates, budget, crew, cast changes) — do not put marketing-"
-        "campaign facts here, that's the Marketing tab's job exclusively, "
-        "a fact should appear in exactly one place, not be echoed across "
-        "sections.\n\n"
+        "recommendation (upcoming titles only, see the IMPORTANT rule "
+        "above) must be forward-looking, ACTIONABLE advice — a specific "
+        "move a studio could make (adjust the release window, lean into a "
+        "specific angle in advertising, address a specific criticism "
+        "before wide release) — not a restatement of sentiment_summary "
+        "with 'given the positive reaction...' bolted on front. If your "
+        "recommendation's first clause just repeats the sentiment finding, "
+        "rewrite it to lead with the action instead. notable_news must be "
+        "strictly production/casting/release facts (dates, budget, crew, "
+        "cast changes) — do not put marketing-campaign facts here, that's "
+        "the Marketing tab's job exclusively, a fact should appear in "
+        "exactly one place, not be echoed across sections.\n\n"
         "fan_pulse is for an actual fan browsing entertainment content, "
         "not a business reader. Write with genuine energy and specificity, "
         "not corporate paraphrase — pull directly from sentiment "
@@ -155,6 +173,12 @@ main_synthesis_agent = Agent(
         "never just restate the level itself ('excitement_level: high, "
         "excitement_reason: fans are very excited' is not acceptable, that "
         "tells the reader nothing they didn't already know from the pill). "
+        "standout_moment should name one specific scene/beat/reveal fans "
+        "keep bringing up — leave it empty rather than writing something "
+        "generic if nothing that specific surfaced. hype_quote should "
+        "capture the actual ENERGY of fan reaction as a short paraphrase "
+        "(never a verbatim quote) — leave it empty rather than inventing "
+        "one if the available data doesn't support a genuine vibe read. "
         "fun_fact_or_news should be something genuinely interesting to "
         "read, not a filler fact.\n\n"
         "Populate sources_used with exactly which of the five upstream "

@@ -22,6 +22,7 @@ from agents.schemas import (
     FanPulse,
     FinalBrief,
     MarketingResult,
+    NewsItem,
     NewsResult,
     SentimentSynthesisResult,
     SourceExcerpt,
@@ -63,18 +64,28 @@ class TestMarketingResult:
         """Regression guard for the upcoming-title framing bug: nothing
         should force lessons_learned to be populated, an upcoming title's
         marketing_agent run should be able to leave it empty."""
-        m = MarketingResult(strategies_observed=["teaser drop"])
+        m = MarketingResult(strategies_observed=[SourceExcerpt(url="https://x.com", claim="teaser drop")])
         assert m.lessons_learned == []
 
     def test_accepts_full_retrospective_data(self):
         m = MarketingResult(
-            strategies_observed=["trailer", "influencer push"],
+            strategies_observed=[
+                SourceExcerpt(url="https://x.com", claim="trailer"),
+                SourceExcerpt(url="https://x.com", claim="influencer push"),
+            ],
             what_worked=[SourceExcerpt(url="https://x.com", claim="Strong trailer response")],
             what_underperformed=[SourceExcerpt(url="https://x.com", claim="Poster criticized")],
             lessons_learned=["Front-load reveals earlier next time"],
         )
         assert len(m.what_worked) == 1
         assert m.lessons_learned == ["Front-load reveals earlier next time"]
+
+    def test_lists_are_length_capped(self):
+        """Regression guard for the fabricated-statistics run: an agent
+        should not be able to return an unbounded wall of claims."""
+        too_many = [SourceExcerpt(url="https://x.com", claim=f"claim {i}") for i in range(10)]
+        with pytest.raises(ValidationError):
+            MarketingResult(what_worked=too_many)
 
 
 class TestCastResult:
@@ -101,7 +112,7 @@ class TestFinalBrief:
             studio_brief=StudioBrief(
                 headline="h", sentiment_summary="s", competitive_risk="high", recommendation="r"
             ),
-            fan_pulse=FanPulse(headline="h2", excitement_level="high"),
+            fan_pulse=FanPulse(headline="h2", excitement_level="high", excitement_reason="Reunion of the original cast"),
             sources_used=["web", "cast", "marketing"],
         )
         dumped = fb.model_dump()
@@ -113,9 +124,22 @@ class TestFinalBrief:
         sb = StudioBrief(headline="h", sentiment_summary="s", competitive_risk="low", recommendation="r")
         assert sb.lessons_learned == []
 
+    def test_studio_brief_recommendation_defaults_empty(self):
+        """Regression guard: released/retrospective titles should be able
+        to omit recommendation entirely (it's nonsensical for something
+        that already happened and can't be changed)."""
+        sb = StudioBrief(headline="h", sentiment_summary="s", competitive_risk="unclear")
+        assert sb.recommendation == ""
+
     def test_fan_pulse_worth_watching_defaults_empty(self):
-        fp = FanPulse(headline="h", excitement_level="mixed")
+        fp = FanPulse(headline="h", excitement_level="mixed", excitement_reason="Mixed early reactions to the trailer")
         assert fp.worth_watching == ""
+
+    def test_fan_pulse_requires_excitement_reason(self):
+        """Regression guard: excitement_level alone, with no reason, was
+        exactly the 'blank, unexplained' Fan Pulse a real run produced."""
+        with pytest.raises(ValidationError):
+            FanPulse(headline="h", excitement_level="high")
 
 
 class TestWebSentimentAndCompetitive:
@@ -129,11 +153,16 @@ class TestWebSentimentAndCompetitive:
 
     def test_news_result_facts_and_rumors_independent(self):
         n = NewsResult(
-            facts=[SourceExcerpt(url="https://x.com", claim="Confirmed December release")],
-            rumors=[SourceExcerpt(url="https://x.com", claim="Possible sequel in talks")],
+            facts=[NewsItem(url="https://x.com", claim="Confirmed December release", category="release")],
+            rumors=[NewsItem(url="https://x.com", claim="Possible sequel in talks", category="other")],
         )
         assert len(n.facts) == 1
         assert len(n.rumors) == 1
+        assert n.facts[0].category == "release"
+
+    def test_news_item_rejects_invalid_category(self):
+        with pytest.raises(ValidationError):
+            NewsItem(url="https://x.com", claim="x", category="gossip")
 
     def test_sentiment_synthesis_sources_available_required(self):
         with pytest.raises(ValidationError):

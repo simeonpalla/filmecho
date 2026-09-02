@@ -141,16 +141,19 @@
   .progress-title {
     font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.1em;
     text-transform: uppercase; color: var(--text-muted); margin-bottom: 12px;
+    display: flex; justify-content: space-between; align-items: center;
   }
 
-  .progress-bar-track {
-    height: 6px; border-radius: 3px; background: var(--unclear-dim);
-    overflow: hidden; margin-bottom: 16px;
+  .progress-timer {
+    display: flex; align-items: center; gap: 8px;
+    font-family: var(--font-mono); font-size: 0.8rem; color: var(--gold);
+    margin-bottom: 16px;
   }
-  .progress-bar-fill {
-    height: 100%; width: 0%; border-radius: 3px;
-    background: linear-gradient(90deg, var(--brand-a), var(--brand-b));
-    transition: width 0.4s ease;
+  .progress-timer-dot {
+    width: 8px; height: 8px; border-radius: 50%; background: var(--gold);
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .progress-timer-dot { animation: pulse 1s ease-in-out infinite; }
   }
 
   .progress-item { display: flex; align-items: center; gap: 10px; padding: 5px 0; font-size: 0.88rem; color: var(--text-muted); }
@@ -314,6 +317,12 @@
   @media (min-width: 720px) { .card-list { grid-template-columns: 1fr 1fr; } }
 
   .mini-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; }
+
+  .hype-quote {
+    font-family: var(--font-display); font-style: italic; font-size: 1.15rem;
+    line-height: 1.5; color: var(--text); border-left: 3px solid var(--news-accent);
+    padding: 6px 0 6px 18px; margin: 4px 0 22px;
+  }
   .mini-card-title { font-weight: 600; font-size: 0.92rem; margin-bottom: 4px; }
   .mini-card.cast-accent { border-left: 3px solid var(--cast-accent); }
   .mini-card.news-accent { border-left: 3px solid var(--news-accent); }
@@ -350,7 +359,7 @@
 
       <div id="progress" class="progress">
         <div class="progress-title">Pipeline progress</div>
-        <div class="progress-bar-track"><div id="progress-bar-fill" class="progress-bar-fill"></div></div>
+        <div id="progress-timer" class="progress-timer"><span class="progress-timer-dot"></span><span id="progress-timer-text">Running for 0s...</span></div>
         <div id="progress-list"></div>
       </div>
       <div id="status" class="status"></div>
@@ -400,7 +409,7 @@ const titleInput = document.getElementById('title-input');
 const searchBtn = document.getElementById('search-btn');
 const progress = document.getElementById('progress');
 const progressList = document.getElementById('progress-list');
-const progressBarFill = document.getElementById('progress-bar-fill');
+const progressTimerText = document.getElementById('progress-timer-text');
 const status = document.getElementById('status');
 const heroBanner = document.getElementById('hero-banner');
 const heroBannerImg = document.getElementById('hero-banner-img');
@@ -429,11 +438,29 @@ const STAGES = [
 ];
 const TWO_PHASE = new Set(['entity_resolution', 'sentiment_synthesis', 'main_synthesis']);
 let stageState = {};
+let timerInterval = null;
+let timerStart = null;
+
+function startTimer() {
+  timerStart = Date.now();
+  progressTimerText.textContent = 'Running for 0s...';
+  clearInterval(timerInterval);
+  timerInterval = setInterval(() => {
+    const secs = Math.floor((Date.now() - timerStart) / 1000);
+    progressTimerText.textContent = `Running for ${secs}s...`;
+  }, 1000);
+}
+
+function stopTimer() {
+  clearInterval(timerInterval);
+  timerInterval = null;
+}
 
 function resetProgress() {
   stageState = {};
   STAGES.forEach(s => { stageState[s.key] = 'pending'; });
   renderProgress();
+  startTimer();
 }
 
 function renderProgress() {
@@ -441,12 +468,6 @@ function renderProgress() {
     const state = stageState[s.key];
     return `<div class="progress-item ${state}"><span class="progress-dot"></span>${s.label}</div>`;
   }).join('');
-
-  const weight = { pending: 0, active: 0.5, done: 1 };
-  const total = STAGES.length;
-  const done = STAGES.reduce((sum, s) => sum + weight[stageState[s.key]], 0);
-  const pct = Math.round((done / total) * 100);
-  progressBarFill.style.width = `${pct}%`;
 }
 
 function markStage(key) {
@@ -505,7 +526,12 @@ document.querySelectorAll('.subtabs').forEach(group => {
   });
 });
 
-function renderStudioOverview(brief, releaseStatus) {
+function internalSearchLink(title) {
+  const safe = title.replace(/"/g, '&quot;');
+  return `<a href="/?title=${encodeURIComponent(title)}" target="_blank" rel="noopener" title="Search &quot;${safe}&quot; on Filmecho">${title}</a>`;
+}
+
+function renderStudioOverview(brief, releaseStatus, competitive) {
   const el = document.getElementById('studio-overview');
   if (!brief) { el.innerHTML = '<p class="empty-state">No studio brief was returned for this run.</p>'; return; }
   const tone = riskTone(brief.competitive_risk);
@@ -514,6 +540,13 @@ function renderStudioOverview(brief, releaseStatus) {
   const news = (brief.notable_news || []).map(n => `<li>${n.claim}${sourceLink(n.url)}</li>`).join('') || '<li>No recent news surfaced.</li>';
   const lessons = (brief.lessons_learned && brief.lessons_learned.length)
     ? `<div class="field"><div class="field-label">Lessons learned</div><ul class="plain">${brief.lessons_learned.map(l => `<li>${l}</li>`).join('')}</ul></div>` : '';
+  const recommendation = brief.recommendation
+    ? `<div class="field"><div class="field-label">Recommendation</div><div class="field-value">${brief.recommendation}</div></div>` : '';
+  const competitors = (competitive && competitive.competing_titles || []).map(c =>
+    `<div class="mini-card"><div class="mini-card-title">${internalSearchLink(c.title)}</div><div class="field-value">${c.strength_vs_searched || ''}</div></div>`
+  ).join('');
+  const competitorsBlock = competitors
+    ? `<div class="field"><div class="field-label">Competing against</div><div class="card-list">${competitors}</div></div>` : '';
   el.innerHTML = `
     <h2>${brief.headline || ''}</h2>
     <div class="tile-row">
@@ -524,9 +557,10 @@ function renderStudioOverview(brief, releaseStatus) {
       </div>
       <div class="tile tone-unclear"><div class="tile-label">Sentiment</div><div class="tile-sub">${brief.sentiment_summary || ''}</div></div>
     </div>
+    ${competitorsBlock}
     <div class="field"><div class="field-label">Notable news</div><ul class="plain">${news}</ul></div>
     ${lessons}
-    <div class="field"><div class="field-label">Recommendation</div><div class="field-value">${brief.recommendation || ''}</div></div>
+    ${recommendation}
   `;
 }
 
@@ -606,7 +640,28 @@ function renderStudioCast(cast) {
   `;
 }
 
-function renderFanOverview(brief) {
+function computeYoutubeStats(youtubeData) {
+  if (!youtubeData || !Object.keys(youtubeData).length) return null;
+  let totalViews = 0, totalLikes = 0, totalComments = 0;
+  let topComment = null;
+  Object.values(youtubeData).forEach(v => {
+    totalViews += v.view_count || 0;
+    totalLikes += v.like_count || 0;
+    totalComments += v.comment_count || 0;
+    (v.comments || []).forEach(c => {
+      if (!topComment || (c.like_count || 0) > (topComment.like_count || 0)) topComment = c;
+    });
+  });
+  return { totalViews, totalLikes, totalComments, topComment };
+}
+
+function formatCount(n) {
+  if (n >= 1e6) return (n / 1e6).toFixed(1).replace(/\.0$/, '') + 'M';
+  if (n >= 1e3) return (n / 1e3).toFixed(1).replace(/\.0$/, '') + 'K';
+  return String(n);
+}
+
+function renderFanOverview(brief, youtubeData) {
   const el = document.getElementById('fan-overview');
   if (!brief) { el.innerHTML = '<p class="empty-state">No fan pulse was returned for this run.</p>'; return; }
   const tone = excitementTone(brief.excitement_level);
@@ -614,8 +669,26 @@ function renderFanOverview(brief) {
   const worth = brief.worth_watching
     ? `<div class="tile tone-unclear"><div class="tile-label">Worth watching?</div><div class="tile-sub">${brief.worth_watching}</div></div>`
     : `<div class="tile tone-unclear"><div class="tile-label">Fun fact</div><div class="tile-sub">${brief.fun_fact_or_news || '\u2014'}</div></div>`;
+  const hypeQuote = brief.hype_quote
+    ? `<div class="hype-quote">"${brief.hype_quote}"</div>` : '';
+  const standout = brief.standout_moment
+    ? `<div class="field"><div class="field-label">Standout moment</div><div class="field-value">${brief.standout_moment}</div></div>` : '';
+
+  const ytStats = computeYoutubeStats(youtubeData);
+  const ytBlock = ytStats ? `
+    <div class="field" style="margin-top:26px;padding-top:20px;border-top:1px solid var(--border);">
+      <div class="field-label">Trailer stats</div>
+      <div class="tile-row">
+        <div class="tile tone-unclear"><div class="tile-label">Views</div><div class="tile-value">${formatCount(ytStats.totalViews)}</div></div>
+        <div class="tile tone-unclear"><div class="tile-label">Likes</div><div class="tile-value">${formatCount(ytStats.totalLikes)}</div></div>
+      </div>
+      ${ytStats.topComment ? `<div class="field"><div class="field-label">Top comment (${formatCount(ytStats.topComment.like_count || 0)} likes)</div><div class="field-value">"${ytStats.topComment.text}"</div></div>` : ''}
+    </div>
+  ` : '';
+
   el.innerHTML = `
     <h2>${brief.headline || ''}</h2>
+    ${hypeQuote}
     <div class="tile-row">
       <div class="tile tone-${tone}">
         <div class="tile-label">Excitement level</div>
@@ -624,7 +697,9 @@ function renderFanOverview(brief) {
       </div>
       ${worth}
     </div>
+    ${standout}
     <div class="field"><div class="field-label">What fans are talking about</div><div class="chip-row">${themes}</div></div>
+    ${ytBlock}
   `;
 }
 
@@ -634,9 +709,21 @@ function renderFanNews(news) {
     el.innerHTML = '<h2>Cast &amp; production news</h2><p class="empty-state">No news surfaced for this run.</p>';
     return;
   }
-  const facts = (news.facts || []).map(f => `<div class="mini-card news-accent"><div class="field-value">${f.claim}${sourceLink(f.url)}</div></div>`).join('');
-  const rumors = (news.rumors || []).map(r => `<div class="mini-card news-accent"><div class="field-value">${r.claim} <span style="color:var(--text-muted)">(rumor)</span>${sourceLink(r.url)}</div></div>`).join('');
-  el.innerHTML = `<h2>Cast &amp; production news</h2><div class="card-list">${facts}${rumors}</div>`;
+  const CATEGORY_LABELS = { casting: 'Casting', production: 'Production', release: 'Release', box_office: 'Box office', other: 'Other' };
+  const grouped = {};
+  [...(news.facts || []), ...(news.rumors || []).map(r => ({ ...r, isRumor: true }))].forEach(item => {
+    const cat = item.category || 'other';
+    (grouped[cat] = grouped[cat] || []).push(item);
+  });
+  const sections = Object.keys(CATEGORY_LABELS)
+    .filter(cat => grouped[cat] && grouped[cat].length)
+    .map(cat => {
+      const items = grouped[cat].map(item =>
+        `<div class="mini-card news-accent"><div class="field-value">${item.claim}${item.isRumor ? ' <span style="color:var(--text-muted)">(rumor)</span>' : ''}${sourceLink(item.url)}</div></div>`
+      ).join('');
+      return `<div class="field"><div class="field-label">${CATEGORY_LABELS[cat]}</div><div class="card-list">${items}</div></div>`;
+    }).join('');
+  el.innerHTML = `<h2>Cast &amp; production news</h2>${sections}`;
 }
 
 function renderHero(entity, youtubeData) {
@@ -694,6 +781,16 @@ tabs.addEventListener('click', (e) => {
   if (btn) showView(btn.dataset.view);
 });
 
+function getRegionHint() {
+  try {
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
+    const locale = navigator.language || '';
+    return [tz, locale].filter(Boolean).join(', ');
+  } catch {
+    return '';
+  }
+}
+
 async function runBrief() {
   const title = titleInput.value.trim();
   if (!title) { status.textContent = 'Enter a title first.'; status.classList.add('visible'); return; }
@@ -710,7 +807,10 @@ async function runBrief() {
   resetProgress();
   progress.classList.add('visible');
 
-  const source = new EventSource(`/api/brief/stream?title=${encodeURIComponent(title)}`);
+  const regionHint = getRegionHint();
+  const source = new EventSource(
+    `/api/brief/stream?title=${encodeURIComponent(title)}&region_hint=${encodeURIComponent(regionHint)}`
+  );
   activeSource = source;
 
   source.onmessage = (raw) => {
@@ -721,6 +821,7 @@ async function runBrief() {
 
     if (payload.event === 'error') {
       progress.classList.remove('visible');
+      stopTimer();
       status.textContent = `Something went wrong: ${payload.message}`;
       status.classList.add('visible');
       source.close(); activeSource = null; searchBtn.disabled = false;
@@ -730,6 +831,7 @@ async function runBrief() {
     if (payload.event === 'result') {
       source.close(); activeSource = null; searchBtn.disabled = false;
       progress.classList.remove('visible');
+      stopTimer();
 
       const data = payload.data;
       const entity = data.entity || {};
@@ -738,10 +840,10 @@ async function runBrief() {
       renderHero(entity, data.youtube);
       renderConfidenceNote(entity, result);
 
-      renderStudioOverview(result.studio_brief, entity.release_status);
+      renderStudioOverview(result.studio_brief, entity.release_status, data.competitive);
       renderStudioMarketing(data.marketing, entity.release_status);
       renderStudioCast(data.cast);
-      renderFanOverview(result.fan_pulse);
+      renderFanOverview(result.fan_pulse, data.youtube);
       renderFanNews(data.news);
 
       tabs.classList.add('visible');
@@ -753,6 +855,7 @@ async function runBrief() {
     if (activeSource !== source) return;
     source.close(); activeSource = null;
     progress.classList.remove('visible');
+      stopTimer();
     status.textContent = 'Connection lost while running the pipeline.';
     status.classList.add('visible');
     searchBtn.disabled = false;
@@ -768,6 +871,18 @@ status.addEventListener('click', (e) => {
   titleInput.value = chip.dataset.title;
   runBrief();
 });
+
+// Deep-linking: a competing-title link opens /?title=X in a new tab, this
+// picks that up on load and runs the search immediately, so the new tab
+// isn't just a blank homepage.
+(function initFromQueryParam() {
+  const params = new URLSearchParams(window.location.search);
+  const deepLinkTitle = params.get('title');
+  if (deepLinkTitle) {
+    titleInput.value = deepLinkTitle;
+    runBrief();
+  }
+})();
 </script>
 </body>
 </html>
