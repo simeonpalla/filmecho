@@ -179,6 +179,27 @@ class TestCandidatesAndReleaseDate:
 
         assert ctx.release_date == "September 11, 2026"
 
+    def test_provenance_passed_through_when_present(self):
+        payload = dict(HIGH_CONFIDENCE_PAYLOAD)
+        payload["source_type"] = "remake"
+        payload["based_on"] = "Remake of the 2016 Malayalam film Oppam"
+        parallel = _mock_parallel_client()
+        genai = _mock_genai_client(payload)
+
+        ctx = resolve_entity("Haiwaan", parallel_client=parallel, genai_client=genai)
+
+        assert ctx.source_type == "remake"
+        assert "Oppam" in ctx.based_on
+
+    def test_provenance_defaults_unclear_not_fabricated(self):
+        parallel = _mock_parallel_client()
+        genai = _mock_genai_client(HIGH_CONFIDENCE_PAYLOAD)  # no source_type/based_on keys
+
+        ctx = resolve_entity("Toxic", parallel_client=parallel, genai_client=genai)
+
+        assert ctx.source_type == "unclear"
+        assert ctx.based_on is None
+
     def test_release_date_defaults_none_when_absent(self):
         parallel = _mock_parallel_client()
         genai = _mock_genai_client(HIGH_CONFIDENCE_PAYLOAD)  # no release_date key

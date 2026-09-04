@@ -14,10 +14,12 @@ import pytest
 from pydantic import ValidationError
 
 from agents.schemas import (
+    BoxOfficeInfo,
     CastPerformanceNote,
     CastPersonalNote,
     CastResult,
     CompetitiveResult,
+    CompetitorInfo,
     EntityResolution,
     FanPulse,
     FinalBrief,
@@ -150,6 +152,30 @@ class TestWebSentimentAndCompetitive:
     def test_competitive_result_risk_enum(self):
         with pytest.raises(ValidationError):
             CompetitiveResult(risk="catastrophic")
+
+    def test_box_office_defaults_to_unclear_not_fabricated(self):
+        """Regression guard: an upcoming title's CompetitiveResult must be
+        constructible with zero box office data, not forced to invent
+        figures for something that hasn't released."""
+        c = CompetitiveResult(risk="unclear", attention_assessment="No competition data.")
+        assert c.box_office.verdict == "unclear"
+        assert c.box_office.worldwide_gross is None
+
+    def test_box_office_accepts_full_released_data(self):
+        c = CompetitiveResult(
+            risk="low", attention_assessment="Held its own against rivals.",
+            box_office=BoxOfficeInfo(
+                budget="$200 million", worldwide_gross="$900 million",
+                verdict="hit", verdict_basis="4.5x budget-to-gross ratio",
+            ),
+        )
+        assert c.box_office.verdict == "hit"
+
+    def test_competitor_gross_estimate_optional(self):
+        comp = CompetitorInfo(title="Rival Film", strength_vs_searched="bigger franchise")
+        assert comp.gross_estimate is None
+        comp_with_gross = CompetitorInfo(title="Rival Film", strength_vs_searched="bigger franchise", gross_estimate="$1.2B")
+        assert comp_with_gross.gross_estimate == "$1.2B"
 
     def test_news_result_facts_and_rumors_independent(self):
         n = NewsResult(

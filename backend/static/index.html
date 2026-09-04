@@ -92,6 +92,21 @@
 
   .search-row { display: flex; gap: 10px; margin: 30px 0 0; }
 
+  .example-chips {
+    display: flex; flex-wrap: wrap; align-items: center; justify-content: center;
+    gap: 8px; margin-top: 14px;
+  }
+  .example-chips-label {
+    font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-muted);
+    margin-right: 2px;
+  }
+  .example-chip {
+    background: var(--surface); border: 1px solid var(--border); color: var(--text-muted);
+    font-family: var(--font-body); font-size: 0.78rem; padding: 5px 12px;
+    border-radius: 20px; cursor: pointer; transition: all 0.15s ease;
+  }
+  .example-chip:hover { border-color: var(--brand-c); color: var(--text); }
+
   #title-input {
     flex: 1;
     background: var(--surface);
@@ -335,6 +350,29 @@
     .tab-btn { font-size: 0.82rem; padding: 12px 6px; }
     .subtabs { overflow-x: auto; }
   }
+
+  .export-row { text-align: center; margin-top: 14px; }
+  #export-btn {
+    background: none; border: 1px solid var(--border); color: var(--text-muted);
+    font-family: var(--font-body); font-size: 0.85rem; padding: 9px 20px;
+    border-radius: 8px; cursor: pointer; transition: all 0.15s ease;
+  }
+  #export-btn:hover { border-color: var(--gold); color: var(--gold); }
+
+  /* Printed/saved-as-PDF output: force every tab and sub-tab visible
+     regardless of which one is currently active on screen, so the export
+     is a complete record of the brief, not just whatever the viewer
+     happened to be looking at. Hide interactive-only chrome. */
+  @media print {
+    .film-strip, .search-row, .example-chips, #progress, .status,
+    .tabs, .subtabs, #export-btn { display: none !important; }
+    .panel, .subpanel { display: block !important; }
+    .page { max-width: 100%; padding: 0; }
+    .brief-eyebrow, .panel { break-inside: avoid; }
+    body { background: #fff; color: #111; }
+    .hero-banner-overlay { position: static; background: none; padding: 12px 0; }
+    .hero-banner img { display: none; }
+  }
 </style>
 </head>
 <body>
@@ -355,6 +393,14 @@
       <div class="search-row">
         <input id="title-input" type="text" placeholder="Enter a film or show title..." autocomplete="off">
         <button id="search-btn">Run brief</button>
+      </div>
+
+      <div id="example-chips" class="example-chips">
+        <span class="example-chips-label">Try:</span>
+        <button class="example-chip" data-title="Dune Part Three">Dune Part Three</button>
+        <button class="example-chip" data-title="Avengers Doomsday">Avengers Doomsday</button>
+        <button class="example-chip" data-title="Haiwaan">Haiwaan</button>
+        <button class="example-chip" data-title="Doomsday 2008">Doomsday (2008)</button>
       </div>
 
       <div id="progress" class="progress">
@@ -380,6 +426,11 @@
     <div id="tabs" class="tabs">
       <button class="tab-btn" data-view="studio" data-active="true">Studio brief</button>
       <button class="tab-btn" data-view="fan" data-active="false">Fan pulse</button>
+      <button id="collections-tab-btn" class="tab-btn" data-view="collections" data-active="false" style="display:none;">Collections</button>
+    </div>
+
+    <div id="export-row" class="export-row" style="display:none;">
+      <button id="export-btn">Export / print brief</button>
     </div>
 
     <div id="studio-panel" class="panel">
@@ -401,6 +452,10 @@
       <div id="fan-overview" class="subpanel visible"></div>
       <div id="fan-news" class="subpanel"></div>
     </div>
+
+    <div id="collections-panel" class="panel">
+      <div style="padding: 26px 28px 30px;" id="collections-content"></div>
+    </div>
   </div>
   <div class="film-strip"></div>
 
@@ -421,6 +476,12 @@ const marqueeFallbackMeta = document.getElementById('marquee-fallback-meta');
 const tabs = document.getElementById('tabs');
 const studioPanel = document.getElementById('studio-panel');
 const fanPanel = document.getElementById('fan-panel');
+const collectionsPanel = document.getElementById('collections-panel');
+const collectionsTabBtn = document.getElementById('collections-tab-btn');
+const collectionsContent = document.getElementById('collections-content');
+const exampleChips = document.getElementById('example-chips');
+const exportRow = document.getElementById('export-row');
+const exportBtn = document.getElementById('export-btn');
 
 let activeSource = null;
 let currentView = 'studio';
@@ -512,6 +573,9 @@ function buildMetaPills(entity) {
   if (entity.director) pills.push(`<span class="meta-pill info">Dir. ${entity.director}</span>`);
   pills.push(`<span class="meta-pill info">${entity.release_date || entity.release_year || 'release date unknown'}</span>`);
   if (entity.release_status && entity.release_status !== 'unclear') pills.push(`<span class="meta-pill info">${entity.release_status}</span>`);
+  if (entity.based_on && entity.source_type !== 'original' && entity.source_type !== 'unclear') {
+    pills.push(`<span class="meta-pill info">${entity.based_on}</span>`);
+  }
   return pills.join('');
 }
 
@@ -726,6 +790,70 @@ function renderFanNews(news) {
   el.innerHTML = `<h2>Cast &amp; production news</h2>${sections}`;
 }
 
+function verdictTone(verdict) {
+  switch ((verdict || 'unclear').toLowerCase()) {
+    case 'blockbuster':
+    case 'hit': return 'positive';
+    case 'average': return 'neutral';
+    case 'underperformed':
+    case 'flop': return 'negative';
+    default: return 'unclear';
+  }
+}
+
+function renderCollections(competitive, youtubeData) {
+  const bo = (competitive && competitive.box_office) || {};
+  const tone = verdictTone(bo.verdict);
+  const boFields = [
+    ['Budget', bo.budget], ['Worldwide gross', bo.worldwide_gross],
+    ['Domestic gross', bo.domestic_gross], ['Opening weekend', bo.opening_weekend],
+  ].filter(([, v]) => v);
+
+  const boTiles = boFields.length
+    ? `<div class="tile-row">${boFields.map(([label, v]) =>
+        `<div class="tile tone-unclear"><div class="tile-label">${label}</div><div class="tile-value" style="font-size:1rem">${v}</div></div>`
+      ).join('')}</div>`
+    : '<p class="empty-state">No specific box office figures surfaced for this run.</p>';
+
+  const verdictBlock = bo.verdict && bo.verdict !== 'unclear' ? `
+    <div class="tile-row">
+      <div class="tile tone-${tone}"><div class="tile-label">Commercial verdict</div><div class="tile-value">${bo.verdict}</div><div class="tile-sub">${bo.verdict_basis || ''}</div></div>
+    </div>
+  ` : '';
+
+  const ytStats = computeYoutubeStats(youtubeData);
+  const ytBlock = ytStats ? `
+    <div class="field"><div class="field-label">Trailer reach</div>
+      <div class="tile-row">
+        <div class="tile tone-unclear"><div class="tile-label">Views</div><div class="tile-value">${formatCount(ytStats.totalViews)}</div></div>
+        <div class="tile tone-unclear"><div class="tile-label">Likes</div><div class="tile-value">${formatCount(ytStats.totalLikes)}</div></div>
+      </div>
+    </div>` : '';
+
+  const competitors = (competitive && competitive.competing_titles || []);
+  const compTable = competitors.length ? `
+    <div class="field">
+      <div class="field-label">Vs. competing titles</div>
+      <div class="card-list">
+        ${competitors.map(c => `
+          <div class="mini-card">
+            <div class="mini-card-title">${internalSearchLink(c.title)}</div>
+            <div class="field-value">${c.strength_vs_searched || ''}</div>
+            ${c.gross_estimate ? `<div class="field-value" style="color:var(--gold)">Their gross: ${c.gross_estimate}</div>` : ''}
+          </div>
+        `).join('')}
+      </div>
+    </div>` : '';
+
+  collectionsContent.innerHTML = `
+    <h2>Collections &amp; comparative performance</h2>
+    ${verdictBlock}
+    <div class="field"><div class="field-label">Box office</div>${boTiles}</div>
+    ${ytBlock}
+    ${compTable}
+  `;
+}
+
 function renderHero(entity, youtubeData) {
   const label = releaseLabel(entity);
   const titleHtml = `${label}: ${entity.title || ''}`;
@@ -774,6 +902,7 @@ function showView(view) {
   document.querySelectorAll('.tab-btn').forEach(btn => { btn.dataset.active = String(btn.dataset.view === view); });
   studioPanel.classList.toggle('visible', view === 'studio');
   fanPanel.classList.toggle('visible', view === 'fan');
+  collectionsPanel.classList.toggle('visible', view === 'collections');
 }
 
 tabs.addEventListener('click', (e) => {
@@ -798,11 +927,15 @@ async function runBrief() {
   if (activeSource) { activeSource.close(); activeSource = null; }
 
   searchBtn.disabled = true;
+  exampleChips.style.display = 'none';
+  exportRow.style.display = 'none';
   heroBanner.classList.remove('visible');
   marqueeFallback.classList.remove('visible');
   tabs.classList.remove('visible');
   studioPanel.classList.remove('visible');
   fanPanel.classList.remove('visible');
+  collectionsPanel.classList.remove('visible');
+  collectionsTabBtn.style.display = 'none';
   status.classList.remove('visible');
   resetProgress();
   progress.classList.add('visible');
@@ -846,7 +979,16 @@ async function runBrief() {
       renderFanOverview(result.fan_pulse, data.youtube);
       renderFanNews(data.news);
 
+      const isReleased = entity.release_status === 'released';
+      collectionsTabBtn.style.display = isReleased ? '' : 'none';
+      if (isReleased) {
+        renderCollections(data.competitive, data.youtube);
+      } else if (currentView === 'collections') {
+        currentView = 'studio';
+      }
+
       tabs.classList.add('visible');
+      exportRow.style.display = '';
       showView(currentView);
     }
   };
@@ -864,6 +1006,15 @@ async function runBrief() {
 
 searchBtn.addEventListener('click', runBrief);
 titleInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') runBrief(); });
+
+exampleChips.addEventListener('click', (e) => {
+  const chip = e.target.closest('.example-chip');
+  if (!chip) return;
+  titleInput.value = chip.dataset.title;
+  runBrief();
+});
+
+exportBtn.addEventListener('click', () => window.print());
 
 status.addEventListener('click', (e) => {
   const chip = e.target.closest('.candidate-chip');

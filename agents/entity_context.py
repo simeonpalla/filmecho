@@ -51,6 +51,8 @@ class EntityContext:
     director: Optional[str] = None
     cast: list[str] = field(default_factory=list)
     release_status: str = "unclear"
+    source_type: str = "unclear"
+    based_on: Optional[str] = None
     confidence: str = "low"
     disambiguation_note: str = ""
     candidates: list[dict] = field(default_factory=list)
@@ -64,6 +66,8 @@ class EntityContext:
             "director": self.director,
             "cast": self.cast,
             "release_status": self.release_status,
+            "source_type": self.source_type,
+            "based_on": self.based_on,
             "confidence": self.confidence,
             "disambiguation_note": self.disambiguation_note,
             "candidates": self.candidates,
@@ -94,8 +98,16 @@ _EXTRACTION_INSTRUCTION = (
     "(or release_year if no exact date was found) against today's date, "
     "given below — these two fields must agree with each other. Only fill "
     "release_date if the excerpts state one, don't infer a specific date "
-    "from just a year. If unsure about any field, leave it null rather "
-    "than guessing."
+    "from just a year.\n\n"
+    "PROVENANCE: also determine source_type and based_on — is this a "
+    "remake, a book/comic adaptation, based on a true story, a "
+    "sequel/reboot/spinoff, or an original work? Only claim something "
+    "other than 'original'/'unclear' if the excerpts explicitly state it, "
+    "don't infer from genre conventions or guess. based_on should name "
+    "the specific source (the original film's title and year, the book's "
+    "title and author, the comic series) when the excerpts give you that "
+    "level of detail, not just a category label.\n\n"
+    "If unsure about any field, leave it null rather than guessing."
 )
 
 
@@ -108,8 +120,10 @@ def _search_excerpts(parallel_client: Parallel, title: str, extra_hint: str = ""
     """
     objective = (
         f"Identify the film or TV title '{title}': confirm its exact "
-        "official title, release year, director, top-billed cast, and "
-        "current release date. Release dates for announced films "
+        "official title, release year, director, top-billed cast, current "
+        "release date, and what it's based on (original story, remake of "
+        "an earlier film, adapted from a book/comic/true story, or a "
+        "sequel/reboot/spinoff). Release dates for announced films "
         "frequently get pushed back or moved up after initial "
         "announcement — prioritize the most recently published source "
         "for the release date specifically, and if sources disagree on "
@@ -121,6 +135,7 @@ def _search_excerpts(parallel_client: Parallel, title: str, extra_hint: str = ""
             f"{title} release year director",
             f"{title} cast",
             f"{title} release date",
+            f"{title} based on remake adaptation",
         ],
         mode="fast",
     )
@@ -217,6 +232,8 @@ def resolve_entity(
     ctx.director = result.director
     ctx.cast = result.cast
     ctx.release_status = result.release_status
+    ctx.source_type = result.source_type
+    ctx.based_on = result.based_on
     ctx.confidence = result.confidence
     ctx.disambiguation_note = result.disambiguation_note
     ctx.candidates = [c.model_dump() for c in result.candidates]

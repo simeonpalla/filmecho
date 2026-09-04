@@ -42,6 +42,17 @@ class EntityResolution(BaseModel):
     )
     director: Optional[str] = Field(default=None, description="Director's name, or null if unknown.")
     cast: list[str] = Field(default_factory=list, description="Up to 5 top-billed cast members.")
+    source_type: Literal[
+        "original", "remake", "book_adaptation", "comic_adaptation",
+        "true_story", "sequel", "reboot", "spinoff", "unclear",
+    ] = Field(
+        default="unclear",
+        description="What this work is derived from, if anything. 'original' = not based on a prior work. Only set to something other than 'unclear'/'original' if the excerpts explicitly state it.",
+    )
+    based_on: Optional[str] = Field(
+        default=None,
+        description="One short phrase naming the specific source when source_type isn't 'original', e.g. 'Remake of the 2016 Malayalam film Oppam' or 'Based on Frank Herbert's novel Dune Messiah' or 'Based on Marvel Comics'. Null if source_type is 'original'/'unclear' or the excerpts don't name a specific source.",
+    )
     release_status: Literal["released", "upcoming", "unclear"] = Field(
         description=(
             "'released' if the title has already come out relative to today's "
@@ -104,6 +115,30 @@ class CompetitorInfo(BaseModel):
     strength_vs_searched: str = Field(
         description="One short phrase on this competitor's specific edge over the searched title (e.g. 'bigger established fanbase', 'earlier release date locks in the premium format slots', 'higher pre-release tracking'). Must come from the excerpts, not be invented."
     )
+    gross_estimate: Optional[str] = Field(
+        default=None,
+        description="This competitor's own box office gross, as reported (e.g. '$2.1B worldwide'), ONLY for released-title comparisons where the excerpts state a figure for THIS competitor specifically. Null if unknown — never estimate or infer one.",
+    )
+
+
+class BoxOfficeInfo(BaseModel):
+    """Only meaningful for released titles — there's no box office for
+    something that hasn't come out. Every field defaults to null/'unclear'
+    so an upcoming title's CompetitiveResult can carry this field without
+    it ever containing invented figures."""
+
+    budget: Optional[str] = Field(default=None, description="Production budget as reported (e.g. '$250 million'). Null if not stated.")
+    worldwide_gross: Optional[str] = Field(default=None, description="Worldwide box office gross as reported. Null if not stated.")
+    domestic_gross: Optional[str] = Field(default=None, description="Domestic/home-market gross as reported. Null if not stated.")
+    opening_weekend: Optional[str] = Field(default=None, description="Opening weekend gross as reported. Null if not stated.")
+    verdict: Literal["blockbuster", "hit", "average", "underperformed", "flop", "unclear"] = Field(
+        default="unclear",
+        description="Overall commercial verdict, judged from budget-vs-gross and how it's actually characterized in coverage. 'unclear' if the excerpts don't support a read — do not guess from genre/studio reputation alone.",
+    )
+    verdict_basis: str = Field(
+        default="",
+        description="One sentence explaining the verdict (e.g. the budget-to-gross ratio, or how commentary characterized it). Empty string if verdict is 'unclear'.",
+    )
 
 
 class CompetitiveResult(BaseModel):
@@ -121,6 +156,10 @@ class CompetitiveResult(BaseModel):
             "question feels hard — for a released title with any box-office or "
             "reception data available, form a judgment from it."
         )
+    )
+    box_office: BoxOfficeInfo = Field(
+        default_factory=BoxOfficeInfo,
+        description="ONLY populate meaningfully for released titles — for upcoming titles, leave every field at its default (null/'unclear'), there is no box office yet.",
     )
 
 
