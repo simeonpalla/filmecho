@@ -287,7 +287,7 @@ async def stream_pipeline(title: str, user_id: str = "filmecho_user", region_hin
 
     yield {"event": "stage", "stage": "sentiment_synthesis",
            "message": "Synthesizing sentiment across sources..."}
-    sentiment_prompt = build_sentiment_prompt(web_sentiment, youtube_data)
+    sentiment_prompt = build_sentiment_prompt(web_sentiment, youtube_data, entity.release_date)
     sentiment_synthesis, sentiment_log = await _run_adk_agent(
         sentiment_synthesis_agent, sentiment_prompt, user_id,
         session_id=f"sent_{uuid.uuid4().hex[:8]}", output_model=SentimentSynthesisResult,

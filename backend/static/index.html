@@ -223,6 +223,7 @@
     overflow: hidden;
     border: 1px solid var(--border);
     background: var(--surface);
+    box-shadow: 0 10px 34px rgba(0,0,0,0.35);
   }
   .hero-banner.visible { display: block; }
 
@@ -278,6 +279,7 @@
     max-width: 900px; margin: 34px auto 0;
     background: var(--surface-raised); border: 1px solid var(--border);
     border-radius: 16px; padding: 30px 32px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.3);
   }
   .greenlight-card.visible { display: block; }
   .greenlight-card.tone-positive { border-color: var(--positive); }
@@ -328,11 +330,45 @@
   @media (min-width: 1050px) { .war-room-grid { grid-template-columns: 1fr 1fr 1fr; } }
   .voice-card {
     background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
-    padding: 16px 18px;
+    padding: 16px 18px; box-shadow: 0 4px 14px rgba(0,0,0,0.18);
+    transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
   }
+  .voice-card:hover { transform: translateY(-3px); box-shadow: 0 10px 24px rgba(0,0,0,0.28); border-color: var(--brand-c); }
   .voice-role { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 0.9rem; margin-bottom: 8px; }
   .voice-icon { font-size: 1.1rem; }
   .voice-insight { font-family: var(--font-display); font-style: italic; font-size: 0.95rem; color: var(--text); line-height: 1.5; }
+
+  /* --- Reputation timeline (deferred feature, now built) --- */
+  .timeline-card { display: none; max-width: 1050px; margin: 22px auto 0; }
+  .timeline-card.visible { display: block; }
+  .timeline-title {
+    font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--text-muted); text-align: center; margin-bottom: 16px;
+  }
+  .timeline-track { display: flex; flex-direction: column; gap: 0; }
+  @media (min-width: 760px) { .timeline-track { flex-direction: row; align-items: stretch; } }
+  .timeline-stop { flex: 1; position: relative; padding: 0 0 0 26px; margin-bottom: 18px; }
+  @media (min-width: 760px) { .timeline-stop { padding: 26px 14px 0; margin-bottom: 0; } }
+  .timeline-stop::before {
+    content: ""; position: absolute; left: 3px; top: 4px; width: 12px; height: 12px;
+    border-radius: 50%; border: 2px solid var(--surface-raised);
+  }
+  @media (min-width: 760px) { .timeline-stop::before { left: 50%; top: 0; margin-left: -7px; } }
+  .timeline-stop::after {
+    content: ""; position: absolute; left: 8px; top: 16px; bottom: -18px; width: 2px;
+    background: var(--border);
+  }
+  @media (min-width: 760px) { .timeline-stop::after { left: 0; right: 0; top: 6px; bottom: auto; width: auto; height: 2px; } }
+  .timeline-stop:last-child::after { display: none; }
+  .timeline-stop.tone-positive::before { background: var(--positive); }
+  .timeline-stop.tone-negative::before { background: var(--negative); }
+  .timeline-stop.tone-neutral::before { background: var(--neutral); }
+  .timeline-stop.tone-unclear::before { background: var(--unclear); }
+  .timeline-phase-label {
+    font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px;
+  }
+  .timeline-note { font-size: 0.9rem; color: var(--text); }
 
   /* --- Release window advisory --- */
   .release-window-card {
@@ -405,19 +441,23 @@
   .card-list { display: grid; grid-template-columns: 1fr; gap: 12px; }
   @media (min-width: 720px) { .card-list { grid-template-columns: 1fr 1fr; } }
 
-  .mini-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; }
+  .mini-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; box-shadow: 0 2px 10px rgba(0,0,0,0.15); transition: transform 0.15s ease, box-shadow 0.15s ease; }
+  .mini-card:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0,0,0,0.22); }
   .mini-card-title { font-weight: 600; font-size: 0.92rem; margin-bottom: 4px; }
   .mini-card.cast-accent { border-left: 3px solid var(--cast-accent); }
   .mini-card.news-accent { border-left: 3px solid var(--news-accent); }
   .mini-card.marketing-accent { border-left: 3px solid var(--marketing-accent); }
 
-  .export-row { text-align: center; margin-top: 24px; display: none; }
-  #export-btn {
+  .export-row { text-align: center; margin-top: 24px; display: none; gap: 10px; justify-content: center; flex-wrap: wrap; }
+  #export-btn, #pdf-btn {
     background: none; border: 1px solid var(--border); color: var(--text-muted);
     font-family: var(--font-body); font-size: 0.85rem; padding: 9px 20px;
     border-radius: 8px; cursor: pointer; transition: all 0.15s ease;
   }
   #export-btn:hover { border-color: var(--gold); color: var(--gold); }
+  #pdf-btn { border-color: var(--brand-c); color: var(--brand-c); }
+  #pdf-btn:hover { background: var(--brand-c); color: #1a0f10; }
+  #pdf-btn:disabled { opacity: 0.5; cursor: default; }
 
   @media (max-width: 560px) {
     .search-row { flex-direction: column; }
@@ -495,10 +535,13 @@
       <div id="war-room-grid" class="war-room-grid"></div>
     </div>
 
+    <div id="timeline-card" class="timeline-card"></div>
+
     <div id="release-window-card" class="release-window-card"></div>
 
     <div class="export-row" id="export-row">
       <button id="export-btn">Export / print memo</button>
+      <button id="pdf-btn">Download PDF report</button>
     </div>
 
     <div id="evidence-section" class="evidence-section">
@@ -541,8 +584,10 @@ const evidenceCollections = document.getElementById('evidence-collections');
 const exampleChips = document.getElementById('example-chips');
 const exportRow = document.getElementById('export-row');
 const exportBtn = document.getElementById('export-btn');
+const pdfBtn = document.getElementById('pdf-btn');
 
 let activeSource = null;
+let lastPayloadData = null;
 
 const STAGES = [
   { key: 'entity_resolution', label: 'Resolving title' },
@@ -655,6 +700,15 @@ function releaseLabel(entity) {
   return 'Screening status unclear';
 }
 
+function sentimentTone(sentiment) {
+  switch ((sentiment || 'unclear').toLowerCase()) {
+    case 'positive': return 'positive';
+    case 'mixed': return 'neutral';
+    case 'negative': return 'negative';
+    default: return 'unclear';
+  }
+}
+
 function buildMetaPills(entity) {
   const pills = [];
   if (entity.director) pills.push(`<span class="meta-pill info">Dir. ${entity.director}</span>`);
@@ -755,6 +809,36 @@ function renderWarRoom(voices) {
     `;
   }).join('');
   warRoom.classList.add('visible');
+}
+
+const PHASE_LABELS = {
+  pre_release: 'Pre-release',
+  trailer: 'Trailer',
+  opening_weekend: 'Opening Weekend',
+  week_two: 'Week 2',
+  long_tail: 'Long-tail',
+};
+const PHASE_ORDER = ['pre_release', 'trailer', 'opening_weekend', 'week_two', 'long_tail'];
+
+function renderTimeline(timeline) {
+  const el = document.getElementById('timeline-card');
+  if (!timeline || !timeline.length) {
+    el.classList.remove('visible');
+    return;
+  }
+  const sorted = [...timeline].sort((a, b) => PHASE_ORDER.indexOf(a.phase) - PHASE_ORDER.indexOf(b.phase));
+  el.innerHTML = `
+    <div class="timeline-title">The Life of Its Reputation</div>
+    <div class="timeline-track">
+      ${sorted.map(entry => `
+        <div class="timeline-stop tone-${sentimentTone(entry.sentiment)}">
+          <div class="timeline-phase-label">${PHASE_LABELS[entry.phase] || entry.phase}</div>
+          <div class="timeline-note">${entry.note || ''}</div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+  el.classList.add('visible');
 }
 
 function renderReleaseWindow(competitive) {
@@ -993,10 +1077,12 @@ async function runBrief() {
   searchBtn.disabled = true;
   exampleChips.style.display = 'none';
   exportRow.style.display = 'none';
+  lastPayloadData = null;
   heroBanner.classList.remove('visible');
   marqueeFallback.classList.remove('visible');
   greenlightCard.classList.remove('visible');
   warRoom.classList.remove('visible');
+  document.getElementById('timeline-card').classList.remove('visible');
   releaseWindowCard.classList.remove('visible');
   evidenceSection.classList.remove('visible');
   evidenceCollectionsBtn.style.display = 'none';
@@ -1032,6 +1118,7 @@ async function runBrief() {
       stopTimer();
 
       const data = payload.data;
+      lastPayloadData = data;
       const entity = data.entity || {};
       const result = data.result || {};
 
@@ -1040,6 +1127,7 @@ async function runBrief() {
 
       renderGreenlightMemo(result, entity.release_status);
       renderWarRoom(result.war_room);
+      renderTimeline(data.sentiment_synthesis && data.sentiment_synthesis.timeline);
       renderReleaseWindow(data.competitive);
 
       renderMarketing(data.marketing, entity.release_status);
@@ -1062,7 +1150,7 @@ async function runBrief() {
       }
 
       evidenceSection.classList.add('visible');
-      exportRow.style.display = '';
+      exportRow.style.display = 'flex';
     }
   };
 
@@ -1088,6 +1176,39 @@ exampleChips.addEventListener('click', (e) => {
 });
 
 exportBtn.addEventListener('click', () => window.print());
+
+pdfBtn.addEventListener('click', async () => {
+  if (!lastPayloadData) return;
+  pdfBtn.disabled = true;
+  const originalLabel = pdfBtn.textContent;
+  pdfBtn.textContent = 'Generating...';
+  try {
+    const res = await fetch('/api/brief/pdf', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(lastPayloadData),
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body.detail || `Request failed (${res.status})`);
+    }
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const safeTitle = ((lastPayloadData.entity || {}).title || 'brief').replace(/[^A-Za-z0-9_-]+/g, '_');
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `filmecho-${safeTitle}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  } catch (err) {
+    alert(`PDF generation failed: ${err.message}`);
+  } finally {
+    pdfBtn.disabled = false;
+    pdfBtn.textContent = originalLabel;
+  }
+});
 
 status.addEventListener('click', (e) => {
   const chip = e.target.closest('.candidate-chip');

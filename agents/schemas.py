@@ -212,6 +212,17 @@ class NewsResult(BaseModel):
     rumors: list[NewsItem] = Field(default_factory=list, max_length=4, description="Explicitly labeled rumor/speculation, categorized.")
 
 
+class ReputationTimelineEntry(BaseModel):
+    """One point on the reputation timeline. Only populate a phase when a
+    real date (YouTube publish date, a dated news/review source) actually
+    places something in it — never infer a phase from guesswork just to
+    fill out the timeline."""
+
+    phase: Literal["pre_release", "trailer", "opening_weekend", "week_two", "long_tail"]
+    sentiment: Literal["positive", "mixed", "negative", "unclear"]
+    note: str = Field(description="What was actually being said in this phase, one sentence, grounded in dated sources.")
+
+
 class SentimentSynthesisResult(BaseModel):
     overall_sentiment: Literal["positive", "mixed", "negative", "unclear"]
     justification: str
@@ -219,6 +230,10 @@ class SentimentSynthesisResult(BaseModel):
     recurring_themes: list[str] = Field(default_factory=list)
     agreement_note: str = Field(description="Do sources agree or conflict, one sentence.")
     sources_available: list[str] = Field(description="Which of web/youtube/reddit actually had data this run.")
+    timeline: list[ReputationTimelineEntry] = Field(
+        default_factory=list, max_length=5,
+        description="Up to 5 entries, one per distinct phase you can actually date (from YouTube publish dates or dated sources). Leave empty entirely if no dates are available to place anything — this is a bonus signal, not a required field.",
+    )
 
 
 class CastPerformanceNote(BaseModel):

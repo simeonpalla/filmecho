@@ -23,15 +23,21 @@ MAX_COMMENTS_PER_VIDEO = 15
 
 
 def _flatten_youtube_comments(youtube_data: Optional[dict], max_per_video: int = MAX_COMMENTS_PER_VIDEO) -> str:
-    """Turn the YouTube Data Agent's raw output into prompt-ready text."""
+    """Turn the YouTube Data Agent's raw output into prompt-ready text.
+
+    Includes each video's real publish date (published_at, from
+    YouTube's own API, not inferred) so the synthesis agent has an actual
+    date to anchor timeline phases against — not a guess.
+    """
     if not youtube_data:
         return "NO YOUTUBE DATA AVAILABLE for this run."
 
     lines = []
     for video_id, info in youtube_data.items():
+        published = info.get("published_at") or "date unknown"
         lines.append(
-            f"Video: {info.get('title', video_id)} "
-            f"(views={info.get('view_count', 0)}, likes={info.get('like_count', 0)}, "
+            f"Video: {info.get('title', video_id)} (published: {published}, "
+            f"views={info.get('view_count', 0)}, likes={info.get('like_count', 0)}, "
             f"comments={info.get('comment_count', 0)})"
         )
         for c in info.get("comments", [])[:max_per_video]:
@@ -44,6 +50,7 @@ def _flatten_youtube_comments(youtube_data: Optional[dict], max_per_video: int =
 def build_sentiment_prompt(
     web_sentiment: Optional[WebSentimentResult],
     youtube_data: Optional[dict],
+    release_date: Optional[str] = None,
     reddit_text: Optional[str] = None,
 ) -> str:
     """Build the full prompt for sentiment_synthesis_agent.
@@ -53,6 +60,10 @@ def build_sentiment_prompt(
             that branch failed or didn't parse.
         youtube_data: youtube_data_agent.collect_youtube_data's raw output,
             or None/{} if that branch failed or found no videos.
+        release_date: The resolved entity's release_date (if known), used
+            only as a reference point for classifying dated YouTube videos
+            into timeline phases — never used to invent a phase without a
+            real date behind it.
         reddit_text: Reserved for reddit_sentiment_agent's output once
             built; None until then.
 
@@ -69,11 +80,13 @@ def build_sentiment_prompt(
     )
     youtube_block = _flatten_youtube_comments(youtube_data)
     reddit_block = reddit_text or "NO REDDIT DATA AVAILABLE (not yet built for this pipeline)."
+    release_date_block = release_date or "unknown"
 
     return (
+        f"Reference release date (for timeline classification only): {release_date_block}\n\n"
         "=== WEB SENTIMENT (structured, from Parallel + Gemini) ===\n"
         f"{web_block}\n\n"
-        "=== YOUTUBE COMMENTS (raw, unanalyzed) ===\n"
+        "=== YOUTUBE COMMENTS (raw, unanalyzed, with real publish dates) ===\n"
         f"{youtube_block}\n\n"
         "=== REDDIT SENTIMENT ===\n"
         f"{reddit_block}"
@@ -106,7 +119,19 @@ sentiment_synthesis_agent = Agent(
         "voice reads as more genuine than critic-summary language. Do not "
         "fabricate sentiment for a source with no data, and do not average "
         "YouTube like counts into a fake numeric score, describe the "
-        "comments qualitatively instead."
+        "comments qualitatively instead.\n\n"
+        "timeline (OPTIONAL, up to 5 entries): each YouTube video has a "
+        "real published_at date. Compare each video's date to the "
+        "reference release date given above and, ONLY where this "
+        "comparison is actually possible, classify: well before the "
+        "release date → 'pre_release'; specifically a trailer video "
+        "published in the run-up → 'trailer'; within about a week of the "
+        "release date → 'opening_weekend'; one to two weeks after → "
+        "'week_two'; much later → 'long_tail'. Write a one-sentence note "
+        "per phase based on what that phase's actual comments/reactions "
+        "said. If the reference release date is 'unknown', or no video "
+        "dates give you enough to place anything, leave timeline as an "
+        "empty list — do not guess a phase without a real date behind it."
     ),
     output_schema=SentimentSynthesisResult,
 )

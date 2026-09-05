@@ -248,3 +248,29 @@ class TestWebSentimentAndCompetitive:
     def test_sentiment_synthesis_sources_available_required(self):
         with pytest.raises(ValidationError):
             SentimentSynthesisResult(overall_sentiment="positive", justification="j", agreement_note="a")
+
+    def test_timeline_defaults_empty_not_fabricated(self):
+        """Regression guard: sentiment_synthesis must be constructible
+        with zero timeline entries — this is a bonus signal only
+        available when real dates exist, never a required guess."""
+        s = SentimentSynthesisResult(
+            overall_sentiment="positive", justification="j", agreement_note="a", sources_available=["web"],
+        )
+        assert s.timeline == []
+
+    def test_timeline_accepts_valid_entries(self):
+        from agents.schemas import ReputationTimelineEntry
+        s = SentimentSynthesisResult(
+            overall_sentiment="mixed", justification="j", agreement_note="a", sources_available=["youtube"],
+            timeline=[
+                ReputationTimelineEntry(phase="trailer", sentiment="positive", note="Trailer response was strongly positive."),
+                ReputationTimelineEntry(phase="opening_weekend", sentiment="mixed", note="Reaction cooled slightly after release."),
+            ],
+        )
+        assert len(s.timeline) == 2
+        assert s.timeline[0].phase == "trailer"
+
+    def test_timeline_rejects_invalid_phase(self):
+        from agents.schemas import ReputationTimelineEntry
+        with pytest.raises(ValidationError):
+            ReputationTimelineEntry(phase="premiere_night", sentiment="positive", note="x")

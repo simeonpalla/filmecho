@@ -15,11 +15,13 @@ from __future__ import annotations
 
 import json
 import os
+import re
 
-from fastapi import FastAPI, HTTPException
-from fastapi.responses import StreamingResponse
+from fastapi import Body, FastAPI, HTTPException
+from fastapi.responses import Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 
+from backend.pdf_report import build_pdf
 from orchestration.pipeline import run_pipeline, stream_pipeline
 
 app = FastAPI(title="Filmecho")
@@ -88,6 +90,30 @@ async def stream_brief(title: str, region_hint: str = ""):
             # incrementally once deployed, not just locally.
             "X-Accel-Buffering": "no",
         },
+    )
+
+
+@app.post("/api/brief/pdf")
+async def brief_pdf(data: dict = Body(...)):
+    """Generate a formatted A4 PDF from an already-computed brief payload.
+
+    Takes the SAME JSON the frontend already holds after a pipeline run
+    (the {"event": "result", "data": ...} payload) and renders it to a
+    real, laid-out document via backend/pdf_report.py — this does NOT
+    re-run the pipeline, so it costs zero additional Parallel/Gemini
+    calls, it's purely a formatting step over data already fetched.
+    """
+    try:
+        pdf_bytes = build_pdf(data)
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(status_code=500, detail=f"PDF generation failed: {exc}") from exc
+
+    title = ((data.get("entity") or {}).get("title")) or "brief"
+    safe_title = re.sub(r"[^A-Za-z0-9_-]+", "_", title).strip("_") or "brief"
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="filmecho-{safe_title}.pdf"'},
     )
 
 
