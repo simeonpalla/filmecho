@@ -468,13 +468,37 @@
 
   /* Printed/saved-as-PDF output */
   @media print {
-    .film-strip, .search-row, .example-chips, #progress, .status, #export-btn { display: none !important; }
+    /* Without this, Chrome/Firefox/Safari silently drop every
+       background-color, background-image and box-shadow on print —
+       which is why verdict badges, opp-risk tiles, voice cards and
+       meta pills were printing flat/blank instead of matching the
+       on-screen design. This forces them to render as authored. */
+    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
+
+    .film-strip, .search-row, .example-chips, #progress, .status, .export-row { display: none !important; }
     .subtabs, .evidence-section, .subpanel { display: block !important; }
     .page { max-width: 100%; padding: 0; }
-    .greenlight-card, .war-room, .evidence-section { break-inside: avoid; }
+    .greenlight-card, .war-room, .evidence-section, .voice-card, .mini-card { break-inside: avoid; }
     body { background: #fff; color: #111; }
     .hero-banner-overlay { position: static; background: none; padding: 12px 0; }
     .hero-banner img { display: none; }
+
+    /* .filmecho-logo and .tagline sit directly on the page background
+       (no card behind them), and body's background flips to white for
+       print — so the on-screen white/light-muted colors that read fine
+       on a near-black background need their own print-only values. */
+    .logo-film { color: #1a1a1a; }
+    .tagline { color: #555555; }
+
+    /* The multi-layer "echo trail" ghost effect (3 stacked, offset,
+       low-opacity copies of "ECHO") is a screen-only flourish; printed
+       it produces overlapping/garbled text instead of a clean word.
+       Keep just the main word for print. */
+    .echo-trail { display: none !important; }
+
+    /* Shadows don't serve a printed page and can render as odd smudges
+       depending on the print engine. */
+    * { box-shadow: none !important; }
   }
 </style>
 </head>
