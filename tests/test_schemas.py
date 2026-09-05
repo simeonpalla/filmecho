@@ -21,14 +21,14 @@ from agents.schemas import (
     CompetitiveResult,
     CompetitorInfo,
     EntityResolution,
-    FanPulse,
-    FinalBrief,
+    GreenlightMemo,
     MarketingResult,
     NewsItem,
     NewsResult,
+    ReleaseWindowAdvice,
     SentimentSynthesisResult,
     SourceExcerpt,
-    StudioBrief,
+    WarRoomVoice,
     WebSentimentResult,
 )
 
@@ -105,43 +105,98 @@ class TestCastResult:
         assert CastResult.model_fields["performances"] is not CastResult.model_fields["personal_updates"]
 
 
-class TestFinalBrief:
+def _six_voices():
+    """Helper: a valid, minimal set of the 6 required war_room voices."""
+    return [
+        WarRoomVoice(role="director", insight="Audience responding to the character arc."),
+        WarRoomVoice(role="producer", insight="Competitive risk is moderate."),
+        WarRoomVoice(role="marketing_chief", insight="Trailer leans on spectacle."),
+        WarRoomVoice(role="casting_executive", insight="Lead actor generating outsized buzz."),
+        WarRoomVoice(role="distribution_executive", insight="Window overlaps a major rival."),
+        WarRoomVoice(role="analyst", insight="Confidence would rise with more box-office data."),
+    ]
+
+
+class TestGreenlightMemo:
     def test_sources_used_stays_top_level(self):
         """Direct regression test for the original schema-drift bug:
-        sources_used must be a sibling of studio_brief/fan_pulse, not
-        nested inside either one."""
-        fb = FinalBrief(
-            studio_brief=StudioBrief(
-                headline="h", sentiment_summary="s", competitive_risk="high", recommendation="r"
-            ),
-            fan_pulse=FanPulse(headline="h2", excitement_level="high", excitement_reason="Reunion of the original cast"),
+        sources_used must be a sibling of the other memo fields, not
+        nested inside a sub-object."""
+        memo = GreenlightMemo(
+            headline="h", verdict="greenlight_with_changes", confidence=74,
+            why=["Strong audience interest", "Moderate competitive risk"],
+            biggest_opportunity="Character-driven marketing angle",
+            biggest_risk="Release-window congestion",
+            recommended_action="Reposition trailer around character conflict",
+            war_room=_six_voices(),
             sources_used=["web", "cast", "marketing"],
         )
-        dumped = fb.model_dump()
+        dumped = memo.model_dump()
         assert "sources_used" in dumped
-        assert "sources_used" not in dumped["fan_pulse"]
-        assert "sources_used" not in dumped["studio_brief"]
+        assert dumped["sources_used"] == ["web", "cast", "marketing"]
 
-    def test_studio_brief_lessons_learned_defaults_empty(self):
-        sb = StudioBrief(headline="h", sentiment_summary="s", competitive_risk="low", recommendation="r")
-        assert sb.lessons_learned == []
-
-    def test_studio_brief_recommendation_defaults_empty(self):
-        """Regression guard: released/retrospective titles should be able
-        to omit recommendation entirely (it's nonsensical for something
-        that already happened and can't be changed)."""
-        sb = StudioBrief(headline="h", sentiment_summary="s", competitive_risk="unclear")
-        assert sb.recommendation == ""
-
-    def test_fan_pulse_worth_watching_defaults_empty(self):
-        fp = FanPulse(headline="h", excitement_level="mixed", excitement_reason="Mixed early reactions to the trailer")
-        assert fp.worth_watching == ""
-
-    def test_fan_pulse_requires_excitement_reason(self):
-        """Regression guard: excitement_level alone, with no reason, was
-        exactly the 'blank, unexplained' Fan Pulse a real run produced."""
+    def test_war_room_requires_exactly_six_voices(self):
         with pytest.raises(ValidationError):
-            FanPulse(headline="h", excitement_level="high")
+            GreenlightMemo(
+                headline="h", verdict="greenlight", confidence=80, why=["x"],
+                biggest_opportunity="o", biggest_risk="r", recommended_action="a",
+                war_room=_six_voices()[:5],  # only 5
+            )
+
+    def test_lessons_learned_defaults_empty(self):
+        memo = GreenlightMemo(
+            headline="h", verdict="greenlight", confidence=80, why=["x"],
+            biggest_opportunity="o", biggest_risk="r", recommended_action="a",
+            war_room=_six_voices(),
+        )
+        assert memo.lessons_learned == []
+
+    def test_what_we_would_change_defaults_empty(self):
+        """Regression guard: released titles should be constructible with
+        zero forward-looking changes — there's nothing left to change
+        about something that already happened."""
+        memo = GreenlightMemo(
+            headline="h", verdict="hold", confidence=60, why=["x"],
+            biggest_opportunity="o", biggest_risk="r", recommended_action="a",
+            war_room=_six_voices(),
+        )
+        assert memo.what_we_would_change == []
+
+    def test_confidence_bounded_0_to_100(self):
+        with pytest.raises(ValidationError):
+            GreenlightMemo(
+                headline="h", verdict="greenlight", confidence=150, why=["x"],
+                biggest_opportunity="o", biggest_risk="r", recommended_action="a",
+                war_room=_six_voices(),
+            )
+
+    def test_verdict_enum_rejects_invalid(self):
+        with pytest.raises(ValidationError):
+            GreenlightMemo(
+                headline="h", verdict="maybe", confidence=50, why=["x"],
+                biggest_opportunity="o", biggest_risk="r", recommended_action="a",
+                war_room=_six_voices(),
+            )
+
+    def test_war_room_voice_role_enum(self):
+        with pytest.raises(ValidationError):
+            WarRoomVoice(role="intern", insight="x")
+
+
+class TestReleaseWindowAdvice:
+    def test_never_implies_hypothetical_outcome_by_default(self):
+        """This field exists specifically to hold a grounded, directional
+        read — not a fabricated counterfactual. Defaults must be inert."""
+        advice = ReleaseWindowAdvice(congestion="unclear", reasoning="", suggested_direction="unclear")
+        assert advice.suggested_direction == "unclear"
+
+    def test_rejects_invalid_direction(self):
+        with pytest.raises(ValidationError):
+            ReleaseWindowAdvice(congestion="high", reasoning="x", suggested_direction="move_to_december_15")
+
+    def test_competitive_result_defaults_release_window_unclear(self):
+        c = CompetitiveResult(risk="unclear", attention_assessment="No data.")
+        assert c.release_window.suggested_direction == "unclear"
 
 
 class TestWebSentimentAndCompetitive:

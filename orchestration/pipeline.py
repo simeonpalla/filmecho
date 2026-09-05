@@ -14,8 +14,9 @@ Sequencing:
               (+ Reddit, once built) into one structured sentiment read.
     Stage 4 — Main Synthesis Agent combines Sentiment Synthesis +
               Competitive + News + Cast + Marketing into the final
-              FinalBrief, populating lessons_learned/worth_watching only
-              for released titles.
+              GreenlightMemo (verdict-first, single studio view — no
+              separate fan-facing brief; see agents/main_synthesis.py's
+              docstring for why that split was removed).
 
 stream_pipeline() is the source of truth: an async generator that yields
 a progress event as each stage genuinely completes (Stage 2's branches
@@ -49,7 +50,7 @@ from agents.main_synthesis import build_main_synthesis_prompt, main_synthesis_ag
 from agents.marketing_agent import marketing_agent
 from agents.news_cast_agent import news_cast_agent
 from agents.schemas import (
-    CastResult, CompetitiveResult, FinalBrief, MarketingResult,
+    CastResult, CompetitiveResult, GreenlightMemo, MarketingResult,
     NewsResult, SentimentSynthesisResult, WebSentimentResult,
 )
 from agents.sentiment_synthesis import build_sentiment_prompt, sentiment_synthesis_agent
@@ -74,14 +75,23 @@ _FETCH_STAGE_LABELS = {
 
 async def _run_adk_agent(
     agent, prompt: str, user_id: str, session_id: str, output_model: Type[_ModelT]
-) -> Optional[_ModelT]:
-    """Run a single turn against an ADK agent and parse its structured output.
+) -> tuple[Optional[_ModelT], list[str]]:
+    """Run a single turn against an ADK agent, parse its structured output,
+    and capture a human-readable log of the actual tool calls it made.
 
     Every agent this pipeline calls declares output_schema, so ADK
     guarantees the final response text is valid JSON matching that model.
-    Returns None on any failure, so a broken agent call degrades one field
-    of the final brief instead of crashing the whole pipeline run.
+    Returns (None, log) on any failure, so a broken agent call degrades one
+    field of the final brief instead of crashing the whole pipeline run —
+    the log is still returned even on failure, so the activity feed shows
+    what was attempted before the failure.
+
+    The activity log is built from ADK's own Event.get_function_calls() /
+    get_function_responses() (confirmed against ADK's source, not guessed),
+    not from anything this codebase invents — it's a direct, honest trace
+    of what actually happened, not a simulated "looks busy" animation.
     """
+    log: list[str] = []
     try:
         await _session_service.create_session(
             app_name=APP_NAME, user_id=user_id, session_id=session_id
@@ -93,19 +103,28 @@ async def _run_adk_agent(
         async for event in runner.run_async(
             user_id=user_id, session_id=session_id, new_message=content
         ):
+            for call in event.get_function_calls():
+                args_summary = ", ".join(f"{k}={v!r}" for k, v in list(call.args.items())[:2])
+                log.append(f"calling {call.name}({args_summary}, ...)")
+            for resp in event.get_function_responses():
+                log.append(f"{resp.name} returned")
             if event.is_final_response() and event.content and event.content.parts:
                 final_text = event.content.parts[0].text
 
         if not final_text:
             print(f"[pipeline] Agent '{agent.name}' returned no content.")
-            return None
-        return output_model.model_validate_json(final_text)
+            log.append("no content returned")
+            return None, log
+        log.append("structured output parsed")
+        return output_model.model_validate_json(final_text), log
     except ValidationError as exc:
         print(f"[pipeline] Agent '{agent.name}' output failed schema validation: {exc}")
-        return None
+        log.append("output failed schema validation")
+        return None, log
     except Exception as exc:  # noqa: BLE001
         print(f"[pipeline] Agent '{agent.name}' failed: {exc}")
-        return None
+        log.append(f"failed: {exc}")
+        return None, log
 
 
 def _entity_prompt(entity: EntityContext, region_hint: str = "") -> str:
@@ -118,64 +137,82 @@ def _entity_prompt(entity: EntityContext, region_hint: str = "") -> str:
     )
 
 
-async def _run_web_sentiment_branch(entity: EntityContext, user_id: str, region_hint: str) -> Optional[WebSentimentResult]:
+async def _run_web_sentiment_branch(entity: EntityContext, user_id: str, region_hint: str) -> tuple[Optional[WebSentimentResult], list[str]]:
     return await _run_adk_agent(
         web_sentiment_agent, _entity_prompt(entity, region_hint), user_id,
         session_id=f"ws_{uuid.uuid4().hex[:8]}", output_model=WebSentimentResult,
     )
 
 
-async def _run_competitive_branch(entity: EntityContext, user_id: str, region_hint: str) -> Optional[CompetitiveResult]:
+async def _run_competitive_branch(entity: EntityContext, user_id: str, region_hint: str) -> tuple[Optional[CompetitiveResult], list[str]]:
     return await _run_adk_agent(
         competitive_agent, _entity_prompt(entity, region_hint), user_id,
         session_id=f"comp_{uuid.uuid4().hex[:8]}", output_model=CompetitiveResult,
     )
 
 
-async def _run_news_branch(entity: EntityContext, user_id: str, region_hint: str) -> Optional[NewsResult]:
+async def _run_news_branch(entity: EntityContext, user_id: str, region_hint: str) -> tuple[Optional[NewsResult], list[str]]:
     return await _run_adk_agent(
         news_cast_agent, _entity_prompt(entity, region_hint), user_id,
         session_id=f"news_{uuid.uuid4().hex[:8]}", output_model=NewsResult,
     )
 
 
-async def _run_cast_branch(entity: EntityContext, user_id: str, region_hint: str) -> Optional[CastResult]:
+async def _run_cast_branch(entity: EntityContext, user_id: str, region_hint: str) -> tuple[Optional[CastResult], list[str]]:
     return await _run_adk_agent(
         cast_agent, _entity_prompt(entity, region_hint), user_id,
         session_id=f"cast_{uuid.uuid4().hex[:8]}", output_model=CastResult,
     )
 
 
-async def _run_marketing_branch(entity: EntityContext, user_id: str, region_hint: str) -> Optional[MarketingResult]:
+async def _run_marketing_branch(entity: EntityContext, user_id: str, region_hint: str) -> tuple[Optional[MarketingResult], list[str]]:
     return await _run_adk_agent(
         marketing_agent, _entity_prompt(entity, region_hint), user_id,
         session_id=f"mktg_{uuid.uuid4().hex[:8]}", output_model=MarketingResult,
     )
 
 
-async def _run_youtube_branch(entity: EntityContext) -> dict:
+async def _run_youtube_branch(entity: EntityContext) -> tuple[dict, list[str]]:
+    """Same (data, log) shape as the five ADK-agent branches, for a
+    uniform activity feed even though this branch is plain function calls,
+    not an LLM agent — the log here is just as honest, it's the real
+    YouTube API calls made, not simulated activity."""
+    log: list[str] = []
     d = entity.as_dict()
+    log.append(f"calling youtube.search.list(q={d['title']!r})")
     videos = await asyncio.to_thread(
         discover_trailer_videos, d["title"], str(d["release_year"] or "")
     )
     video_ids = [v["video_id"] for v in videos]
     if not video_ids:
         print("[pipeline] YouTube discovery found no videos; degrading gracefully.")
-        return {}
+        log.append("no trailer videos found")
+        return {}, log
+    log.append(f"found {len(video_ids)} candidate videos")
+    log.append("calling youtube.videos.list + commentThreads.list")
     try:
-        return await asyncio.to_thread(collect_youtube_data, video_ids)
+        data = await asyncio.to_thread(collect_youtube_data, video_ids)
+        log.append("YouTube data collected")
+        return data, log
     except Exception as exc:  # noqa: BLE001
         print(f"[pipeline] YouTube data branch failed: {exc}")
-        return {}
+        log.append(f"failed: {exc}")
+        return {}, log
 
 
 async def _named(name: str, coro) -> tuple[str, object]:
-    """Tag a branch coroutine's result with its name for as_completed()."""
+    """Tag a branch coroutine's result with its name for as_completed().
+
+    Every branch coroutine now returns (parsed_result_or_None, activity_log)
+    — even on an unexpected raise here, this returns that same shape
+    (None, [log line]) rather than a bare None, so every downstream
+    unpacking site can rely on the tuple shape unconditionally.
+    """
     try:
         result = await coro
     except Exception as exc:  # noqa: BLE001
         print(f"[pipeline] branch '{name}' raised unexpectedly: {exc}")
-        result = None
+        result = (None, [f"failed: {exc}"])
     return name, result
 
 
@@ -197,6 +234,10 @@ async def stream_pipeline(title: str, user_id: str = "filmecho_user", region_hin
         - {"event": "stage", "stage": <name>, "message": <str>} — a stage
           genuinely finished. Order for the six Stage 2 branches reflects
           real completion order, not a fixed guess.
+        - {"event": "activity", "stage": <name>, "log": [<str>, ...]} —
+          the real tool calls that stage made (built from ADK's own
+          Event.get_function_calls()/get_function_responses(), not
+          simulated), emitted right after that stage's "stage" event.
         - {"event": "error", "message": <str>} — unrecoverable failure;
           no further events follow.
         - {"event": "result", "data": <dict>} — always the last event on
@@ -232,9 +273,10 @@ async def stream_pipeline(title: str, user_id: str = "filmecho_user", region_hin
     ]
     branch_results: dict[str, object] = {}
     for coro in asyncio.as_completed(branches):
-        name, result = await coro
-        branch_results[name] = result
+        name, (parsed, log) = await coro
+        branch_results[name] = parsed
         yield {"event": "stage", "stage": name, "message": _FETCH_STAGE_LABELS[name]}
+        yield {"event": "activity", "stage": name, "log": log}
 
     web_sentiment: Optional[WebSentimentResult] = branch_results.get("web_sentiment")
     youtube_data: dict = branch_results.get("youtube") or {}
@@ -246,21 +288,23 @@ async def stream_pipeline(title: str, user_id: str = "filmecho_user", region_hin
     yield {"event": "stage", "stage": "sentiment_synthesis",
            "message": "Synthesizing sentiment across sources..."}
     sentiment_prompt = build_sentiment_prompt(web_sentiment, youtube_data)
-    sentiment_synthesis = await _run_adk_agent(
+    sentiment_synthesis, sentiment_log = await _run_adk_agent(
         sentiment_synthesis_agent, sentiment_prompt, user_id,
         session_id=f"sent_{uuid.uuid4().hex[:8]}", output_model=SentimentSynthesisResult,
     )
     yield {"event": "stage", "stage": "sentiment_synthesis", "message": "Sentiment synthesis complete"}
+    yield {"event": "activity", "stage": "sentiment_synthesis", "log": sentiment_log}
 
-    yield {"event": "stage", "stage": "main_synthesis", "message": "Writing the studio and fan briefs..."}
+    yield {"event": "stage", "stage": "main_synthesis", "message": "Convening the war room and writing the memo..."}
     main_prompt = build_main_synthesis_prompt(entity, sentiment_synthesis, competitive, news, cast, marketing, region_hint)
-    final_brief = await _run_adk_agent(
+    memo, main_log = await _run_adk_agent(
         main_synthesis_agent, main_prompt, user_id,
-        session_id=f"main_{uuid.uuid4().hex[:8]}", output_model=FinalBrief,
+        session_id=f"main_{uuid.uuid4().hex[:8]}", output_model=GreenlightMemo,
     )
+    yield {"event": "activity", "stage": "main_synthesis", "log": main_log}
 
-    result: dict = final_brief.model_dump() if final_brief else {
-        "studio_brief": None, "fan_pulse": None, "sources_used": [],
+    result: dict = memo.model_dump() if memo else {
+        "verdict": None, "confidence": 0, "why": [], "war_room": [], "sources_used": [],
     }
     result["entity_confidence"] = entity.confidence
     result["disambiguation_note"] = entity.disambiguation_note

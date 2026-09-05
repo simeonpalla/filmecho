@@ -172,6 +172,25 @@
   }
 
   .progress-item { display: flex; align-items: center; gap: 10px; padding: 5px 0; font-size: 0.88rem; color: var(--text-muted); }
+
+  .activity-feed-title {
+    font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--text-muted); margin: 18px 0 8px;
+    padding-top: 14px; border-top: 1px solid var(--border);
+  }
+  .activity-feed {
+    max-height: 160px; overflow-y: auto; font-family: var(--font-mono);
+    font-size: 0.76rem; line-height: 1.7; color: var(--text-muted);
+    background: #0000004d; border-radius: 6px; padding: 10px 12px;
+  }
+  .activity-line { white-space: pre-wrap; word-break: break-word; }
+  .activity-line .agent-tag { color: var(--brand-c); }
+  .activity-line .tool-call { color: var(--gold); }
+  .activity-line .tool-return { color: var(--positive); }
+  @media (prefers-reduced-motion: no-preference) {
+    .activity-line.new { animation: activityIn 0.25s ease; }
+  }
+  @keyframes activityIn { from { opacity: 0; transform: translateX(-4px); } to { opacity: 1; transform: translateX(0); } }
   .progress-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; background: var(--unclear-dim); border: 1px solid var(--border); }
   .progress-item.active { color: var(--text); }
   .progress-item.active .progress-dot { background: var(--gold); border-color: var(--gold); }
@@ -191,7 +210,7 @@
   .candidate-chip:hover { background: var(--negative-dim); }
 
   @media (prefers-reduced-motion: no-preference) {
-    .hero-banner, .panel { animation: rise 0.35s ease; }
+    .hero-banner, .panel, .greenlight-card, .war-room, .release-window-card { animation: rise 0.35s ease; }
   }
   @keyframes rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
@@ -253,36 +272,91 @@
   .marquee-fallback .hero-banner-title { color: var(--gold); }
   .marquee-fallback .hero-banner-meta { justify-content: center; }
 
-  /* --- Main tabs --- */
-  .tabs { display: none; gap: 8px; margin-top: 28px; max-width: 640px; margin-left: auto; margin-right: auto; }
-  .tabs.visible { display: flex; }
-
-  .tab-btn {
-    flex: 1; background: var(--surface); border: 1px solid var(--border); color: var(--text-muted);
-    font-family: var(--font-body); font-weight: 700; font-size: 0.95rem; padding: 14px;
-    border-radius: 10px 10px 0 0; border-bottom: 3px solid var(--border); cursor: pointer;
-    transition: all 0.15s ease;
+  /* --- Greenlight Memo: the verdict-first centerpiece --- */
+  .greenlight-card {
+    display: none;
+    max-width: 900px; margin: 34px auto 0;
+    background: var(--surface-raised); border: 1px solid var(--border);
+    border-radius: 16px; padding: 30px 32px;
   }
-  .tab-btn[data-tone="positive"] { border-bottom-color: var(--positive); }
-  .tab-btn[data-tone="negative"] { border-bottom-color: var(--negative); }
-  .tab-btn[data-tone="neutral"] { border-bottom-color: var(--neutral); }
-  .tab-btn[data-tone="unclear"] { border-bottom-color: var(--unclear); }
-  .tab-btn[data-active="true"] { color: var(--text); background: var(--surface-raised); }
+  .greenlight-card.visible { display: block; }
+  .greenlight-card.tone-positive { border-color: var(--positive); }
+  .greenlight-card.tone-negative { border-color: var(--negative); }
+  .greenlight-card.tone-neutral { border-color: var(--neutral); }
 
-  .panel { display: none; max-width: 1180px; margin: 0 auto; background: var(--surface-raised); border: 1px solid var(--border); border-radius: 0 0 14px 14px; padding: 0; }
-  .panel.visible { display: block; }
+  .verdict-row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 6px; }
+  .verdict-badge {
+    font-family: var(--font-mono); font-weight: 700; font-size: 0.85rem;
+    letter-spacing: 0.08em; text-transform: uppercase; padding: 7px 16px;
+    border-radius: 20px; display: inline-flex; align-items: center; gap: 8px;
+  }
+  .verdict-dot { width: 10px; height: 10px; border-radius: 50%; }
+  .verdict-badge.tone-positive { background: var(--positive-dim); color: var(--positive); }
+  .verdict-badge.tone-negative { background: var(--negative-dim); color: var(--negative); }
+  .verdict-badge.tone-neutral { background: var(--neutral-dim); color: var(--neutral); }
+  .verdict-badge.tone-positive .verdict-dot { background: var(--positive); }
+  .verdict-badge.tone-negative .verdict-dot { background: var(--negative); }
+  .verdict-badge.tone-neutral .verdict-dot { background: var(--neutral); }
 
-  /* --- Sub-tabs inside each panel --- */
-  .subtabs { display: flex; gap: 4px; padding: 14px 24px 0; border-bottom: 1px solid var(--border); }
+  .confidence-wrap { display: flex; align-items: center; gap: 8px; font-family: var(--font-mono); font-size: 0.82rem; color: var(--text-muted); }
+  .confidence-bar { width: 90px; height: 6px; border-radius: 3px; background: var(--unclear-dim); overflow: hidden; }
+  .confidence-bar-fill { height: 100%; border-radius: 3px; }
+  .confidence-bar-fill.tone-positive { background: var(--positive); }
+  .confidence-bar-fill.tone-negative { background: var(--negative); }
+  .confidence-bar-fill.tone-neutral { background: var(--neutral); }
+
+  .greenlight-card h2 { font-family: var(--font-display); font-weight: 600; font-size: 1.55rem; margin: 14px 0 22px; line-height: 1.35; }
+
+  .opp-risk-row { display: grid; grid-template-columns: 1fr; gap: 14px; margin-bottom: 22px; }
+  @media (min-width: 640px) { .opp-risk-row { grid-template-columns: 1fr 1fr; } }
+  .opp-risk-tile { border-radius: 10px; padding: 16px 18px; border: 1px solid var(--border); }
+  .opp-risk-tile.opportunity { border-color: var(--positive); background: linear-gradient(135deg, var(--positive-dim), var(--surface-raised) 70%); }
+  .opp-risk-tile.risk { border-color: var(--negative); background: linear-gradient(135deg, var(--negative-dim), var(--surface-raised) 70%); }
+  .opp-risk-label { font-family: var(--font-mono); font-size: 0.66rem; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 6px; }
+  .opp-risk-tile.opportunity .opp-risk-label { color: var(--positive); }
+  .opp-risk-tile.risk .opp-risk-label { color: var(--negative); }
+
+  /* --- War Room --- */
+  .war-room { display: none; max-width: 1180px; margin: 24px auto 0; }
+  .war-room.visible { display: block; }
+  .war-room-title {
+    font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--text-muted); text-align: center; margin-bottom: 16px;
+  }
+  .war-room-grid { display: grid; grid-template-columns: 1fr; gap: 14px; }
+  @media (min-width: 700px) { .war-room-grid { grid-template-columns: 1fr 1fr; } }
+  @media (min-width: 1050px) { .war-room-grid { grid-template-columns: 1fr 1fr 1fr; } }
+  .voice-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    padding: 16px 18px;
+  }
+  .voice-role { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 0.9rem; margin-bottom: 8px; }
+  .voice-icon { font-size: 1.1rem; }
+  .voice-insight { font-family: var(--font-display); font-style: italic; font-size: 0.95rem; color: var(--text); line-height: 1.5; }
+
+  /* --- Release window advisory --- */
+  .release-window-card {
+    display: none; max-width: 900px; margin: 20px auto 0;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    padding: 18px 22px;
+  }
+  .release-window-card.visible { display: block; }
+  .rw-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+  .rw-title { font-weight: 700; font-size: 0.92rem; }
+  .rw-caveat { font-family: var(--font-mono); font-size: 0.68rem; color: var(--text-muted); margin-top: 10px; font-style: italic; }
+
+  /* --- Evidence sub-tabs (single bar, no more Studio/Fan split) --- */
+  .evidence-section { display: none; max-width: 1180px; margin: 34px auto 0; background: var(--surface-raised); border: 1px solid var(--border); border-radius: 14px; }
+  .evidence-section.visible { display: block; }
+
+  .subtabs { display: flex; gap: 4px; padding: 14px 24px 0; border-bottom: 1px solid var(--border); overflow-x: auto; }
   .subtab-btn {
     background: none; border: none; color: var(--text-muted); font-family: var(--font-body);
     font-weight: 600; font-size: 0.85rem; padding: 10px 16px; cursor: pointer;
     border-bottom: 2px solid transparent; transition: color 0.15s ease, border-color 0.15s ease;
+    white-space: nowrap;
   }
   .subtab-btn[data-active="true"] { color: var(--text); }
-  .subtabs.tone-marketing .subtab-btn[data-active="true"] { border-color: var(--marketing-accent); }
-  .subtabs.tone-cast .subtab-btn[data-active="true"] { border-color: var(--cast-accent); }
-  .subtabs.tone-news .subtab-btn[data-active="true"] { border-color: var(--news-accent); }
   .subtabs.tone-overview .subtab-btn[data-active="true"] { border-color: var(--gold); }
 
   .subpanel { display: none; padding: 26px 28px 30px; }
@@ -332,26 +406,12 @@
   @media (min-width: 720px) { .card-list { grid-template-columns: 1fr 1fr; } }
 
   .mini-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; }
-
-  .hype-quote {
-    font-family: var(--font-display); font-style: italic; font-size: 1.15rem;
-    line-height: 1.5; color: var(--text); border-left: 3px solid var(--news-accent);
-    padding: 6px 0 6px 18px; margin: 4px 0 22px;
-  }
   .mini-card-title { font-weight: 600; font-size: 0.92rem; margin-bottom: 4px; }
   .mini-card.cast-accent { border-left: 3px solid var(--cast-accent); }
   .mini-card.news-accent { border-left: 3px solid var(--news-accent); }
   .mini-card.marketing-accent { border-left: 3px solid var(--marketing-accent); }
 
-  @media (max-width: 560px) {
-    .search-row { flex-direction: column; }
-    #search-btn { padding: 14px; }
-    .page { padding: 30px 16px 90px; }
-    .tab-btn { font-size: 0.82rem; padding: 12px 6px; }
-    .subtabs { overflow-x: auto; }
-  }
-
-  .export-row { text-align: center; margin-top: 14px; }
+  .export-row { text-align: center; margin-top: 24px; display: none; }
   #export-btn {
     background: none; border: 1px solid var(--border); color: var(--text-muted);
     font-family: var(--font-body); font-size: 0.85rem; padding: 9px 20px;
@@ -359,16 +419,19 @@
   }
   #export-btn:hover { border-color: var(--gold); color: var(--gold); }
 
-  /* Printed/saved-as-PDF output: force every tab and sub-tab visible
-     regardless of which one is currently active on screen, so the export
-     is a complete record of the brief, not just whatever the viewer
-     happened to be looking at. Hide interactive-only chrome. */
+  @media (max-width: 560px) {
+    .search-row { flex-direction: column; }
+    #search-btn { padding: 14px; }
+    .page { padding: 30px 16px 90px; }
+    .subtab-btn { font-size: 0.8rem; padding: 10px 10px; }
+  }
+
+  /* Printed/saved-as-PDF output */
   @media print {
-    .film-strip, .search-row, .example-chips, #progress, .status,
-    .tabs, .subtabs, #export-btn { display: none !important; }
-    .panel, .subpanel { display: block !important; }
+    .film-strip, .search-row, .example-chips, #progress, .status, #export-btn { display: none !important; }
+    .subtabs, .evidence-section, .subpanel { display: block !important; }
     .page { max-width: 100%; padding: 0; }
-    .brief-eyebrow, .panel { break-inside: avoid; }
+    .greenlight-card, .war-room, .evidence-section { break-inside: avoid; }
     body { background: #fff; color: #111; }
     .hero-banner-overlay { position: static; background: none; padding: 12px 0; }
     .hero-banner img { display: none; }
@@ -388,7 +451,7 @@
           <span class="logo-echo-main">ECHO</span>
         </div>
       </div>
-      <p class="tagline">Trailer sentiment, competitive read, cast reception, and marketing analysis, in one brief.</p>
+      <p class="tagline">The AI studio intelligence room — search, listen, understand, decide.</p>
 
       <div class="search-row">
         <input id="title-input" type="text" placeholder="Enter a film or show title..." autocomplete="off">
@@ -407,6 +470,8 @@
         <div class="progress-title">Pipeline progress</div>
         <div id="progress-timer" class="progress-timer"><span class="progress-timer-dot"></span><span id="progress-timer-text">Running for 0s...</span></div>
         <div id="progress-list"></div>
+        <div class="activity-feed-title">Live agent activity</div>
+        <div id="activity-feed" class="activity-feed"></div>
       </div>
       <div id="status" class="status"></div>
     </div>
@@ -423,38 +488,30 @@
       <div id="marquee-fallback-meta" class="hero-banner-meta"></div>
     </div>
 
-    <div id="tabs" class="tabs">
-      <button class="tab-btn" data-view="studio" data-active="true">Studio brief</button>
-      <button class="tab-btn" data-view="fan" data-active="false">Fan pulse</button>
-      <button id="collections-tab-btn" class="tab-btn" data-view="collections" data-active="false" style="display:none;">Collections</button>
+    <div id="greenlight-card" class="greenlight-card"></div>
+
+    <div id="war-room" class="war-room">
+      <div class="war-room-title">The War Room</div>
+      <div id="war-room-grid" class="war-room-grid"></div>
     </div>
 
-    <div id="export-row" class="export-row" style="display:none;">
-      <button id="export-btn">Export / print brief</button>
+    <div id="release-window-card" class="release-window-card"></div>
+
+    <div class="export-row" id="export-row">
+      <button id="export-btn">Export / print memo</button>
     </div>
 
-    <div id="studio-panel" class="panel">
-      <div class="subtabs tone-overview" data-group="studio">
-        <button class="subtab-btn" data-sub="studio-overview" data-active="true">Overview</button>
-        <button class="subtab-btn" data-sub="studio-marketing" data-active="false">Marketing</button>
-        <button class="subtab-btn" data-sub="studio-cast" data-active="false">Cast</button>
+    <div id="evidence-section" class="evidence-section">
+      <div class="subtabs tone-overview">
+        <button class="subtab-btn" data-sub="evidence-marketing" data-active="true">Marketing</button>
+        <button class="subtab-btn" data-sub="evidence-cast" data-active="false">Cast</button>
+        <button class="subtab-btn" data-sub="evidence-news" data-active="false">News</button>
+        <button id="evidence-collections-btn" class="subtab-btn" data-sub="evidence-collections" data-active="false" style="display:none;">Collections</button>
       </div>
-      <div id="studio-overview" class="subpanel visible"></div>
-      <div id="studio-marketing" class="subpanel"></div>
-      <div id="studio-cast" class="subpanel"></div>
-    </div>
-
-    <div id="fan-panel" class="panel">
-      <div class="subtabs tone-overview" data-group="fan">
-        <button class="subtab-btn" data-sub="fan-overview" data-active="true">Overview</button>
-        <button class="subtab-btn" data-sub="fan-news" data-active="false">News</button>
-      </div>
-      <div id="fan-overview" class="subpanel visible"></div>
-      <div id="fan-news" class="subpanel"></div>
-    </div>
-
-    <div id="collections-panel" class="panel">
-      <div style="padding: 26px 28px 30px;" id="collections-content"></div>
+      <div id="evidence-marketing" class="subpanel visible"></div>
+      <div id="evidence-cast" class="subpanel"></div>
+      <div id="evidence-news" class="subpanel"></div>
+      <div id="evidence-collections" class="subpanel"></div>
     </div>
   </div>
   <div class="film-strip"></div>
@@ -464,6 +521,7 @@ const titleInput = document.getElementById('title-input');
 const searchBtn = document.getElementById('search-btn');
 const progress = document.getElementById('progress');
 const progressList = document.getElementById('progress-list');
+const activityFeed = document.getElementById('activity-feed');
 const progressTimerText = document.getElementById('progress-timer-text');
 const status = document.getElementById('status');
 const heroBanner = document.getElementById('hero-banner');
@@ -473,18 +531,18 @@ const heroBannerMeta = document.getElementById('hero-banner-meta');
 const marqueeFallback = document.getElementById('marquee-fallback');
 const marqueeFallbackTitle = document.getElementById('marquee-fallback-title');
 const marqueeFallbackMeta = document.getElementById('marquee-fallback-meta');
-const tabs = document.getElementById('tabs');
-const studioPanel = document.getElementById('studio-panel');
-const fanPanel = document.getElementById('fan-panel');
-const collectionsPanel = document.getElementById('collections-panel');
-const collectionsTabBtn = document.getElementById('collections-tab-btn');
-const collectionsContent = document.getElementById('collections-content');
+const greenlightCard = document.getElementById('greenlight-card');
+const warRoom = document.getElementById('war-room');
+const warRoomGrid = document.getElementById('war-room-grid');
+const releaseWindowCard = document.getElementById('release-window-card');
+const evidenceSection = document.getElementById('evidence-section');
+const evidenceCollectionsBtn = document.getElementById('evidence-collections-btn');
+const evidenceCollections = document.getElementById('evidence-collections');
 const exampleChips = document.getElementById('example-chips');
 const exportRow = document.getElementById('export-row');
 const exportBtn = document.getElementById('export-btn');
 
 let activeSource = null;
-let currentView = 'studio';
 
 const STAGES = [
   { key: 'entity_resolution', label: 'Resolving title' },
@@ -495,7 +553,7 @@ const STAGES = [
   { key: 'cast', label: 'Cast reception' },
   { key: 'marketing', label: 'Marketing analysis' },
   { key: 'sentiment_synthesis', label: 'Sentiment synthesis' },
-  { key: 'main_synthesis', label: 'Final brief' },
+  { key: 'main_synthesis', label: 'Greenlight memo' },
 ];
 const TWO_PHASE = new Set(['entity_resolution', 'sentiment_synthesis', 'main_synthesis']);
 let stageState = {};
@@ -521,6 +579,7 @@ function resetProgress() {
   stageState = {};
   STAGES.forEach(s => { stageState[s.key] = 'pending'; });
   renderProgress();
+  activityFeed.innerHTML = '';
   startTimer();
 }
 
@@ -529,6 +588,28 @@ function renderProgress() {
     const state = stageState[s.key];
     return `<div class="progress-item ${state}"><span class="progress-dot"></span>${s.label}</div>`;
   }).join('');
+}
+
+const STAGE_LABEL_LOOKUP = Object.fromEntries(STAGES.map(s => [s.key, s.label]));
+
+function activityLineHtml(line) {
+  let cls = '';
+  if (line.startsWith('calling ')) cls = 'tool-call';
+  else if (line.includes('returned') || line.includes('parsed') || line.includes('complete')) cls = 'tool-return';
+  const safe = line.replace(/</g, '&lt;');
+  return cls ? `<span class="${cls}">${safe}</span>` : safe;
+}
+
+function appendActivity(stage, log) {
+  if (!log || !log.length) return;
+  const label = STAGE_LABEL_LOOKUP[stage] || stage;
+  log.forEach(line => {
+    const el = document.createElement('div');
+    el.className = 'activity-line new';
+    el.innerHTML = `<span class="agent-tag">[${label}]</span> ${activityLineHtml(line)}`;
+    activityFeed.appendChild(el);
+  });
+  activityFeed.scrollTop = activityFeed.scrollHeight;
 }
 
 function markStage(key) {
@@ -553,11 +634,17 @@ function riskTone(risk) {
   }
 }
 
-function excitementTone(level) {
-  switch ((level || 'unclear').toLowerCase()) {
-    case 'high': return 'positive';
-    case 'mixed': return 'neutral';
-    case 'low': return 'negative';
+function verdictTone(verdict) {
+  switch ((verdict || 'unclear').toLowerCase()) {
+    case 'greenlight':
+    case 'blockbuster':
+    case 'hit': return 'positive';
+    case 'greenlight_with_changes':
+    case 'average': return 'neutral';
+    case 'hold':
+    case 'pass':
+    case 'underperformed':
+    case 'flop': return 'negative';
     default: return 'unclear';
   }
 }
@@ -579,7 +666,7 @@ function buildMetaPills(entity) {
   return pills.join('');
 }
 
-// --- Sub-tab wiring (generic, used for both Studio and Fan panels) ---
+// --- Sub-tab wiring (generic; works for the single evidence-section bar) ---
 document.querySelectorAll('.subtabs').forEach(group => {
   group.addEventListener('click', (e) => {
     const btn = e.target.closest('.subtab-btn');
@@ -595,37 +682,104 @@ function internalSearchLink(title) {
   return `<a href="/?title=${encodeURIComponent(title)}" target="_blank" rel="noopener" title="Search &quot;${safe}&quot; on Filmecho">${title}</a>`;
 }
 
-function renderStudioOverview(brief, releaseStatus, competitive) {
-  const el = document.getElementById('studio-overview');
-  if (!brief) { el.innerHTML = '<p class="empty-state">No studio brief was returned for this run.</p>'; return; }
-  const tone = riskTone(brief.competitive_risk);
-  const riskLabel = releaseStatus === 'released' ? 'Competitive outcome' : 'Competitive risk';
-  const riskLegend = riskLegendText(releaseStatus, brief.competitive_risk);
-  const news = (brief.notable_news || []).map(n => `<li>${n.claim}${sourceLink(n.url)}</li>`).join('') || '<li>No recent news surfaced.</li>';
-  const lessons = (brief.lessons_learned && brief.lessons_learned.length)
-    ? `<div class="field"><div class="field-label">Lessons learned</div><ul class="plain">${brief.lessons_learned.map(l => `<li>${l}</li>`).join('')}</ul></div>` : '';
-  const recommendation = brief.recommendation
-    ? `<div class="field"><div class="field-label">Recommendation</div><div class="field-value">${brief.recommendation}</div></div>` : '';
-  const competitors = (competitive && competitive.competing_titles || []).map(c =>
-    `<div class="mini-card"><div class="mini-card-title">${internalSearchLink(c.title)}</div><div class="field-value">${c.strength_vs_searched || ''}</div></div>`
-  ).join('');
-  const competitorsBlock = competitors
-    ? `<div class="field"><div class="field-label">Competing against</div><div class="card-list">${competitors}</div></div>` : '';
-  el.innerHTML = `
-    <h2>${brief.headline || ''}</h2>
-    <div class="tile-row">
-      <div class="tile tone-${tone}">
-        <div class="tile-label">${riskLabel}</div>
-        <div class="tile-value">${brief.competitive_risk || 'unclear'}</div>
-        <div class="tile-sub">${riskLegend}</div>
-      </div>
-      <div class="tile tone-unclear"><div class="tile-label">Sentiment</div><div class="tile-sub">${brief.sentiment_summary || ''}</div></div>
+function sourceLink(url) {
+  return url ? ` <a href="${url}" target="_blank" rel="noopener">source</a>` : '';
+}
+
+const VERDICT_LABELS = {
+  greenlight: 'GREENLIGHT',
+  greenlight_with_changes: 'GREENLIGHT WITH CHANGES',
+  hold: 'HOLD',
+  pass: 'PASS',
+};
+
+const ROLE_META = {
+  director: { icon: '\u{1F3AC}', label: 'The Director' },
+  producer: { icon: '\u{1F3AF}', label: 'The Producer' },
+  marketing_chief: { icon: '\u{1F4E3}', label: 'The Marketing Chief' },
+  casting_executive: { icon: '\u{1F3AD}', label: 'The Casting Executive' },
+  distribution_executive: { icon: '\u{1F5D3}\uFE0F', label: 'The Distribution Executive' },
+  analyst: { icon: '\u{1F4CA}', label: 'The Analyst' },
+};
+
+function renderGreenlightMemo(memo, releaseStatus) {
+  if (!memo) {
+    greenlightCard.innerHTML = '<p class="empty-state">No memo was returned for this run.</p>';
+    greenlightCard.classList.add('visible');
+    return;
+  }
+  const tone = verdictTone(memo.verdict);
+  greenlightCard.className = `greenlight-card visible tone-${tone}`;
+
+  const why = (memo.why || []).map(w => `<li>${w}</li>`).join('') || '<li>No specific reasons surfaced.</li>';
+  const changeLabel = releaseStatus === 'released' ? 'Lessons learned' : "What we'd change";
+  const changeItems = releaseStatus === 'released' ? (memo.lessons_learned || []) : (memo.what_we_would_change || []);
+  const changesBlock = changeItems.length
+    ? `<div class="field"><div class="field-label">${changeLabel}</div><ul class="plain">${changeItems.map(c => `<li>${c}</li>`).join('')}</ul></div>` : '';
+
+  const notableNews = (memo.notable_news || []).map(n => `<li>${n.claim}${sourceLink(n.url)}</li>`).join('');
+  const newsBlock = notableNews ? `<div class="field"><div class="field-label">Notable news</div><ul class="plain">${notableNews}</ul></div>` : '';
+
+  greenlightCard.innerHTML = `
+    <div class="verdict-row">
+      <span class="verdict-badge tone-${tone}"><span class="verdict-dot"></span>${VERDICT_LABELS[memo.verdict] || 'VERDICT UNCLEAR'}</span>
+      <span class="confidence-wrap">
+        Confidence: ${memo.confidence}%
+        <span class="confidence-bar"><span class="confidence-bar-fill tone-${tone}" style="width:${memo.confidence}%"></span></span>
+      </span>
     </div>
-    ${competitorsBlock}
-    <div class="field"><div class="field-label">Notable news</div><ul class="plain">${news}</ul></div>
-    ${lessons}
-    ${recommendation}
+    <h2>${memo.headline || ''}</h2>
+    <div class="field"><div class="field-label">Why</div><ul class="plain">${why}</ul></div>
+    <div class="opp-risk-row">
+      <div class="opp-risk-tile opportunity"><div class="opp-risk-label">Biggest opportunity</div><div class="field-value">${memo.biggest_opportunity || ''}</div></div>
+      <div class="opp-risk-tile risk"><div class="opp-risk-label">Biggest risk</div><div class="field-value">${memo.biggest_risk || ''}</div></div>
+    </div>
+    <div class="field"><div class="field-label">Recommended action</div><div class="field-value">${memo.recommended_action || ''}</div></div>
+    ${changesBlock}
+    ${newsBlock}
   `;
+}
+
+function renderWarRoom(voices) {
+  if (!voices || !voices.length) {
+    warRoom.classList.remove('visible');
+    return;
+  }
+  warRoomGrid.innerHTML = voices.map(v => {
+    const meta = ROLE_META[v.role] || { icon: '\u{1F4AC}', label: v.role };
+    return `
+      <div class="voice-card">
+        <div class="voice-role"><span class="voice-icon">${meta.icon}</span>${meta.label}</div>
+        <div class="voice-insight">&ldquo;${v.insight}&rdquo;</div>
+      </div>
+    `;
+  }).join('');
+  warRoom.classList.add('visible');
+}
+
+function renderReleaseWindow(competitive) {
+  const rw = competitive && competitive.release_window;
+  if (!rw || (rw.congestion === 'unclear' && rw.suggested_direction === 'unclear')) {
+    releaseWindowCard.classList.remove('visible');
+    return;
+  }
+  const congestionTone = riskTone(rw.congestion);
+  const DIRECTION_LABELS = {
+    keep_current_window: 'Keep current window',
+    consider_earlier: 'Consider shifting earlier',
+    consider_later: 'Consider shifting later',
+    unclear: 'Direction unclear',
+  };
+  releaseWindowCard.innerHTML = `
+    <div class="rw-header">
+      <span class="rw-title">\u{1F5D3}\uFE0F Release Window Advisory</span>
+      <span class="pill tone-${congestionTone}" style="font-family:var(--font-mono);font-size:0.78rem;padding:3px 10px;border-radius:20px;border:1px solid currentColor;">${rw.congestion} congestion</span>
+    </div>
+    <div class="field-value">${rw.reasoning || ''}</div>
+    <div class="field-value" style="margin-top:8px;font-weight:600;">${DIRECTION_LABELS[rw.suggested_direction] || ''}</div>
+    <div class="rw-caveat">Directional read based on real competing titles found this run — not a projection of what a different date would actually produce.</div>
+  `;
+  releaseWindowCard.classList.add('visible');
 }
 
 function marketingLabels(releaseStatus) {
@@ -635,32 +789,8 @@ function marketingLabels(releaseStatus) {
   return { worked: 'Positive signals so far', under: 'Concerns so far' };
 }
 
-function sourceLink(url) {
-  return url ? ` <a href="${url}" target="_blank" rel="noopener">source</a>` : '';
-}
-
-const RISK_LEGEND = {
-  upcoming: {
-    low: 'unlikely to have attention split by competing releases',
-    moderate: 'some competition, may share attention',
-    high: 'facing direct, high-profile competition in the same window',
-    unclear: 'not enough data to assess',
-  },
-  released: {
-    low: 'held its own or outperformed its competition',
-    moderate: 'mixed performance against competition',
-    high: 'was notably outcompeted at the box office',
-    unclear: 'not enough data to assess',
-  },
-};
-
-function riskLegendText(releaseStatus, level) {
-  const table = RISK_LEGEND[releaseStatus] || RISK_LEGEND.upcoming;
-  return table[(level || 'unclear').toLowerCase()] || table.unclear;
-}
-
-function renderStudioMarketing(marketing, releaseStatus) {
-  const el = document.getElementById('studio-marketing');
+function renderMarketing(marketing, releaseStatus) {
+  const el = document.getElementById('evidence-marketing');
   if (!marketing) { el.innerHTML = '<h2>Marketing</h2><p class="empty-state">No marketing coverage surfaced for this run.</p>'; return; }
   const labels = marketingLabels(releaseStatus);
   const strategies = (marketing.strategies_observed || []).map(s =>
@@ -679,8 +809,8 @@ function renderStudioMarketing(marketing, releaseStatus) {
   `;
 }
 
-function renderStudioCast(cast) {
-  const el = document.getElementById('studio-cast');
+function renderCast(cast) {
+  const el = document.getElementById('evidence-cast');
   if (!cast) { el.innerHTML = '<h2>Cast reception</h2><p class="empty-state">No cast-specific coverage surfaced for this run.</p>'; return; }
   const perf = (cast.performances || []).map(p => `
     <div class="mini-card cast-accent">
@@ -704,6 +834,29 @@ function renderStudioCast(cast) {
   `;
 }
 
+function renderNews(news) {
+  const el = document.getElementById('evidence-news');
+  if (!news || (!news.facts?.length && !news.rumors?.length)) {
+    el.innerHTML = '<h2>Production &amp; cast news</h2><p class="empty-state">No news surfaced for this run.</p>';
+    return;
+  }
+  const CATEGORY_LABELS = { casting: 'Casting', production: 'Production', release: 'Release', box_office: 'Box office', other: 'Other' };
+  const grouped = {};
+  [...(news.facts || []), ...(news.rumors || []).map(r => ({ ...r, isRumor: true }))].forEach(item => {
+    const cat = item.category || 'other';
+    (grouped[cat] = grouped[cat] || []).push(item);
+  });
+  const sections = Object.keys(CATEGORY_LABELS)
+    .filter(cat => grouped[cat] && grouped[cat].length)
+    .map(cat => {
+      const items = grouped[cat].map(item =>
+        `<div class="mini-card news-accent"><div class="field-value">${item.claim}${item.isRumor ? ' <span style="color:var(--text-muted)">(rumor)</span>' : ''}${sourceLink(item.url)}</div></div>`
+      ).join('');
+      return `<div class="field"><div class="field-label">${CATEGORY_LABELS[cat]}</div><div class="card-list">${items}</div></div>`;
+    }).join('');
+  el.innerHTML = `<h2>Production &amp; cast news</h2>${sections}`;
+}
+
 function computeYoutubeStats(youtubeData) {
   if (!youtubeData || !Object.keys(youtubeData).length) return null;
   let totalViews = 0, totalLikes = 0, totalComments = 0;
@@ -723,82 +876,6 @@ function formatCount(n) {
   if (n >= 1e6) return (n / 1e6).toFixed(1).replace(/\.0$/, '') + 'M';
   if (n >= 1e3) return (n / 1e3).toFixed(1).replace(/\.0$/, '') + 'K';
   return String(n);
-}
-
-function renderFanOverview(brief, youtubeData) {
-  const el = document.getElementById('fan-overview');
-  if (!brief) { el.innerHTML = '<p class="empty-state">No fan pulse was returned for this run.</p>'; return; }
-  const tone = excitementTone(brief.excitement_level);
-  const themes = (brief.top_themes || []).map(t => `<span class="chip">${t}</span>`).join('') || '<span class="empty-state">None surfaced.</span>';
-  const worth = brief.worth_watching
-    ? `<div class="tile tone-unclear"><div class="tile-label">Worth watching?</div><div class="tile-sub">${brief.worth_watching}</div></div>`
-    : `<div class="tile tone-unclear"><div class="tile-label">Fun fact</div><div class="tile-sub">${brief.fun_fact_or_news || '\u2014'}</div></div>`;
-  const hypeQuote = brief.hype_quote
-    ? `<div class="hype-quote">"${brief.hype_quote}"</div>` : '';
-  const standout = brief.standout_moment
-    ? `<div class="field"><div class="field-label">Standout moment</div><div class="field-value">${brief.standout_moment}</div></div>` : '';
-
-  const ytStats = computeYoutubeStats(youtubeData);
-  const ytBlock = ytStats ? `
-    <div class="field" style="margin-top:26px;padding-top:20px;border-top:1px solid var(--border);">
-      <div class="field-label">Trailer stats</div>
-      <div class="tile-row">
-        <div class="tile tone-unclear"><div class="tile-label">Views</div><div class="tile-value">${formatCount(ytStats.totalViews)}</div></div>
-        <div class="tile tone-unclear"><div class="tile-label">Likes</div><div class="tile-value">${formatCount(ytStats.totalLikes)}</div></div>
-      </div>
-      ${ytStats.topComment ? `<div class="field"><div class="field-label">Top comment (${formatCount(ytStats.topComment.like_count || 0)} likes)</div><div class="field-value">"${ytStats.topComment.text}"</div></div>` : ''}
-    </div>
-  ` : '';
-
-  el.innerHTML = `
-    <h2>${brief.headline || ''}</h2>
-    ${hypeQuote}
-    <div class="tile-row">
-      <div class="tile tone-${tone}">
-        <div class="tile-label">Excitement level</div>
-        <div class="tile-value">${brief.excitement_level || 'unclear'}</div>
-        <div class="tile-sub">${brief.excitement_reason || ''}</div>
-      </div>
-      ${worth}
-    </div>
-    ${standout}
-    <div class="field"><div class="field-label">What fans are talking about</div><div class="chip-row">${themes}</div></div>
-    ${ytBlock}
-  `;
-}
-
-function renderFanNews(news) {
-  const el = document.getElementById('fan-news');
-  if (!news || (!news.facts?.length && !news.rumors?.length)) {
-    el.innerHTML = '<h2>Cast &amp; production news</h2><p class="empty-state">No news surfaced for this run.</p>';
-    return;
-  }
-  const CATEGORY_LABELS = { casting: 'Casting', production: 'Production', release: 'Release', box_office: 'Box office', other: 'Other' };
-  const grouped = {};
-  [...(news.facts || []), ...(news.rumors || []).map(r => ({ ...r, isRumor: true }))].forEach(item => {
-    const cat = item.category || 'other';
-    (grouped[cat] = grouped[cat] || []).push(item);
-  });
-  const sections = Object.keys(CATEGORY_LABELS)
-    .filter(cat => grouped[cat] && grouped[cat].length)
-    .map(cat => {
-      const items = grouped[cat].map(item =>
-        `<div class="mini-card news-accent"><div class="field-value">${item.claim}${item.isRumor ? ' <span style="color:var(--text-muted)">(rumor)</span>' : ''}${sourceLink(item.url)}</div></div>`
-      ).join('');
-      return `<div class="field"><div class="field-label">${CATEGORY_LABELS[cat]}</div><div class="card-list">${items}</div></div>`;
-    }).join('');
-  el.innerHTML = `<h2>Cast &amp; production news</h2>${sections}`;
-}
-
-function verdictTone(verdict) {
-  switch ((verdict || 'unclear').toLowerCase()) {
-    case 'blockbuster':
-    case 'hit': return 'positive';
-    case 'average': return 'neutral';
-    case 'underperformed':
-    case 'flop': return 'negative';
-    default: return 'unclear';
-  }
 }
 
 function renderCollections(competitive, youtubeData) {
@@ -845,7 +922,7 @@ function renderCollections(competitive, youtubeData) {
       </div>
     </div>` : '';
 
-  collectionsContent.innerHTML = `
+  evidenceCollections.innerHTML = `
     <h2>Collections &amp; comparative performance</h2>
     ${verdictBlock}
     <div class="field"><div class="field-label">Box office</div>${boTiles}</div>
@@ -897,19 +974,6 @@ function renderConfidenceNote(entity, result) {
   status.classList.add('visible');
 }
 
-function showView(view) {
-  currentView = view;
-  document.querySelectorAll('.tab-btn').forEach(btn => { btn.dataset.active = String(btn.dataset.view === view); });
-  studioPanel.classList.toggle('visible', view === 'studio');
-  fanPanel.classList.toggle('visible', view === 'fan');
-  collectionsPanel.classList.toggle('visible', view === 'collections');
-}
-
-tabs.addEventListener('click', (e) => {
-  const btn = e.target.closest('.tab-btn');
-  if (btn) showView(btn.dataset.view);
-});
-
 function getRegionHint() {
   try {
     const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
@@ -931,11 +995,11 @@ async function runBrief() {
   exportRow.style.display = 'none';
   heroBanner.classList.remove('visible');
   marqueeFallback.classList.remove('visible');
-  tabs.classList.remove('visible');
-  studioPanel.classList.remove('visible');
-  fanPanel.classList.remove('visible');
-  collectionsPanel.classList.remove('visible');
-  collectionsTabBtn.style.display = 'none';
+  greenlightCard.classList.remove('visible');
+  warRoom.classList.remove('visible');
+  releaseWindowCard.classList.remove('visible');
+  evidenceSection.classList.remove('visible');
+  evidenceCollectionsBtn.style.display = 'none';
   status.classList.remove('visible');
   resetProgress();
   progress.classList.add('visible');
@@ -951,6 +1015,7 @@ async function runBrief() {
     try { payload = JSON.parse(raw.data); } catch { return; }
 
     if (payload.event === 'stage') { markStage(payload.stage); return; }
+    if (payload.event === 'activity') { appendActivity(payload.stage, payload.log); return; }
 
     if (payload.event === 'error') {
       progress.classList.remove('visible');
@@ -973,23 +1038,31 @@ async function runBrief() {
       renderHero(entity, data.youtube);
       renderConfidenceNote(entity, result);
 
-      renderStudioOverview(result.studio_brief, entity.release_status, data.competitive);
-      renderStudioMarketing(data.marketing, entity.release_status);
-      renderStudioCast(data.cast);
-      renderFanOverview(result.fan_pulse, data.youtube);
-      renderFanNews(data.news);
+      renderGreenlightMemo(result, entity.release_status);
+      renderWarRoom(result.war_room);
+      renderReleaseWindow(data.competitive);
+
+      renderMarketing(data.marketing, entity.release_status);
+      renderCast(data.cast);
+      renderNews(data.news);
 
       const isReleased = entity.release_status === 'released';
-      collectionsTabBtn.style.display = isReleased ? '' : 'none';
+      evidenceCollectionsBtn.style.display = isReleased ? '' : 'none';
       if (isReleased) {
         renderCollections(data.competitive, data.youtube);
-      } else if (currentView === 'collections') {
-        currentView = 'studio';
+      } else {
+        // If a previous (released) run left Collections as the active
+        // sub-tab, fall back to Marketing rather than showing an empty
+        // conditional tab for this (upcoming) title.
+        const activeBtn = evidenceSection.querySelector('.subtab-btn[data-active="true"]');
+        if (activeBtn && activeBtn.dataset.sub === 'evidence-collections') {
+          evidenceSection.querySelectorAll('.subtab-btn').forEach(b => b.dataset.active = String(b.dataset.sub === 'evidence-marketing'));
+          evidenceSection.querySelectorAll('.subpanel').forEach(p => p.classList.toggle('visible', p.id === 'evidence-marketing'));
+        }
       }
 
-      tabs.classList.add('visible');
+      evidenceSection.classList.add('visible');
       exportRow.style.display = '';
-      showView(currentView);
     }
   };
 
@@ -997,7 +1070,7 @@ async function runBrief() {
     if (activeSource !== source) return;
     source.close(); activeSource = null;
     progress.classList.remove('visible');
-      stopTimer();
+    stopTimer();
     status.textContent = 'Connection lost while running the pipeline.';
     status.classList.add('visible');
     searchBtn.disabled = false;

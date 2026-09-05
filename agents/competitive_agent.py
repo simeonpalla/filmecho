@@ -139,7 +139,22 @@ competitive_agent = Agent(
         "'unclear') — there is no box office for something that hasn't "
         "released, do not project or estimate one. Every number in "
         "box_office must trace to a specific excerpt, never invent a "
-        "figure to make the answer feel more complete."
+        "figure to make the answer feel more complete.\n\n"
+        "release_window: ONLY for release_status='upcoming' (released "
+        "titles already have a fixed, unchangeable window, leave this at "
+        "defaults). Using the SAME competing_titles you just identified, "
+        "assess congestion (how crowded the window actually is) and give "
+        "suggested_direction. This is directional comparative analysis "
+        "using real data you already have, NOT prediction: you may say "
+        "'consider_earlier' or 'consider_later' if the excerpts show a "
+        "specific real competitor whose release date and genre overlap "
+        "would be avoided by shifting, but NEVER name a specific "
+        "alternate date, and NEVER state or imply what box office or "
+        "reception a hypothetical different date would produce — there "
+        "is no real data for a date that didn't happen, only for the "
+        "actual competitors you found. If the excerpts don't give you "
+        "enough about competitors' specific dates/genres to reason about "
+        "this, set suggested_direction to 'unclear' rather than guessing."
     ),
     tools=[competitive_tool],
     output_schema=CompetitiveResult,
