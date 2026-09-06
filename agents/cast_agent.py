@@ -97,6 +97,7 @@ async def get_cast_reception(
             f"{title} cast list",
             f"{title} cast performance reviews",
             f"{title} acting reactions",
+            f"{title} biggest casting reveal fan reaction",
             f"{title} cast injury controversy salary",
         ],
         session_id=session_id or None,
@@ -129,9 +130,20 @@ cast_agent = Agent(
         "an entertainment journalist who covers performance criticism and "
         "industry-insider reporting specifically — not a general news "
         "reporter. Populate performances with one entry per actor the "
-        "excerpts actually name and discuss (actor name, a specific note on "
-        "their reception — cite what critics/fans actually said about the "
-        "performance itself, not casting announcements), "
+        "excerpts discuss WITH SOME ATTACHED AUDIENCE OR CRITIC REACTION "
+        "(actor name, a specific note on that reception). Draw a careful "
+        "line here: a bare, reaction-free fact like 'X was cast as Y, "
+        "confirmed by the studio' with nothing else belongs to the news "
+        "agent, not here — but genuine excitement, anticipation, "
+        "skepticism, surprise, or debate ABOUT a casting choice absolutely "
+        "counts as reception and belongs here, especially for an upcoming "
+        "title where there's no performance footage yet to review and "
+        "casting reaction IS the reception signal available. A single "
+        "actor's casting can be the single biggest story surrounding a "
+        "film (a franchise veteran's surprise return, a high-profile "
+        "reveal) — don't let that story's 'announcement' framing make you "
+        "skip them: if the excerpts show ANY audience or press reaction to "
+        "it, they get a performances entry, not just a mention elsewhere. "
         "standout_performance naming whoever got the strongest praise "
         "(empty string if none stood out), overall_cast_reception as one "
         "sentence, and personal_updates with any behind-the-scenes or "
