@@ -28,6 +28,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import os
 import uuid
 from typing import AsyncIterator, Optional, Type, TypeVar
 
@@ -64,6 +65,14 @@ APP_NAME = "filmecho"
 _session_service = InMemorySessionService()
 
 _ModelT = TypeVar("_ModelT", bound=BaseModel)
+
+# How long an upcoming/unclear title's memo is served from cache before a
+# fresh pipeline run happens again. Short enough that it can't plausibly
+# hide real day-to-day movement in pre-release buzz, long enough to
+# absorb the live-search-noise flakiness described in memo_cache.py's
+# docstring (a title's confidence swinging 78->90 a minute apart wasn't
+# the world changing, it was Parallel returning different excerpts).
+UPCOMING_CACHE_TTL_SECONDS = int(os.environ.get("FILMECHO_UPCOMING_CACHE_TTL_SECONDS", str(20 * 60)))
 
 _FETCH_STAGE_LABELS = {
     "web_sentiment": "Web sentiment analysis complete",
@@ -232,13 +241,12 @@ async def stream_pipeline(
             that market rather than defaulting to US/UK. Empty string if
             unavailable — every agent instruction treats that as "no
             regional bias," not an error.
-        force_refresh: If True, skip a cache hit and recompute even for a
-            released title, then overwrite the cache with the fresh
-            result. This is the deliberate escape hatch for the one case
-            a released title's memo SHOULD change: a re-release,
-            anniversary rewatch spike, or other genuinely new event.
-            Ignored for upcoming/unclear titles, which are never cached
-            in the first place.
+        force_refresh: If True, skip any cache hit (permanent for a
+            released title, short-TTL for upcoming/unclear) and recompute
+            now, overwriting the cache with the fresh result. This is the
+            deliberate escape hatch for whenever a memo SHOULD change:
+            genuinely new data, a re-release, or just wanting a guaranteed-
+            current read right now rather than whatever's cached.
 
     Yields:
         dicts with an "event" key:
@@ -273,25 +281,42 @@ async def stream_pipeline(
         yield {"event": "stage", "stage": "entity_resolution",
                "message": f"Resolved: {entity.canonical_title or entity.title}{status_note}"}
 
-    # A released title's facts don't change between queries — the
-    # pipeline re-doing live research on every call was producing a
-    # different confidence score and even different box-office figures
-    # for the same film across repeat runs, which is wrong for something
-    # framed as a settled studio memo. Upcoming/unclear titles are
-    # excluded on purpose: pre-release buzz genuinely moves day to day.
+    # A released title's facts don't change between queries, so it's
+    # cached indefinitely (ttl_seconds=None). An upcoming/unclear title
+    # DOES need to reflect real movement over days — but it does NOT
+    # meaningfully change minute-to-minute, and testing showed it was
+    # producing visibly different confidence scores and even
+    # contradictory cast facts within a single minute. That's not real
+    # freshness, it's live-search noise (Parallel returning a different
+    # excerpt set on back-to-back calls) — so upcoming/unclear titles get
+    # a short TTL instead of "never cache," trading away zero genuine
+    # freshness while eliminating that flakiness.
     canonical_title = entity.canonical_title or entity.title
-    if entity.release_status == "released" and not force_refresh:
-        cached = memo_cache.get(canonical_title, entity.release_year)
+    is_released = entity.release_status == "released"
+    ttl_seconds = None if is_released else UPCOMING_CACHE_TTL_SECONDS
+
+    if not force_refresh:
+        cached = memo_cache.get(canonical_title, entity.release_year, ttl_seconds=ttl_seconds)
         if cached is not None:
-            yield {"event": "stage", "stage": "cache_hit",
-                   "message": f"Using the frozen memo for this released title (originally computed {cached['cached_at']}). "
-                              "Released titles aren't re-researched on every query — use \"Refresh this memo\" if something genuinely new happened (re-release, anniversary spike, new data)."}
+            if is_released:
+                message = (
+                    f"Using the frozen memo for this released title (originally computed {cached['cached_at']}). "
+                    "Released titles aren't re-researched on every query — use \"Refresh this memo\" if "
+                    "something genuinely new happened (re-release, anniversary spike, new data)."
+                )
+            else:
+                message = (
+                    f"Using the recently computed memo for this title (computed {cached['cached_at']}, "
+                    f"cached for up to {UPCOMING_CACHE_TTL_SECONDS // 60} minutes to avoid answers changing "
+                    "between back-to-back queries). Use \"Refresh this memo\" for a guaranteed-current read."
+                )
+            yield {"event": "stage", "stage": "cache_hit", "message": message}
             yield {"event": "result", "data": cached}
             return
-    elif entity.release_status == "released" and force_refresh:
+    else:
         memo_cache.invalidate(canonical_title, entity.release_year)
         yield {"event": "stage", "stage": "cache_refresh",
-               "message": "Forcing a fresh recompute for this released title, overwriting the previous frozen memo."}
+               "message": "Forcing a fresh recompute for this title, overwriting any cached memo."}
 
     yield {"event": "stage", "stage": "fetch",
            "message": "Running web sentiment, competitive, news, cast, marketing, and YouTube agents..."}
@@ -360,12 +385,13 @@ async def stream_pipeline(
         "result": result,
     }
 
-    # Freeze this result for a released title so the next query for the
-    # same film serves it back instead of re-researching from scratch —
-    # see memo_cache.py's docstring for the reasoning and the
-    # force_refresh escape hatch.
-    if entity.release_status == "released":
-        memo_cache.set(canonical_title, entity.release_year, payload)
+    # Cache every fresh result — released titles are served back
+    # indefinitely (see the ttl_seconds=None read above), upcoming/
+    # unclear titles are served back for UPCOMING_CACHE_TTL_SECONDS to
+    # absorb live-search noise, then this same write path naturally
+    # produces a fresh entry on the next post-expiry request. See
+    # memo_cache.py's docstring and the force_refresh escape hatch.
+    memo_cache.set(canonical_title, entity.release_year, payload)
 
     yield {"event": "result", "data": payload}
 

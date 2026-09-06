@@ -100,3 +100,48 @@ class TestStats:
         stats = cache.stats()
         assert stats["entries"] == 2
         assert len(stats["keys"]) == 2
+
+
+class TestTTL:
+    """Covers the upcoming/unclear title caching policy: short-lived, not
+    permanent, added specifically because testing showed the SAME title
+    ("Avengers: Doomsday") producing contradictory cast facts and a
+    78%->90% confidence swing one minute apart — live-search-result
+    noise, not genuine day-to-day movement in pre-release buzz."""
+
+    def test_no_ttl_means_never_expires(self):
+        cache = MemoCache()
+        cache.set("RRR", 2022, {"entity": {"title": "RRR"}})
+        assert cache.get("RRR", 2022, ttl_seconds=None) is not None
+
+    def test_fresh_entry_is_served_within_ttl(self):
+        cache = MemoCache()
+        cache.set("Avengers: Doomsday", 2026, {"entity": {"title": "Avengers: Doomsday"}})
+        # Just written, so even a short TTL should still serve it.
+        assert cache.get("Avengers: Doomsday", 2026, ttl_seconds=1200) is not None
+
+    def test_expired_entry_is_treated_as_a_miss(self):
+        from datetime import datetime, timedelta, timezone
+        from orchestration.memo_cache import _CacheEntry, _cache_key
+
+        cache = MemoCache()
+        key = _cache_key("Avengers: Doomsday", 2026)
+        # Manually backdate the entry past a 20-minute TTL to simulate
+        # time passing, rather than sleeping in a test.
+        old_timestamp = (datetime.now(timezone.utc) - timedelta(minutes=25)).isoformat()
+        cache._entries[key] = _CacheEntry(payload={"entity": {"title": "Avengers: Doomsday"}}, cached_at=old_timestamp)
+
+        assert cache.get("Avengers: Doomsday", 2026, ttl_seconds=20 * 60) is None
+
+    def test_expired_entry_under_no_ttl_is_still_served(self):
+        """Same backdated entry, but read with ttl_seconds=None (the
+        released-title policy) — age must not matter at all in that mode."""
+        from datetime import datetime, timedelta, timezone
+        from orchestration.memo_cache import _CacheEntry, _cache_key
+
+        cache = MemoCache()
+        key = _cache_key("RRR", 2022)
+        very_old = (datetime.now(timezone.utc) - timedelta(days=365)).isoformat()
+        cache._entries[key] = _CacheEntry(payload={"entity": {"title": "RRR"}}, cached_at=very_old)
+
+        assert cache.get("RRR", 2022, ttl_seconds=None) is not None

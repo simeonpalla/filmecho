@@ -1198,17 +1198,22 @@ function renderConfidenceNote(entity, result) {
 }
 
 function renderCacheNote(entity, data) {
-  // Only released titles are ever cached (see orchestration/memo_cache.py) —
-  // upcoming/unclear titles always reflect the current live pipeline run,
-  // so there's nothing to explain or offer to refresh.
-  if (entity.release_status !== 'released') {
-    cacheNote.classList.remove('visible');
-    cacheNote.innerHTML = '';
-    return;
+  // Both released and upcoming/unclear titles are cached now (see
+  // orchestration/memo_cache.py) — released permanently, upcoming/
+  // unclear for a short window to avoid the answer visibly changing
+  // between back-to-back searches. Phrasing differs so it's clear which
+  // kind of caching is in play.
+  const isReleased = entity.release_status === 'released';
+  let text;
+  if (isReleased) {
+    text = data.served_from_cache
+      ? `Showing the frozen memo for this released title, originally computed ${new Date(data.cached_at).toLocaleString()}. Released titles aren't re-researched on every search.`
+      : `This memo is now frozen as the standing result for this released title — future searches will serve this same version.`;
+  } else {
+    text = data.served_from_cache
+      ? `Showing a recently computed memo, from ${new Date(data.cached_at).toLocaleString()}. Repeat searches for this title are cached briefly so the answer doesn't shift between back-to-back queries.`
+      : `This memo will be served back for repeat searches of this title for a short while, so results stay consistent between queries.`;
   }
-  const text = data.served_from_cache
-    ? `Showing the frozen memo for this released title, originally computed ${new Date(data.cached_at).toLocaleString()}. Released titles aren't re-researched on every search.`
-    : `This memo is now frozen as the standing result for this released title — future searches will serve this same version.`;
   cacheNote.innerHTML = `
     <span class="cache-note-text">${text}</span>
     <button id="refresh-btn">Refresh this memo</button>

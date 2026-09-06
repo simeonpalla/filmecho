@@ -1,15 +1,24 @@
 """In-memory cache for completed Greenlight Memo pipeline runs.
 
-Why this exists: a *released* film's underlying facts (box office, cast
-performance reception, what critics said) don't change from one query to
-the next — but this pipeline re-runs live Parallel search + Gemini
-synthesis on every call, with no seeding between calls, so the exact same
-title produced noticeably different confidence scores and even different
-box-office figures across repeat runs during testing. That's a real bug
-for anything billed as a studio memo: the memo for a released film should
-read the same today as it did an hour ago, unless something genuinely new
-happened (a re-release, an anniversary rewatch spike, newly available
-data).
+Why this exists, in two parts:
+
+1. A *released* film's underlying facts (box office, cast reception, what
+   critics said) don't change from one query to the next — but this
+   pipeline re-runs live Parallel search + Gemini synthesis on every
+   call, with no seeding between calls, so the exact same title produced
+   noticeably different confidence scores and even different box-office
+   figures across repeat runs during testing.
+
+2. Less obviously, but just as real: even an *upcoming* title's memo
+   swung 78% -> 90% confidence one minute apart during testing, and
+   diffing the two runs showed why — Parallel's live search returned
+   MEANINGFULLY DIFFERENT excerpts each call (one run reported "Chris
+   Evans not returning" as a rumor, the very next run stated "Chris
+   Evans will return" as a news fact). That's input-level variance, not
+   model sampling — no amount of lowering the LLM's temperature fixes it,
+   because the two calls are reasoning over genuinely different source
+   material. The real world did not change in that one minute; the
+   search index's response did.
 
 Policy, matching how a real archive would treat this:
 - release_status == "released": cache indefinitely once computed. Serve
@@ -19,9 +28,14 @@ Policy, matching how a real archive would treat this:
   sudden-relevance case, not an automatic timer, since guessing at
   "sudden renewed interest" from inside this pipeline would be its own
   source of flakiness.
-- release_status in ("upcoming", "unclear"): never cached. Pre-release
-  buzz is genuinely moving day to day, so every call should reflect
-  current reality.
+- release_status in ("upcoming", "unclear"): cached too, but with a
+  short TTL (see UPCOMING_CACHE_TTL_SECONDS in pipeline.py) rather than
+  never. Pre-release buzz does genuinely move over days, so this can't
+  be frozen forever like a released title — but it does NOT genuinely
+  move minute-to-minute, so a short window trades away zero real
+  freshness while eliminating the exact flakiness above. force_refresh
+  still bypasses this immediately when someone wants guaranteed-current
+  data right now.
 
 This is a plain in-memory dict, not a database. That's a deliberate
 scope decision for the hackathon deadline, not an oversight — see the
@@ -59,6 +73,10 @@ class _CacheEntry:
     payload: dict
     cached_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
+    def age_seconds(self) -> float:
+        cached_dt = datetime.fromisoformat(self.cached_at)
+        return (datetime.now(timezone.utc) - cached_dt).total_seconds()
+
 
 class MemoCache:
     """Thread-safe in-memory store for completed pipeline payloads."""
@@ -67,12 +85,22 @@ class MemoCache:
         self._entries: dict[str, _CacheEntry] = {}
         self._lock = threading.Lock()
 
-    def get(self, canonical_title: str, release_year: Optional[int]) -> Optional[dict]:
-        """Return a cached payload plus its cache metadata, or None on a miss."""
+    def get(self, canonical_title: str, release_year: Optional[int], ttl_seconds: Optional[float] = None) -> Optional[dict]:
+        """Return a cached payload plus its cache metadata, or None on a
+        miss OR an expired entry.
+
+        ttl_seconds=None means "never expires" (the released-title
+        policy). A numeric ttl_seconds treats an entry older than that
+        as a miss — it is NOT deleted here, just not served, so a
+        concurrent request that's already mid-flight recomputing it
+        doesn't race against this one deleting the same key.
+        """
         key = _cache_key(canonical_title, release_year)
         with self._lock:
             entry = self._entries.get(key)
         if entry is None:
+            return None
+        if ttl_seconds is not None and entry.age_seconds() > ttl_seconds:
             return None
         return {**entry.payload, "served_from_cache": True, "cached_at": entry.cached_at}
 
