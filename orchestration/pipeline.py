@@ -57,6 +57,7 @@ from agents.sentiment_synthesis import build_sentiment_prompt, sentiment_synthes
 from agents.web_sentiment_agent import web_sentiment_agent
 from agents.youtube_data_agent import collect_youtube_data
 from agents.youtube_discovery_agent import discover_trailer_videos
+from orchestration.memo_cache import memo_cache
 
 APP_NAME = "filmecho"
 _session_service = InMemorySessionService()
@@ -216,7 +217,9 @@ async def _named(name: str, coro) -> tuple[str, object]:
     return name, result
 
 
-async def stream_pipeline(title: str, user_id: str = "filmecho_user", region_hint: str = "") -> AsyncIterator[dict]:
+async def stream_pipeline(
+    title: str, user_id: str = "filmecho_user", region_hint: str = "", force_refresh: bool = False,
+) -> AsyncIterator[dict]:
     """Run the full pipeline, yielding progress events as each stage completes.
 
     Args:
@@ -228,6 +231,13 @@ async def stream_pipeline(title: str, user_id: str = "filmecho_user", region_hin
             that market rather than defaulting to US/UK. Empty string if
             unavailable — every agent instruction treats that as "no
             regional bias," not an error.
+        force_refresh: If True, skip a cache hit and recompute even for a
+            released title, then overwrite the cache with the fresh
+            result. This is the deliberate escape hatch for the one case
+            a released title's memo SHOULD change: a re-release,
+            anniversary rewatch spike, or other genuinely new event.
+            Ignored for upcoming/unclear titles, which are never cached
+            in the first place.
 
     Yields:
         dicts with an "event" key:
@@ -241,7 +251,9 @@ async def stream_pipeline(title: str, user_id: str = "filmecho_user", region_hin
         - {"event": "error", "message": <str>} — unrecoverable failure;
           no further events follow.
         - {"event": "result", "data": <dict>} — always the last event on
-          success, same shape run_pipeline() returns.
+          success, same shape run_pipeline() returns. For a cache hit,
+          `data["served_from_cache"]` is True and `data["cached_at"]`
+          gives when the underlying agents actually ran.
     """
     yield {"event": "stage", "stage": "entity_resolution",
            "message": "Resolving title and checking release status..."}
@@ -259,6 +271,26 @@ async def stream_pipeline(title: str, user_id: str = "filmecho_user", region_hin
     else:
         yield {"event": "stage", "stage": "entity_resolution",
                "message": f"Resolved: {entity.canonical_title or entity.title}{status_note}"}
+
+    # A released title's facts don't change between queries — the
+    # pipeline re-doing live research on every call was producing a
+    # different confidence score and even different box-office figures
+    # for the same film across repeat runs, which is wrong for something
+    # framed as a settled studio memo. Upcoming/unclear titles are
+    # excluded on purpose: pre-release buzz genuinely moves day to day.
+    canonical_title = entity.canonical_title or entity.title
+    if entity.release_status == "released" and not force_refresh:
+        cached = memo_cache.get(canonical_title, entity.release_year)
+        if cached is not None:
+            yield {"event": "stage", "stage": "cache_hit",
+                   "message": f"Using the frozen memo for this released title (originally computed {cached['cached_at']}). "
+                              "Released titles aren't re-researched on every query — use \"Refresh this memo\" if something genuinely new happened (re-release, anniversary spike, new data)."}
+            yield {"event": "result", "data": cached}
+            return
+    elif entity.release_status == "released" and force_refresh:
+        memo_cache.invalidate(canonical_title, entity.release_year)
+        yield {"event": "stage", "stage": "cache_refresh",
+               "message": "Forcing a fresh recompute for this released title, overwriting the previous frozen memo."}
 
     yield {"event": "stage", "stage": "fetch",
            "message": "Running web sentiment, competitive, news, cast, marketing, and YouTube agents..."}
@@ -321,10 +353,20 @@ async def stream_pipeline(title: str, user_id: str = "filmecho_user", region_hin
         "sentiment_synthesis": sentiment_synthesis.model_dump() if sentiment_synthesis else None,
         "result": result,
     }
+
+    # Freeze this result for a released title so the next query for the
+    # same film serves it back instead of re-researching from scratch —
+    # see memo_cache.py's docstring for the reasoning and the
+    # force_refresh escape hatch.
+    if entity.release_status == "released":
+        memo_cache.set(canonical_title, entity.release_year, payload)
+
     yield {"event": "result", "data": payload}
 
 
-async def run_pipeline(title: str, user_id: str = "filmecho_user", region_hint: str = "") -> dict:
+async def run_pipeline(
+    title: str, user_id: str = "filmecho_user", region_hint: str = "", force_refresh: bool = False,
+) -> dict:
     """Non-streaming wrapper around stream_pipeline, for the CLI and tests.
 
     Returns:
@@ -335,7 +377,7 @@ async def run_pipeline(title: str, user_id: str = "filmecho_user", region_hint: 
             without ever producing a result.
     """
     final_payload = None
-    async for event in stream_pipeline(title, user_id, region_hint):
+    async for event in stream_pipeline(title, user_id, region_hint, force_refresh=force_refresh):
         if event["event"] == "result":
             final_payload = event["data"]
         elif event["event"] == "error":

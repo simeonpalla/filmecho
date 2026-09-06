@@ -252,6 +252,23 @@
   }
   .candidate-chip:hover { background: var(--negative-dim); }
 
+  /* --- Frozen-memo note (released titles are served from cache) --- */
+  .cache-note {
+    display: none; max-width: 900px; margin: 20px auto 0;
+    background: var(--unclear-dim); border: 1px solid var(--border); border-radius: 4px;
+    padding: 10px 16px; font-size: 0.85rem; color: var(--text);
+    align-items: center; gap: 12px; flex-wrap: wrap; justify-content: space-between;
+  }
+  .cache-note.visible { display: flex; }
+  .cache-note-text { flex: 1; min-width: 200px; }
+  #refresh-btn {
+    background: none; border: 1px solid var(--brand-c); color: var(--brand-c);
+    font-family: var(--font-body); font-size: 0.82rem; padding: 6px 14px;
+    border-radius: 6px; cursor: pointer; transition: all 0.15s ease; white-space: nowrap;
+  }
+  #refresh-btn:hover:not(:disabled) { background: var(--brand-c); color: var(--on-ink); }
+  #refresh-btn:disabled { opacity: 0.5; cursor: default; }
+
   @media (prefers-reduced-motion: no-preference) {
     .hero-banner, .panel, .greenlight-card, .war-room, .release-window-card { animation: rise 0.35s ease; }
   }
@@ -636,6 +653,8 @@
       <div id="marquee-fallback-meta" class="hero-banner-meta"></div>
     </div>
 
+    <div id="cache-note" class="cache-note"></div>
+
     <div id="greenlight-card" class="greenlight-card"></div>
 
     <div id="war-room" class="war-room">
@@ -693,9 +712,11 @@ const exampleChips = document.getElementById('example-chips');
 const exportRow = document.getElementById('export-row');
 const exportBtn = document.getElementById('export-btn');
 const pdfBtn = document.getElementById('pdf-btn');
+const cacheNote = document.getElementById('cache-note');
 
 let activeSource = null;
 let lastPayloadData = null;
+let lastSearchedTitle = '';
 
 const STAGES = [
   { key: 'entity_resolution', label: 'Resolving title' },
@@ -1166,6 +1187,34 @@ function renderConfidenceNote(entity, result) {
   status.classList.add('visible');
 }
 
+function renderCacheNote(entity, data) {
+  // Only released titles are ever cached (see orchestration/memo_cache.py) —
+  // upcoming/unclear titles always reflect the current live pipeline run,
+  // so there's nothing to explain or offer to refresh.
+  if (entity.release_status !== 'released') {
+    cacheNote.classList.remove('visible');
+    cacheNote.innerHTML = '';
+    return;
+  }
+  const text = data.served_from_cache
+    ? `Showing the frozen memo for this released title, originally computed ${new Date(data.cached_at).toLocaleString()}. Released titles aren't re-researched on every search.`
+    : `This memo is now frozen as the standing result for this released title — future searches will serve this same version.`;
+  cacheNote.innerHTML = `
+    <span class="cache-note-text">${text}</span>
+    <button id="refresh-btn">Refresh this memo</button>
+  `;
+  cacheNote.classList.add('visible');
+}
+
+cacheNote.addEventListener('click', (e) => {
+  if (!e.target.closest('#refresh-btn')) return;
+  const btn = e.target.closest('#refresh-btn');
+  btn.disabled = true;
+  btn.textContent = 'Refreshing...';
+  titleInput.value = lastSearchedTitle;
+  runBrief(true);
+});
+
 function getRegionHint() {
   try {
     const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
@@ -1176,7 +1225,7 @@ function getRegionHint() {
   }
 }
 
-async function runBrief() {
+async function runBrief(forceRefresh = false) {
   const title = titleInput.value.trim();
   if (!title) { status.textContent = 'Enter a title first.'; status.classList.add('visible'); return; }
 
@@ -1185,7 +1234,9 @@ async function runBrief() {
   searchBtn.disabled = true;
   exampleChips.style.display = 'none';
   exportRow.style.display = 'none';
+  cacheNote.classList.remove('visible');
   lastPayloadData = null;
+  lastSearchedTitle = title;
   heroBanner.classList.remove('visible');
   marqueeFallback.classList.remove('visible');
   greenlightCard.classList.remove('visible');
@@ -1201,6 +1252,7 @@ async function runBrief() {
   const regionHint = getRegionHint();
   const source = new EventSource(
     `/api/brief/stream?title=${encodeURIComponent(title)}&region_hint=${encodeURIComponent(regionHint)}`
+    + (forceRefresh ? '&force_refresh=true' : '')
   );
   activeSource = source;
 
@@ -1208,7 +1260,13 @@ async function runBrief() {
     let payload;
     try { payload = JSON.parse(raw.data); } catch { return; }
 
-    if (payload.event === 'stage') { markStage(payload.stage); return; }
+    if (payload.event === 'stage') {
+      if (payload.stage === 'cache_hit' || payload.stage === 'cache_refresh') {
+        progressTimerText.textContent = payload.message;
+      }
+      markStage(payload.stage);
+      return;
+    }
     if (payload.event === 'activity') { appendActivity(payload.stage, payload.log); return; }
 
     if (payload.event === 'error') {
@@ -1259,6 +1317,8 @@ async function runBrief() {
 
       evidenceSection.classList.add('visible');
       exportRow.style.display = 'flex';
+
+      renderCacheNote(entity, data);
     }
   };
 

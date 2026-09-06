@@ -22,6 +22,7 @@ from fastapi.responses import Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 
 from backend.pdf_report import build_pdf
+from orchestration.memo_cache import memo_cache
 from orchestration.pipeline import run_pipeline, stream_pipeline
 
 app = FastAPI(title="Filmecho")
@@ -30,24 +31,28 @@ _STATIC_DIR = os.path.join(os.path.dirname(__file__), "static")
 
 
 @app.get("/api/brief")
-async def get_brief(title: str, region_hint: str = ""):
+async def get_brief(title: str, region_hint: str = "", force_refresh: bool = False):
     """Run the full pipeline for a title and return the combined result.
 
     Non-streaming; kept for programmatic/API callers that just want one
     JSON response. The frontend uses /api/brief/stream instead, so it can
     show real progress.
+
+    force_refresh: for a released title, skip the frozen cached memo and
+    recompute from scratch (see orchestration/memo_cache.py). No effect
+    on upcoming/unclear titles, which are never cached.
     """
     title = (title or "").strip()
     if not title:
         raise HTTPException(status_code=400, detail="title is required")
     try:
-        return await run_pipeline(title, region_hint=region_hint)
+        return await run_pipeline(title, region_hint=region_hint, force_refresh=force_refresh)
     except Exception as exc:  # noqa: BLE001
         raise HTTPException(status_code=500, detail=f"Pipeline failed: {exc}") from exc
 
 
 @app.get("/api/brief/stream")
-async def stream_brief(title: str, region_hint: str = ""):
+async def stream_brief(title: str, region_hint: str = "", force_refresh: bool = False):
     """Stream pipeline progress as Server-Sent Events.
 
     Each event is a JSON-encoded line in the SSE `data:` field, matching
@@ -59,6 +64,10 @@ async def stream_brief(title: str, region_hint: str = ""):
     passes through untouched — this backend does no IP geolocation or
     server-side location inference of its own.
 
+    force_refresh: the frontend's "Refresh this memo" action sets this to
+    true to force a released title past its cached memo — see
+    orchestration/memo_cache.py. Ignored for upcoming/unclear titles.
+
     Validation (missing title) happens before the stream opens, so it
     still returns a normal HTTP error rather than an SSE error event.
     """
@@ -68,7 +77,7 @@ async def stream_brief(title: str, region_hint: str = ""):
 
     async def event_source():
         try:
-            async for event in stream_pipeline(title, region_hint=region_hint):
+            async for event in stream_pipeline(title, region_hint=region_hint, force_refresh=force_refresh):
                 yield f"data: {json.dumps(event)}\n\n"
         except Exception as exc:  # noqa: BLE001
             # Last-resort guard: stream_pipeline degrades individual
@@ -91,6 +100,14 @@ async def stream_brief(title: str, region_hint: str = ""):
             "X-Accel-Buffering": "no",
         },
     )
+
+
+@app.get("/api/cache/stats")
+async def cache_stats():
+    """Introspection only — how many released-title memos are frozen right
+    now. Handy for confirming the cache is actually doing something
+    during a demo, not meant as a public API surface."""
+    return memo_cache.stats()
 
 
 @app.post("/api/brief/pdf")
