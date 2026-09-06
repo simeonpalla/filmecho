@@ -58,6 +58,7 @@ from agents.web_sentiment_agent import web_sentiment_agent
 from agents.youtube_data_agent import collect_youtube_data
 from agents.youtube_discovery_agent import discover_trailer_videos
 from orchestration.memo_cache import memo_cache
+from orchestration.refusal_guard import drop_if_refusal
 
 APP_NAME = "filmecho"
 _session_service = InMemorySessionService()
@@ -310,12 +311,12 @@ async def stream_pipeline(
         yield {"event": "stage", "stage": name, "message": _FETCH_STAGE_LABELS[name]}
         yield {"event": "activity", "stage": name, "log": log}
 
-    web_sentiment: Optional[WebSentimentResult] = branch_results.get("web_sentiment")
+    web_sentiment: Optional[WebSentimentResult] = drop_if_refusal("web_sentiment", branch_results.get("web_sentiment"))
     youtube_data: dict = branch_results.get("youtube") or {}
-    competitive: Optional[CompetitiveResult] = branch_results.get("competitive")
-    news: Optional[NewsResult] = branch_results.get("news")
-    cast: Optional[CastResult] = branch_results.get("cast")
-    marketing: Optional[MarketingResult] = branch_results.get("marketing")
+    competitive: Optional[CompetitiveResult] = drop_if_refusal("competitive", branch_results.get("competitive"))
+    news: Optional[NewsResult] = drop_if_refusal("news", branch_results.get("news"))
+    cast: Optional[CastResult] = drop_if_refusal("cast", branch_results.get("cast"))
+    marketing: Optional[MarketingResult] = drop_if_refusal("marketing", branch_results.get("marketing"))
 
     yield {"event": "stage", "stage": "sentiment_synthesis",
            "message": "Synthesizing sentiment across sources..."}
@@ -324,6 +325,7 @@ async def stream_pipeline(
         sentiment_synthesis_agent, sentiment_prompt, user_id,
         session_id=f"sent_{uuid.uuid4().hex[:8]}", output_model=SentimentSynthesisResult,
     )
+    sentiment_synthesis = drop_if_refusal("sentiment_synthesis", sentiment_synthesis)
     yield {"event": "stage", "stage": "sentiment_synthesis", "message": "Sentiment synthesis complete"}
     yield {"event": "activity", "stage": "sentiment_synthesis", "log": sentiment_log}
 
@@ -333,6 +335,10 @@ async def stream_pipeline(
         main_synthesis_agent, main_prompt, user_id,
         session_id=f"main_{uuid.uuid4().hex[:8]}", output_model=GreenlightMemo,
     )
+    # The final memo is user-facing text, so this check matters most
+    # here — a refusal that slipped past every upstream guard would be
+    # directly visible in the Greenlight Memo itself.
+    memo = drop_if_refusal("main_synthesis", memo)
     yield {"event": "activity", "stage": "main_synthesis", "log": main_log}
 
     result: dict = memo.model_dump() if memo else {

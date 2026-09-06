@@ -41,7 +41,17 @@ class EntityResolution(BaseModel):
         description="Full release date as reported (e.g. 'September 11, 2026'), or null if only a year or nothing is known. Do not guess a date that wasn't in the excerpts.",
     )
     director: Optional[str] = Field(default=None, description="Director's name, or null if unknown.")
-    cast: list[str] = Field(default_factory=list, description="Up to 5 top-billed cast members.")
+    cast: list[str] = Field(
+        default_factory=list,
+        description=(
+            "The most prominent named cast members, typically up to 5. For a "
+            "genuine ensemble/crossover film with no clear top-5 (e.g. a "
+            "multi-hero team-up), list up to 10 of the most prominent named "
+            "actors instead of leaving this empty — a longer real list is "
+            "more useful downstream than an empty one, but every name must "
+            "still come from the excerpts, never guessed."
+        ),
+    )
     source_type: Literal[
         "original", "remake", "book_adaptation", "comic_adaptation",
         "true_story", "sequel", "reboot", "spinoff", "unclear",
