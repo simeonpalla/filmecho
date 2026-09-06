@@ -19,24 +19,32 @@
     --text: #211d17;
     --text-muted: #736a58;
 
-    --brand-a: #c1552e;
-    --brand-b: #9c2b2b;
+    --brand-a: #d9622e;
+    --brand-b: #b8272a;
     --brand-c: #23415c;
 
     --gold: #9c6a17;
 
     --positive: #2f6e3e;
-    --positive-dim: #e2ecdf;
+    --positive-dim: #dcebd5;
     --negative: #9c2b2b;
-    --negative-dim: #f3e3dc;
+    --negative-dim: #f2dad1;
     --neutral: #9c6a17;
-    --neutral-dim: #f2e8cf;
+    --neutral-dim: #f5e4b0;
     --unclear: #736a58;
     --unclear-dim: #ece5d2;
 
     --marketing-accent: #6c4f8c;
+    --marketing-tint: #f0eaf7;
     --cast-accent: #1f6e7a;
+    --cast-tint: #e4f1f1;
     --news-accent: #b0512d;
+    --news-tint: #f8e9df;
+
+    /* A deep oxblood, distinct from --ink, reserved for the marquee
+       band behind the wordmark — the one deliberately "loud" moment
+       on the page, styled like an actual theater marquee sign. */
+    --marquee-bg: #3b1220;
 
     /* A small set of colors reserved for the few spots that are always
        a dark "chip" or overlay regardless of the overall (now light)
@@ -83,6 +91,25 @@
   .page { max-width: 1320px; margin: 0 auto; padding: 44px 28px 110px; }
   .hero { max-width: 660px; margin: 0 auto; text-align: center; }
 
+  /* The one loud moment on the page: a theater-marquee sign, sprocket
+     holes punched along its top and bottom edge like the filmstrip
+     bar, holding the wordmark instead of it just sitting on plain
+     paper. This is where the design should spend its boldness. */
+  .marquee-band {
+    background: var(--marquee-bg);
+    border-radius: 10px;
+    padding: 30px 24px 22px;
+    position: relative;
+    overflow: hidden;
+  }
+  .marquee-band::before, .marquee-band::after {
+    content: ""; position: absolute; left: 0; right: 0; height: 10px;
+    background-image: radial-gradient(circle, var(--bg) 2.4px, transparent 2.6px);
+    background-size: 20px 10px; background-position: center; background-repeat: repeat-x;
+  }
+  .marquee-band::before { top: 0; }
+  .marquee-band::after { bottom: 0; }
+
   /* --- Filmecho wordmark: a letterpress double-strike on "ECHO", as if
      the plate slipped slightly on the reprint — one offset ghost, not
      a four-layer glow. Reads as an intentional print artifact, and
@@ -97,14 +124,14 @@
     justify-content: center;
     letter-spacing: -0.01em;
     user-select: none;
-    margin: 26px 0 8px;
+    margin: 10px 0 6px;
   }
-  .logo-film { color: var(--text); margin-right: 0.16em; }
+  .logo-film { color: var(--on-ink); margin-right: 0.16em; }
   .logo-echo-wrapper { position: relative; display: inline-block; }
-  .logo-echo-main { color: var(--brand-b); position: relative; z-index: 2; font-style: italic; }
-  .echo-trail { position: absolute; top: 0; left: 3px; color: var(--brand-b); opacity: 0.22; z-index: 1; font-style: italic; }
+  .logo-echo-main { color: var(--gold-on-ink); position: relative; z-index: 2; font-style: italic; }
+  .echo-trail { position: absolute; top: 0; left: 3px; color: var(--gold-on-ink); opacity: 0.35; z-index: 1; font-style: italic; }
 
-  .tagline { color: var(--text-muted); font-size: 0.95rem; margin: 0; }
+  .tagline { color: var(--on-ink-muted); font-size: 0.95rem; margin: 0; }
 
   .search-row { display: flex; gap: 10px; margin: 30px 0 0; }
 
@@ -117,11 +144,11 @@
     margin-right: 2px;
   }
   .example-chip {
-    background: var(--surface); border: 1px solid var(--border); color: var(--text-muted);
+    background: var(--neutral-dim); border: 1px solid var(--border); color: var(--text);
     font-family: var(--font-body); font-size: 0.78rem; padding: 5px 12px;
     border-radius: 20px; cursor: pointer; transition: all 0.15s ease;
   }
-  .example-chip:hover { border-color: var(--brand-c); color: var(--text); }
+  .example-chip:hover { background: var(--brand-b); border-color: var(--brand-b); color: var(--on-ink); }
 
   #title-input {
     flex: 1;
@@ -484,9 +511,9 @@
   .mini-card { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 14px 16px; box-shadow: 0 2px 8px rgba(33,29,23,0.05); transition: transform 0.15s ease, box-shadow 0.15s ease; }
   .mini-card:hover { transform: translateY(-2px); box-shadow: 0 6px 14px rgba(33,29,23,0.08); }
   .mini-card-title { font-weight: 600; font-size: 0.92rem; margin-bottom: 4px; }
-  .mini-card.cast-accent { border-left: 3px solid var(--cast-accent); }
-  .mini-card.news-accent { border-left: 3px solid var(--news-accent); }
-  .mini-card.marketing-accent { border-left: 3px solid var(--marketing-accent); }
+  .mini-card.cast-accent { border-left: 3px solid var(--cast-accent); background: var(--cast-tint); }
+  .mini-card.news-accent { border-left: 3px solid var(--news-accent); background: var(--news-tint); }
+  .mini-card.marketing-accent { border-left: 3px solid var(--marketing-accent); background: var(--marketing-tint); }
 
   .export-row { text-align: center; margin-top: 24px; display: none; gap: 10px; justify-content: center; flex-wrap: wrap; }
   #export-btn, #pdf-btn {
@@ -515,10 +542,31 @@
        on-screen design. This forces them to render as authored. */
     * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
 
+    /* A real, consistent page margin — relying on the browser/OS print
+       dialog's own default margin is what was producing inconsistent
+       spacing. This fixes it the same way regardless of print settings. */
+    @page { margin: 16mm 18mm; }
+
     .film-strip, .search-row, .example-chips, #progress, .status, .export-row { display: none !important; }
     .subtabs, .evidence-section, .subpanel { display: block !important; }
     .page { max-width: 100%; padding: 0; }
-    .greenlight-card, .war-room, .evidence-section, .voice-card, .mini-card { break-inside: avoid; }
+
+    /* Only atomic, single-idea pieces get break-inside:avoid. Applying
+       it to large multi-part containers (the whole evidence section,
+       the whole war room, the whole memo card) asks the browser to
+       keep something taller than a page together, which it can't do —
+       instead it tends to shove the whole block onto a fresh page,
+       leaving a large gap and effectively re-sorting the section order
+       on the printed page. That's what was showing up as sections
+       being split apart oddly. */
+    .voice-card, .mini-card { break-inside: avoid; }
+
+    /* The rotated "stamp" look is a screen-only flourish; keeping a
+       rotated element in the print layout can shift how its text gets
+       read back out of the page (e.g. by copy/search), so it's
+       disabled here rather than just cosmetically ignored. */
+    .verdict-badge { transform: none !important; }
+
     /* The on-screen theme is already ink-on-paper, so unlike before,
        nothing here needs to be recolored for print — just force the
        page itself to pure white to save ink, which the color-adjust
@@ -542,14 +590,16 @@
   <div class="film-strip"></div>
   <div class="page">
     <div class="hero">
-      <div class="filmecho-logo">
-        <span class="logo-film">FILM</span>
-        <div class="logo-echo-wrapper">
-          <span class="echo-trail">ECHO</span>
-          <span class="logo-echo-main">ECHO</span>
+      <div class="marquee-band">
+        <div class="filmecho-logo">
+          <span class="logo-film">FILM</span>
+          <div class="logo-echo-wrapper">
+            <span class="echo-trail">ECHO</span>
+            <span class="logo-echo-main">ECHO</span>
+          </div>
         </div>
+        <p class="tagline">The AI studio intelligence room — search, listen, understand, decide.</p>
       </div>
-      <p class="tagline">The AI studio intelligence room — search, listen, understand, decide.</p>
 
       <div class="search-row">
         <input id="title-input" type="text" placeholder="Enter a film or show title..." autocomplete="off">
