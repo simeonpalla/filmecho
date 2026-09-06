@@ -263,14 +263,41 @@ class TestWebSentimentAndCompetitive:
         s = SentimentSynthesisResult(
             overall_sentiment="mixed", justification="j", agreement_note="a", sources_available=["youtube"],
             timeline=[
-                ReputationTimelineEntry(phase="trailer", sentiment="positive", note="Trailer response was strongly positive."),
-                ReputationTimelineEntry(phase="opening_weekend", sentiment="mixed", note="Reaction cooled slightly after release."),
+                ReputationTimelineEntry(milestone="Trailer", date="2021-12-09", sentiment="positive", note="Trailer response was strongly positive."),
+                ReputationTimelineEntry(milestone="Opening Weekend", date="2022-03-25", sentiment="mixed", note="Reaction cooled slightly after release."),
             ],
         )
         assert len(s.timeline) == 2
-        assert s.timeline[0].phase == "trailer"
+        assert s.timeline[0].milestone == "Trailer"
+        assert s.timeline[0].date == "2021-12-09"
 
-    def test_timeline_rejects_invalid_phase(self):
+    def test_timeline_milestone_is_free_form_not_a_fixed_enum(self):
+        """Regression guard for the too-narrow-coverage bug: the timeline
+        used to be capped to a fixed 5-phase enum (pre_release/trailer/
+        opening_weekend/week_two/long_tail), which meant an announcement
+        or casting reveal could never appear on it even when a real date
+        was available. milestone is deliberately a free string now, not
+        an enum, so any accurately-named, dated event is valid."""
+        from agents.schemas import ReputationTimelineEntry
+        entry = ReputationTimelineEntry(
+            milestone="Casting Announcement", date="2025-03-26",
+            sentiment="positive", note="Cast reveal livestream drew record viewership.",
+        )
+        assert entry.milestone == "Casting Announcement"
+
+    def test_timeline_entry_requires_a_date(self):
         from agents.schemas import ReputationTimelineEntry
         with pytest.raises(ValidationError):
-            ReputationTimelineEntry(phase="premiere_night", sentiment="positive", note="x")
+            ReputationTimelineEntry(milestone="Trailer", sentiment="positive", note="x")
+
+    def test_timeline_entry_caps_at_eight(self):
+        from agents.schemas import ReputationTimelineEntry
+        nine = [
+            ReputationTimelineEntry(milestone=f"Milestone {i}", date="2022-01-01", sentiment="unclear", note="x")
+            for i in range(9)
+        ]
+        with pytest.raises(ValidationError):
+            SentimentSynthesisResult(
+                overall_sentiment="unclear", justification="j", agreement_note="a",
+                sources_available=["web"], timeline=nine,
+            )

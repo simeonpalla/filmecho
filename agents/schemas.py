@@ -223,25 +223,31 @@ class NewsResult(BaseModel):
 
 
 class ReputationTimelineEntry(BaseModel):
-    """One point on the reputation timeline. Only populate a phase when a
-    real date (YouTube publish date, a dated news/review source) actually
-    places something in it — never infer a phase from guesswork just to
-    fill out the timeline."""
+    """One dated milestone in a title's public life — not restricted to a
+    fixed set of phases, so it can actually cover the whole arc
+    (announcement, casting reveals, each trailer, premiere, opening
+    weekend, long-tail reaction...), not just whichever YouTube videos
+    happened to get discovered. Only populate one when a real date
+    actually places it — never infer a milestone from guesswork."""
 
-    phase: Literal["pre_release", "trailer", "opening_weekend", "week_two", "long_tail"]
-    date: Optional[str] = Field(
-        default=None,
+    milestone: str = Field(
         description=(
-            "The real date that placed this entry in this phase — a YouTube "
-            "video's published_at, or a dated source's publication date. "
-            "Format as given (e.g. 'March 3, 2021' or the raw ISO date), "
-            "never reformatted into a guess. Null only if truly no date "
-            "was available for this entry, which should be rare since a "
-            "phase can't be assigned without one in the first place."
-        ),
+            "A short, specific label for what this is — e.g. 'Casting "
+            "Announcement', 'First Trailer', 'Special Look', 'Premiere', "
+            "'Opening Weekend', 'Long-Tail Reaction'. Not restricted to a "
+            "fixed list; name it accurately for what actually happened."
+        )
+    )
+    date: str = Field(
+        description=(
+            "The real date this happened, normalized to YYYY-MM-DD "
+            "(date only — never include a time-of-day, even if the "
+            "source gave one). Convert whatever format the source used "
+            "into this format; never invent or estimate a date."
+        )
     )
     sentiment: Literal["positive", "mixed", "negative", "unclear"]
-    note: str = Field(description="What was actually being said in this phase, one sentence, grounded in dated sources.")
+    note: str = Field(description="What was actually being said/reported around this milestone, one sentence, grounded in dated sources.")
 
 
 class SentimentSynthesisResult(BaseModel):
@@ -252,8 +258,8 @@ class SentimentSynthesisResult(BaseModel):
     agreement_note: str = Field(description="Do sources agree or conflict, one sentence.")
     sources_available: list[str] = Field(description="Which of web/youtube/reddit actually had data this run.")
     timeline: list[ReputationTimelineEntry] = Field(
-        default_factory=list, max_length=5,
-        description="Up to 5 entries, one per distinct phase you can actually date (from YouTube publish dates or dated sources). Leave empty entirely if no dates are available to place anything — this is a bonus signal, not a required field.",
+        default_factory=list, max_length=8,
+        description="Up to 8 dated milestones across the title's whole public life, drawn from YouTube publish dates AND dated news facts (announcement, casting reveals, each trailer, premiere, opening weekend, long-tail reaction, etc.) — as many distinct real-dated events as the sources actually support, sorted chronologically. Leave empty entirely if no dates are available to place anything — this is a bonus signal, not a required field.",
     )
 
 

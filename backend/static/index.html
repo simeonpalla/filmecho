@@ -431,9 +431,9 @@
     text-transform: uppercase; color: var(--text-muted); text-align: center; margin-bottom: 16px;
   }
   .timeline-track { display: flex; flex-direction: column; gap: 0; }
-  @media (min-width: 760px) { .timeline-track { flex-direction: row; align-items: stretch; } }
-  .timeline-stop { flex: 1; position: relative; padding: 0 0 0 26px; margin-bottom: 18px; }
-  @media (min-width: 760px) { .timeline-stop { padding: 26px 14px 0; margin-bottom: 0; } }
+  @media (min-width: 760px) { .timeline-track { flex-direction: row; flex-wrap: wrap; align-items: stretch; } }
+  .timeline-stop { flex: 1; min-width: 160px; position: relative; padding: 0 0 0 26px; margin-bottom: 18px; }
+  @media (min-width: 760px) { .timeline-stop { padding: 26px 14px 0; margin-bottom: 22px; } }
   .timeline-stop::before {
     content: ""; position: absolute; left: 3px; top: 4px; width: 12px; height: 12px;
     border-radius: 50%; border: 2px solid var(--surface-raised);
@@ -956,28 +956,22 @@ function renderWarRoom(voices) {
   warRoom.classList.add('visible');
 }
 
-const PHASE_LABELS = {
-  pre_release: 'Pre-release',
-  trailer: 'Trailer',
-  opening_weekend: 'Opening Weekend',
-  week_two: 'Week 2',
-  long_tail: 'Long-tail',
-};
-const PHASE_ORDER = ['pre_release', 'trailer', 'opening_weekend', 'week_two', 'long_tail'];
-
 function renderTimeline(timeline) {
   const el = document.getElementById('timeline-card');
   if (!timeline || !timeline.length) {
     el.classList.remove('visible');
     return;
   }
-  const sorted = [...timeline].sort((a, b) => PHASE_ORDER.indexOf(a.phase) - PHASE_ORDER.indexOf(b.phase));
+  // Milestones are no longer a fixed 5-phase enum, so just sort
+  // chronologically by date — the schema normalizes date to YYYY-MM-DD
+  // specifically so this lexicographic sort is also a correct date sort.
+  const sorted = [...timeline].sort((a, b) => (a.date || '').localeCompare(b.date || ''));
   el.innerHTML = `
     <div class="timeline-title">The Life of Its Reputation</div>
     <div class="timeline-track">
       ${sorted.map(entry => `
         <div class="timeline-stop tone-${sentimentTone(entry.sentiment)}">
-          <div class="timeline-phase-label">${PHASE_LABELS[entry.phase] || entry.phase}${entry.date ? ` — ${entry.date}` : ''}</div>
+          <div class="timeline-phase-label">${entry.milestone || 'Milestone'}${entry.date ? ` — ${entry.date}` : ''}</div>
           <div class="timeline-note">${entry.note || ''}</div>
         </div>
       `).join('')}

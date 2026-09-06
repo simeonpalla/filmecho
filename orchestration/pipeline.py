@@ -320,7 +320,7 @@ async def stream_pipeline(
 
     yield {"event": "stage", "stage": "sentiment_synthesis",
            "message": "Synthesizing sentiment across sources..."}
-    sentiment_prompt = build_sentiment_prompt(web_sentiment, youtube_data, entity.release_date)
+    sentiment_prompt = build_sentiment_prompt(web_sentiment, youtube_data, entity.release_date, news=news)
     sentiment_synthesis, sentiment_log = await _run_adk_agent(
         sentiment_synthesis_agent, sentiment_prompt, user_id,
         session_id=f"sent_{uuid.uuid4().hex[:8]}", output_model=SentimentSynthesisResult,

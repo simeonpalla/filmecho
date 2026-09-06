@@ -15,9 +15,10 @@ from __future__ import annotations
 from typing import Optional
 
 from google.adk.agents import Agent
+from google.genai import types as genai_types
 
-from agents.entity_context import GEMINI_MODEL
-from agents.schemas import SentimentSynthesisResult, WebSentimentResult
+from agents.entity_context import GEMINI_MODEL, GROUNDING_TEMPERATURE
+from agents.schemas import NewsResult, SentimentSynthesisResult, WebSentimentResult
 
 MAX_COMMENTS_PER_VIDEO = 15
 
@@ -47,11 +48,34 @@ def _flatten_youtube_comments(youtube_data: Optional[dict], max_per_video: int =
     return "\n".join(lines) if lines else "NO YOUTUBE COMMENTS AVAILABLE for this run."
 
 
+def _flatten_dated_news(news: Optional[NewsResult]) -> str:
+    """Surface news_cast_agent's dated facts (production start, casting
+    reveal, release-date confirmation, etc.) as timeline-building
+    material. This is the source of milestones a YouTube-only timeline
+    could never cover — an announcement or casting reveal usually
+    doesn't have its own dedicated video, but the news agent already
+    captured its date via NewsItem.date."""
+    if not news:
+        return "NO PRODUCTION/CAST NEWS DATA AVAILABLE for this run."
+    facts = (news.facts if hasattr(news, "facts") else news.get("facts")) or []
+    dated = [f for f in facts if (f.date if hasattr(f, "date") else f.get("date"))]
+    if not dated:
+        return "No dated facts among the production/cast news for this run."
+    lines = []
+    for f in dated:
+        date = f.date if hasattr(f, "date") else f.get("date")
+        claim = f.claim if hasattr(f, "claim") else f.get("claim")
+        category = f.category if hasattr(f, "category") else f.get("category")
+        lines.append(f"- ({date}, {category}) {claim}")
+    return "\n".join(lines)
+
+
 def build_sentiment_prompt(
     web_sentiment: Optional[WebSentimentResult],
     youtube_data: Optional[dict],
     release_date: Optional[str] = None,
     reddit_text: Optional[str] = None,
+    news: Optional[NewsResult] = None,
 ) -> str:
     """Build the full prompt for sentiment_synthesis_agent.
 
@@ -60,12 +84,16 @@ def build_sentiment_prompt(
             that branch failed or didn't parse.
         youtube_data: youtube_data_agent.collect_youtube_data's raw output,
             or None/{} if that branch failed or found no videos.
-        release_date: The resolved entity's release_date (if known), used
-            only as a reference point for classifying dated YouTube videos
-            into timeline phases — never used to invent a phase without a
-            real date behind it.
+        release_date: The resolved entity's release_date (if known), given
+            for context only — timeline milestones are no longer
+            classified against it into fixed phases, see the agent's
+            instruction for why.
         reddit_text: Reserved for reddit_sentiment_agent's output once
             built; None until then.
+        news: news_cast_agent's structured result, or None. Its dated
+            facts (NewsItem.date) are the source of timeline milestones
+            that aren't tied to a YouTube video — announcement, casting
+            reveals, production wrap, etc.
 
     Returns:
         A single prompt string, with the web sentiment section serialized
@@ -80,14 +108,17 @@ def build_sentiment_prompt(
     )
     youtube_block = _flatten_youtube_comments(youtube_data)
     reddit_block = reddit_text or "NO REDDIT DATA AVAILABLE (not yet built for this pipeline)."
+    news_dates_block = _flatten_dated_news(news)
     release_date_block = release_date or "unknown"
 
     return (
-        f"Reference release date (for timeline classification only): {release_date_block}\n\n"
+        f"Reference release date (for context only): {release_date_block}\n\n"
         "=== WEB SENTIMENT (structured, from Parallel + Gemini) ===\n"
         f"{web_block}\n\n"
         "=== YOUTUBE COMMENTS (raw, unanalyzed, with real publish dates) ===\n"
         f"{youtube_block}\n\n"
+        "=== DATED PRODUCTION/CAST NEWS (for timeline milestones only) ===\n"
+        f"{news_dates_block}\n\n"
         "=== REDDIT SENTIMENT ===\n"
         f"{reddit_block}"
     )
@@ -120,22 +151,26 @@ sentiment_synthesis_agent = Agent(
         "fabricate sentiment for a source with no data, and do not average "
         "YouTube like counts into a fake numeric score, describe the "
         "comments qualitatively instead.\n\n"
-        "timeline (OPTIONAL, up to 5 entries): each YouTube video has a "
-        "real published_at date. Compare each video's date to the "
-        "reference release date given above and, ONLY where this "
-        "comparison is actually possible, classify: well before the "
-        "release date → 'pre_release'; specifically a trailer video "
-        "published in the run-up → 'trailer'; within about a week of the "
-        "release date → 'opening_weekend'; one to two weeks after → "
-        "'week_two'; much later → 'long_tail'. Every entry MUST also set "
-        "date to the actual published_at value of the video that placed "
-        "it in that phase — you already have this date in the YOUTUBE "
-        "COMMENTS section above, use it verbatim, never reformat or "
-        "estimate it. Write a one-sentence note "
-        "per phase based on what that phase's actual comments/reactions "
-        "said. If the reference release date is 'unknown', or no video "
-        "dates give you enough to place anything, leave timeline as an "
-        "empty list — do not guess a phase without a real date behind it."
+        "timeline (OPTIONAL, up to 8 entries): build this from TWO date "
+        "sources — each YouTube video's published_at, AND the dated "
+        "entries in DATED PRODUCTION/CAST NEWS above. Don't force these "
+        "into a fixed 5-phase scheme; instead, write a short, specific "
+        "milestone label for what actually happened at each date — "
+        "'Casting Announcement', 'Production Wrap', 'First Trailer', "
+        "'Special Look', 'Premiere', 'Opening Weekend', 'Long-Tail "
+        "Reaction', or whatever accurately describes it. Cover the "
+        "title's whole arc where the dates support it — an announcement "
+        "and a casting reveal are just as valid a milestone as a trailer "
+        "video, don't only report on YouTube-anchored moments if the news "
+        "section gives you earlier ones too. Every entry's date MUST be "
+        "normalized to YYYY-MM-DD (date only, strip any time-of-day, e.g. "
+        "a YouTube '2026-07-20T13:00:20Z' becomes '2026-07-20') — never "
+        "invent or estimate one. Write a one-sentence note per milestone "
+        "based on what was actually said/reported around that date. Sort "
+        "entries chronologically by date. If no dates are available at "
+        "all across both sources, leave timeline as an empty list — do "
+        "not guess a milestone without a real date behind it."
     ),
     output_schema=SentimentSynthesisResult,
+    generate_content_config=genai_types.GenerateContentConfig(temperature=GROUNDING_TEMPERATURE),
 )

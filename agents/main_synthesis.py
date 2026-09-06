@@ -25,8 +25,9 @@ from __future__ import annotations
 from typing import Optional
 
 from google.adk.agents import Agent
+from google.genai import types as genai_types
 
-from agents.entity_context import EntityContext, GEMINI_MODEL
+from agents.entity_context import EntityContext, GEMINI_MODEL, GROUNDING_TEMPERATURE
 from agents.schemas import CastResult, CompetitiveResult, GreenlightMemo, MarketingResult, NewsResult, SentimentSynthesisResult
 
 _PROMPT_TEMPLATE = """Produce the Greenlight Memo for a film title, from five structured
@@ -164,4 +165,5 @@ main_synthesis_agent = Agent(
         "having the field at all."
     ),
     output_schema=GreenlightMemo,
+    generate_content_config=genai_types.GenerateContentConfig(temperature=GROUNDING_TEMPERATURE),
 )

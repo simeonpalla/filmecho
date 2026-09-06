@@ -52,11 +52,6 @@ SOURCE_LABELS = {
     "competitive": "competitive landscape", "news": "production/cast news",
     "cast": "cast reception", "marketing": "marketing analysis",
 }
-PHASE_LABELS = {
-    "pre_release": "Pre-release", "trailer": "Trailer",
-    "opening_weekend": "Opening Weekend", "week_two": "Week 2", "long_tail": "Long-tail",
-}
-PHASE_ORDER = ["pre_release", "trailer", "opening_weekend", "week_two", "long_tail"]
 
 
 def _styles() -> dict:
@@ -212,11 +207,14 @@ def build_pdf(data: dict) -> bytes:
     timeline = sentiment_synthesis.get("timeline") or []
     if timeline:
         story.append(Paragraph("THE LIFE OF ITS REPUTATION", s["h2"]))
-        ordered = sorted(timeline, key=lambda e: PHASE_ORDER.index(e["phase"]) if e.get("phase") in PHASE_ORDER else len(PHASE_ORDER))
+        # Milestones are free-form now, not a fixed 5-phase enum — the
+        # schema normalizes date to YYYY-MM-DD specifically so this
+        # string sort is also a correct chronological sort.
+        ordered = sorted(timeline, key=lambda e: e.get("date") or "")
         for entry in ordered:
-            phase_label = PHASE_LABELS.get(entry.get("phase"), entry.get("phase", ""))
+            milestone_label = entry.get("milestone") or "Milestone"
             date_bit = f" — {_esc(entry['date'])}" if entry.get("date") else ""
-            story.append(Paragraph(f"<b>{_esc(phase_label)}{date_bit}</b>", s["h3"]))
+            story.append(Paragraph(f"<b>{_esc(milestone_label)}{date_bit}</b>", s["h3"]))
             story.append(Paragraph(_esc(entry.get("note", "")), s["body"]))
 
     # --- Release window advisory ---
