@@ -9,34 +9,47 @@
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #0a0912;
-    --bg-wash: radial-gradient(ellipse 1000px 600px at 15% -10%, rgba(167,139,250,0.14), transparent 60%),
-                radial-gradient(ellipse 900px 600px at 90% 0%, rgba(226,99,122,0.12), transparent 55%),
-                radial-gradient(ellipse 800px 500px at 50% 100%, rgba(95,168,224,0.08), transparent 60%);
-    --surface: #161320;
-    --surface-raised: #1e1a2c;
-    --border: #2f2a42;
-    --text: #f0eef7;
-    --text-muted: #9791ab;
+    /* Editorial "trade paper" palette — a studio intelligence memo, not
+       a dashboard, so the base is paper and ink rather than a dark UI. */
+    --bg: #f1ecdf;
+    --bg-wash: radial-gradient(ellipse 1400px 700px at 50% -12%, rgba(156,43,43,0.05), transparent 60%);
+    --surface: #faf7ef;
+    --surface-raised: #fffdf8;
+    --border: #ddd2b4;
+    --text: #211d17;
+    --text-muted: #736a58;
 
-    --brand-a: #ff8a65;
-    --brand-b: #e2637a;
-    --brand-c: #a78bfa;
+    --brand-a: #c1552e;
+    --brand-b: #9c2b2b;
+    --brand-c: #23415c;
 
-    --gold: #e0ab55;
+    --gold: #9c6a17;
 
-    --positive: #4cd68a;
-    --positive-dim: #17402c;
-    --negative: #ff5c6c;
-    --negative-dim: #4a1e26;
-    --neutral: #f5b64a;
-    --neutral-dim: #4a3a1a;
-    --unclear: #7a7690;
-    --unclear-dim: #2f2a42;
+    --positive: #2f6e3e;
+    --positive-dim: #e2ecdf;
+    --negative: #9c2b2b;
+    --negative-dim: #f3e3dc;
+    --neutral: #9c6a17;
+    --neutral-dim: #f2e8cf;
+    --unclear: #736a58;
+    --unclear-dim: #ece5d2;
 
-    --marketing-accent: #a78bfa;
-    --cast-accent: #5fa8e0;
-    --news-accent: #e2637a;
+    --marketing-accent: #6c4f8c;
+    --cast-accent: #1f6e7a;
+    --news-accent: #b0512d;
+
+    /* A small set of colors reserved for the few spots that are always
+       a dark "chip" or overlay regardless of the overall (now light)
+       theme — a poster-image caption bar and the live activity log —
+       so those keep working as dark surfaces with light text. */
+    --ink: #211d17;
+    --on-ink: #f5f1e6;
+    --on-ink-muted: #c9c0a8;
+    --gold-on-ink: #e7b75c;
+    --brand-c-on-ink: #8fb4d8;
+    --positive-on-ink: #6fcb86;
+    --negative-on-ink: #ff8a78;
+    --neutral-on-ink: #f0c15c;
 
     --font-display: "Fraunces", Georgia, serif;
     --font-body: "Inter", system-ui, sans-serif;
@@ -56,37 +69,40 @@
     min-height: 100vh;
   }
 
+  /* A literal filmstrip edge — an ink band with the page color punched
+     through as sprocket holes — rather than a generic decorative line. */
   .film-strip {
-    height: 10px;
-    background-image: radial-gradient(circle, var(--border) 2px, transparent 2.5px);
-    background-size: 22px 10px;
+    height: 14px;
+    background-color: var(--ink);
+    background-image: radial-gradient(circle, var(--bg) 3px, transparent 3.2px);
+    background-size: 24px 14px;
     background-repeat: repeat-x;
     background-position: center;
-    opacity: 0.7;
   }
 
   .page { max-width: 1320px; margin: 0 auto; padding: 44px 28px 110px; }
   .hero { max-width: 660px; margin: 0 auto; text-align: center; }
 
-  /* --- Filmecho echo-trail logo --- */
+  /* --- Filmecho wordmark: a letterpress double-strike on "ECHO", as if
+     the plate slipped slightly on the reprint — one offset ghost, not
+     a four-layer glow. Reads as an intentional print artifact, and
+     (as a bonus) it's a single duplicate instead of four, so it holds
+     up cleanly when printed or copy-pasted. --- */
   .filmecho-logo {
-    font-family: system-ui, -apple-system, sans-serif;
-    font-size: clamp(2rem, 8vw, 3.5rem);
+    font-family: var(--font-display);
+    font-size: clamp(2.1rem, 8vw, 3.6rem);
     font-weight: 900;
     display: flex;
-    align-items: center;
+    align-items: baseline;
     justify-content: center;
-    letter-spacing: -0.02em;
+    letter-spacing: -0.01em;
     user-select: none;
-    margin: 22px 0 6px;
+    margin: 26px 0 8px;
   }
-  .logo-film { color: #ffffff; margin-right: 0.1em; z-index: 5; }
+  .logo-film { color: var(--text); margin-right: 0.16em; }
   .logo-echo-wrapper { position: relative; display: inline-block; }
-  .logo-echo-main { color: #FA7C83; position: relative; z-index: 4; }
-  .echo-trail { position: absolute; top: 0; color: #FA7C83; }
-  .trail-1 { left: 0.2em; opacity: 0.4; z-index: 3; }
-  .trail-2 { left: 0.4em; opacity: 0.15; z-index: 2; }
-  .trail-3 { left: 0.6em; opacity: 0.05; z-index: 1; }
+  .logo-echo-main { color: var(--brand-b); position: relative; z-index: 2; font-style: italic; }
+  .echo-trail { position: absolute; top: 0; left: 3px; color: var(--brand-b); opacity: 0.22; z-index: 1; font-style: italic; }
 
   .tagline { color: var(--text-muted); font-size: 0.95rem; margin: 0; }
 
@@ -120,12 +136,12 @@
     transition: border-color 0.15s ease, box-shadow 0.15s ease;
   }
 
-  #title-input:focus { border-color: var(--brand-c); box-shadow: 0 0 0 3px rgba(167,139,250,0.18); }
+  #title-input:focus { border-color: var(--brand-c); box-shadow: 0 0 0 3px rgba(35,65,92,0.16); }
   #title-input::placeholder { color: var(--text-muted); }
 
   #search-btn {
     background: linear-gradient(90deg, var(--brand-a), var(--brand-b));
-    color: #1a0f10;
+    color: var(--on-ink);
     border: none;
     font-family: var(--font-body);
     font-weight: 700;
@@ -154,7 +170,7 @@
   .progress.visible { display: block; }
 
   .progress-title {
-    font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.1em;
+    font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.03em;
     text-transform: uppercase; color: var(--text-muted); margin-bottom: 12px;
     display: flex; justify-content: space-between; align-items: center;
   }
@@ -174,19 +190,19 @@
   .progress-item { display: flex; align-items: center; gap: 10px; padding: 5px 0; font-size: 0.88rem; color: var(--text-muted); }
 
   .activity-feed-title {
-    font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.1em;
+    font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.03em;
     text-transform: uppercase; color: var(--text-muted); margin: 18px 0 8px;
     padding-top: 14px; border-top: 1px solid var(--border);
   }
   .activity-feed {
     max-height: 160px; overflow-y: auto; font-family: var(--font-mono);
-    font-size: 0.76rem; line-height: 1.7; color: var(--text-muted);
-    background: #0000004d; border-radius: 6px; padding: 10px 12px;
+    font-size: 0.76rem; line-height: 1.7; color: var(--on-ink-muted);
+    background: var(--ink); border-radius: 6px; padding: 10px 12px;
   }
   .activity-line { white-space: pre-wrap; word-break: break-word; }
-  .activity-line .agent-tag { color: var(--brand-c); }
-  .activity-line .tool-call { color: var(--gold); }
-  .activity-line .tool-return { color: var(--positive); }
+  .activity-line .agent-tag { color: var(--brand-c-on-ink); }
+  .activity-line .tool-call { color: var(--gold-on-ink); }
+  .activity-line .tool-return { color: var(--positive-on-ink); }
   @media (prefers-reduced-motion: no-preference) {
     .activity-line.new { animation: activityIn 0.25s ease; }
   }
@@ -223,7 +239,7 @@
     overflow: hidden;
     border: 1px solid var(--border);
     background: var(--surface);
-    box-shadow: 0 10px 34px rgba(0,0,0,0.35);
+    box-shadow: 0 10px 28px rgba(33,29,23,0.14);
   }
   .hero-banner.visible { display: block; }
 
@@ -237,29 +253,34 @@
 
   .hero-banner-overlay {
     position: absolute; inset: 0;
-    background: linear-gradient(0deg, rgba(10,9,18,0.94) 0%, rgba(10,9,18,0.5) 45%, rgba(10,9,18,0.05) 75%);
+    background: linear-gradient(0deg, rgba(33,29,23,0.94) 0%, rgba(33,29,23,0.55) 45%, rgba(33,29,23,0.06) 75%);
     display: flex; flex-direction: column; justify-content: flex-end;
     padding: 24px 28px;
   }
 
+  /* Reads as a marquee caption card over the poster art, so it stays a
+     dark "chip" — with its own on-ink accent set — regardless of the
+     surrounding (now light) theme. */
   .hero-banner-title {
-    font-family: var(--font-mono); font-size: 0.78rem; letter-spacing: 0.14em;
-    text-transform: uppercase; color: var(--gold); margin-bottom: 10px;
+    font-family: var(--font-mono); font-size: 0.78rem; letter-spacing: 0.06em;
+    text-transform: uppercase; color: var(--gold-on-ink); margin-bottom: 10px;
   }
 
   .hero-banner-meta { display: flex; flex-wrap: wrap; gap: 8px; }
 
   .meta-pill {
-    font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.04em;
-    padding: 5px 12px; border-radius: 20px; border: 1px solid var(--border);
-    color: var(--text-muted); background: rgba(10,9,18,0.5);
+    font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.02em;
+    padding: 5px 12px; border-radius: 4px; border: 1px solid rgba(245,241,230,0.25);
+    color: var(--on-ink-muted); background: rgba(33,29,23,0.55);
   }
-  .meta-pill.info { border-color: var(--cast-accent); color: var(--cast-accent); }
-  .meta-pill.confidence-high { border-color: var(--positive); color: var(--positive); }
-  .meta-pill.confidence-medium { border-color: var(--neutral); color: var(--neutral); }
-  .meta-pill.confidence-low { border-color: var(--negative); color: var(--negative); }
+  .meta-pill.info { border-color: var(--brand-c-on-ink); color: var(--brand-c-on-ink); }
+  .meta-pill.confidence-high { border-color: var(--positive-on-ink); color: var(--positive-on-ink); }
+  .meta-pill.confidence-medium { border-color: var(--neutral-on-ink); color: var(--neutral-on-ink); }
+  .meta-pill.confidence-low { border-color: var(--negative-on-ink); color: var(--negative-on-ink); }
 
-  /* Fallback text-only banner when no poster image is available */
+  /* Fallback text-only banner when no poster image is available — this
+     one sits on the light page, not a dark overlay, so its title and
+     pills switch back to the standard (dark-on-light) tokens. */
   .marquee-fallback {
     display: none;
     margin-top: 34px;
@@ -271,6 +292,13 @@
   }
   .marquee-fallback.visible { display: block; }
   .marquee-fallback .hero-banner-title { color: var(--gold); }
+  .marquee-fallback .meta-pill {
+    color: var(--text-muted); background: var(--unclear-dim); border-color: var(--border);
+  }
+  .marquee-fallback .meta-pill.info { border-color: var(--cast-accent); color: var(--cast-accent); }
+  .marquee-fallback .meta-pill.confidence-high { border-color: var(--positive); color: var(--positive); }
+  .marquee-fallback .meta-pill.confidence-medium { border-color: var(--neutral); color: var(--neutral); }
+  .marquee-fallback .meta-pill.confidence-low { border-color: var(--negative); color: var(--negative); }
   .marquee-fallback .hero-banner-meta { justify-content: center; }
 
   /* --- Greenlight Memo: the verdict-first centerpiece --- */
@@ -278,24 +306,28 @@
     display: none;
     max-width: 900px; margin: 34px auto 0;
     background: var(--surface-raised); border: 1px solid var(--border);
-    border-radius: 16px; padding: 30px 32px;
-    box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+    border-radius: 4px; padding: 34px 32px;
+    box-shadow: 0 8px 24px rgba(33,29,23,0.10);
   }
   .greenlight-card.visible { display: block; }
-  .greenlight-card.tone-positive { border-color: var(--positive); }
-  .greenlight-card.tone-negative { border-color: var(--negative); }
-  .greenlight-card.tone-neutral { border-color: var(--neutral); }
+  .greenlight-card.tone-positive { border-left: 4px solid var(--positive); }
+  .greenlight-card.tone-negative { border-left: 4px solid var(--negative); }
+  .greenlight-card.tone-neutral { border-left: 4px solid var(--neutral); }
 
-  .verdict-row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 6px; }
+  .verdict-row { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; margin-bottom: 6px; }
+
+  /* A rubber-stamp mark, not a rounded status pill — this is a studio
+     memo being "stamped" approved/held, not a dashboard badge. */
   .verdict-badge {
     font-family: var(--font-mono); font-weight: 700; font-size: 0.85rem;
-    letter-spacing: 0.08em; text-transform: uppercase; padding: 7px 16px;
-    border-radius: 20px; display: inline-flex; align-items: center; gap: 8px;
+    letter-spacing: 0.03em; text-transform: uppercase; padding: 7px 16px;
+    border: 2px solid; border-radius: 3px; transform: rotate(-2deg);
+    display: inline-flex; align-items: center; gap: 8px; background: none;
   }
-  .verdict-dot { width: 10px; height: 10px; border-radius: 50%; }
-  .verdict-badge.tone-positive { background: var(--positive-dim); color: var(--positive); }
-  .verdict-badge.tone-negative { background: var(--negative-dim); color: var(--negative); }
-  .verdict-badge.tone-neutral { background: var(--neutral-dim); color: var(--neutral); }
+  .verdict-dot { width: 9px; height: 9px; border-radius: 50%; }
+  .verdict-badge.tone-positive { border-color: var(--positive); color: var(--positive); }
+  .verdict-badge.tone-negative { border-color: var(--negative); color: var(--negative); }
+  .verdict-badge.tone-neutral { border-color: var(--neutral); color: var(--neutral); }
   .verdict-badge.tone-positive .verdict-dot { background: var(--positive); }
   .verdict-badge.tone-negative .verdict-dot { background: var(--negative); }
   .verdict-badge.tone-neutral .verdict-dot { background: var(--neutral); }
@@ -314,7 +346,7 @@
   .opp-risk-tile { border-radius: 10px; padding: 16px 18px; border: 1px solid var(--border); }
   .opp-risk-tile.opportunity { border-color: var(--positive); background: linear-gradient(135deg, var(--positive-dim), var(--surface-raised) 70%); }
   .opp-risk-tile.risk { border-color: var(--negative); background: linear-gradient(135deg, var(--negative-dim), var(--surface-raised) 70%); }
-  .opp-risk-label { font-family: var(--font-mono); font-size: 0.66rem; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 6px; }
+  .opp-risk-label { font-family: var(--font-mono); font-size: 0.66rem; letter-spacing: 0.03em; text-transform: uppercase; margin-bottom: 6px; }
   .opp-risk-tile.opportunity .opp-risk-label { color: var(--positive); }
   .opp-risk-tile.risk .opp-risk-label { color: var(--negative); }
 
@@ -322,18 +354,26 @@
   .war-room { display: none; max-width: 1180px; margin: 24px auto 0; }
   .war-room.visible { display: block; }
   .war-room-title {
-    font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.14em;
+    font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.03em;
     text-transform: uppercase; color: var(--text-muted); text-align: center; margin-bottom: 16px;
   }
   .war-room-grid { display: grid; grid-template-columns: 1fr; gap: 14px; }
   @media (min-width: 700px) { .war-room-grid { grid-template-columns: 1fr 1fr; } }
   @media (min-width: 1050px) { .war-room-grid { grid-template-columns: 1fr 1fr 1fr; } }
+  /* Each seat at the table gets its own accent rather than an identical
+     box, so the grid reads as six distinct voices, not six repeats. */
   .voice-card {
-    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
-    padding: 16px 18px; box-shadow: 0 4px 14px rgba(0,0,0,0.18);
-    transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+    background: var(--surface); border: 1px solid var(--border); border-top: 3px solid var(--border);
+    border-radius: 4px; padding: 16px 18px; box-shadow: 0 3px 10px rgba(33,29,23,0.06);
+    transition: transform 0.18s ease, box-shadow 0.18s ease;
   }
-  .voice-card:hover { transform: translateY(-3px); box-shadow: 0 10px 24px rgba(0,0,0,0.28); border-color: var(--brand-c); }
+  .voice-card:hover { transform: translateY(-2px); box-shadow: 0 8px 18px rgba(33,29,23,0.10); }
+  .voice-card.role-director { border-top-color: var(--brand-b); }
+  .voice-card.role-producer { border-top-color: var(--ink); }
+  .voice-card.role-marketing_chief { border-top-color: var(--marketing-accent); }
+  .voice-card.role-casting_executive { border-top-color: var(--cast-accent); }
+  .voice-card.role-distribution_executive { border-top-color: var(--gold); }
+  .voice-card.role-analyst { border-top-color: var(--brand-c); }
   .voice-role { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 0.9rem; margin-bottom: 8px; }
   .voice-icon { font-size: 1.1rem; }
   .voice-insight { font-family: var(--font-display); font-style: italic; font-size: 0.95rem; color: var(--text); line-height: 1.5; }
@@ -342,7 +382,7 @@
   .timeline-card { display: none; max-width: 1050px; margin: 22px auto 0; }
   .timeline-card.visible { display: block; }
   .timeline-title {
-    font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.14em;
+    font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.03em;
     text-transform: uppercase; color: var(--text-muted); text-align: center; margin-bottom: 16px;
   }
   .timeline-track { display: flex; flex-direction: column; gap: 0; }
@@ -365,7 +405,7 @@
   .timeline-stop.tone-neutral::before { background: var(--neutral); }
   .timeline-stop.tone-unclear::before { background: var(--unclear); }
   .timeline-phase-label {
-    font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.08em;
+    font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.03em;
     text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px;
   }
   .timeline-note { font-size: 0.9rem; color: var(--text); }
@@ -413,7 +453,7 @@
   .tile.tone-neutral { border-color: var(--neutral); background: linear-gradient(135deg, var(--neutral-dim), var(--surface) 70%); }
   .tile.tone-unclear { border-color: var(--unclear); background: var(--surface); }
 
-  .tile-label { font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px; }
+  .tile-label { font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.03em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px; }
   .tile-value { font-family: var(--font-display); font-weight: 600; font-size: 1.15rem; text-transform: capitalize; }
   .tile.tone-positive .tile-value { color: var(--positive); }
   .tile.tone-negative .tile-value { color: var(--negative); }
@@ -422,7 +462,7 @@
 
   .field { margin-bottom: 18px; }
   .field:last-child { margin-bottom: 0; }
-  .field-label { font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px; }
+  .field-label { font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.03em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px; }
   .field-value { font-size: 0.96rem; }
   .field-value a { color: inherit; }
 
@@ -441,8 +481,8 @@
   .card-list { display: grid; grid-template-columns: 1fr; gap: 12px; }
   @media (min-width: 720px) { .card-list { grid-template-columns: 1fr 1fr; } }
 
-  .mini-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; box-shadow: 0 2px 10px rgba(0,0,0,0.15); transition: transform 0.15s ease, box-shadow 0.15s ease; }
-  .mini-card:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0,0,0,0.22); }
+  .mini-card { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 14px 16px; box-shadow: 0 2px 8px rgba(33,29,23,0.05); transition: transform 0.15s ease, box-shadow 0.15s ease; }
+  .mini-card:hover { transform: translateY(-2px); box-shadow: 0 6px 14px rgba(33,29,23,0.08); }
   .mini-card-title { font-weight: 600; font-size: 0.92rem; margin-bottom: 4px; }
   .mini-card.cast-accent { border-left: 3px solid var(--cast-accent); }
   .mini-card.news-accent { border-left: 3px solid var(--news-accent); }
@@ -456,7 +496,7 @@
   }
   #export-btn:hover { border-color: var(--gold); color: var(--gold); }
   #pdf-btn { border-color: var(--brand-c); color: var(--brand-c); }
-  #pdf-btn:hover { background: var(--brand-c); color: #1a0f10; }
+  #pdf-btn:hover { background: var(--brand-c); color: var(--on-ink); }
   #pdf-btn:disabled { opacity: 0.5; cursor: default; }
 
   @media (max-width: 560px) {
@@ -479,21 +519,17 @@
     .subtabs, .evidence-section, .subpanel { display: block !important; }
     .page { max-width: 100%; padding: 0; }
     .greenlight-card, .war-room, .evidence-section, .voice-card, .mini-card { break-inside: avoid; }
-    body { background: #fff; color: #111; }
+    /* The on-screen theme is already ink-on-paper, so unlike before,
+       nothing here needs to be recolored for print — just force the
+       page itself to pure white to save ink, which the color-adjust
+       rule above won't override since it's an explicit background. */
+    body { background: #fff; }
     .hero-banner-overlay { position: static; background: none; padding: 12px 0; }
     .hero-banner img { display: none; }
 
-    /* .filmecho-logo and .tagline sit directly on the page background
-       (no card behind them), and body's background flips to white for
-       print — so the on-screen white/light-muted colors that read fine
-       on a near-black background need their own print-only values. */
-    .logo-film { color: #1a1a1a; }
-    .tagline { color: #555555; }
-
-    /* The multi-layer "echo trail" ghost effect (3 stacked, offset,
-       low-opacity copies of "ECHO") is a screen-only flourish; printed
-       it produces overlapping/garbled text instead of a clean word.
-       Keep just the main word for print. */
+    /* The letterpress ghost-strike on "ECHO" is a screen-only flourish;
+       printed, its absolute-positioned duplicate can still show up in
+       the text layer on copy/search. Keep just the main word for print. */
     .echo-trail { display: none !important; }
 
     /* Shadows don't serve a printed page and can render as odd smudges
@@ -509,9 +545,7 @@
       <div class="filmecho-logo">
         <span class="logo-film">FILM</span>
         <div class="logo-echo-wrapper">
-          <span class="echo-trail trail-3">ECHO</span>
-          <span class="echo-trail trail-2">ECHO</span>
-          <span class="echo-trail trail-1">ECHO</span>
+          <span class="echo-trail">ECHO</span>
           <span class="logo-echo-main">ECHO</span>
         </div>
       </div>
@@ -826,7 +860,7 @@ function renderWarRoom(voices) {
   warRoomGrid.innerHTML = voices.map(v => {
     const meta = ROLE_META[v.role] || { icon: '\u{1F4AC}', label: v.role };
     return `
-      <div class="voice-card">
+      <div class="voice-card role-${v.role}">
         <div class="voice-role"><span class="voice-icon">${meta.icon}</span>${meta.label}</div>
         <div class="voice-insight">&ldquo;${v.insight}&rdquo;</div>
       </div>
