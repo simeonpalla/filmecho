@@ -229,6 +229,17 @@ class ReputationTimelineEntry(BaseModel):
     fill out the timeline."""
 
     phase: Literal["pre_release", "trailer", "opening_weekend", "week_two", "long_tail"]
+    date: Optional[str] = Field(
+        default=None,
+        description=(
+            "The real date that placed this entry in this phase — a YouTube "
+            "video's published_at, or a dated source's publication date. "
+            "Format as given (e.g. 'March 3, 2021' or the raw ISO date), "
+            "never reformatted into a guess. Null only if truly no date "
+            "was available for this entry, which should be rare since a "
+            "phase can't be assigned without one in the first place."
+        ),
+    )
     sentiment: Literal["positive", "mixed", "negative", "unclear"]
     note: str = Field(description="What was actually being said in this phase, one sentence, grounded in dated sources.")
 
@@ -333,6 +344,18 @@ class GreenlightMemo(BaseModel):
     confidence: int = Field(
         ge=0, le=100,
         description="0-100. Lower when upstream sources were sparse/unavailable or when signals conflict; do not default to a round number like 50 or 75 out of habit, base it on how much real evidence actually supports the verdict.",
+    )
+    confidence_rationale: str = Field(
+        default="",
+        description=(
+            "One sentence stating WHY the confidence number is what it is — "
+            "name how many of the five upstream sources actually had data "
+            "(cross-check against sources_used) and whether they agreed or "
+            "conflicted. E.g. 'Based on 4 of 5 sources, which broadly "
+            "agreed; competitive data was unavailable this run.' This is "
+            "shown directly next to the confidence score, so it must "
+            "actually explain the number, not restate the verdict."
+        ),
     )
     why: list[str] = Field(max_length=3, min_length=1, description="Up to 3 short reasons for the verdict, each traceable to specific upstream data (sentiment, competitive, cast, marketing, or news).")
     biggest_opportunity: str = Field(description="The single strongest positive lever, specific and named — not 'strong audience interest' but what specifically is driving it.")

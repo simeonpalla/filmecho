@@ -156,7 +156,12 @@ main_synthesis_agent = Agent(
         "you were given — five available, agreeing sources should score "
         "meaningfully higher than two available, conflicting ones. "
         "Populate sources_used with exactly which of the five upstream "
-        "sections actually had data."
+        "sections actually had data, and populate confidence_rationale "
+        "with one sentence that a reader could use to verify the number — "
+        "name how many of the five sources you had and whether they "
+        "agreed. This is displayed directly next to the confidence score "
+        "in the product, so a vague sentence here defeats the point of "
+        "having the field at all."
     ),
     output_schema=GreenlightMemo,
 )

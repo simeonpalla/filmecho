@@ -24,7 +24,7 @@ from reportlab.platypus import (
 
 VERDICT_COLORS = {
     "greenlight": colors.HexColor("#1f7a4d"),
-    "greenlight_with_changes": colors.HexColor("#a67c1a"),
+    "greenlight_with_changes": colors.HexColor("#a85d0a"),
     "hold": colors.HexColor("#a63333"),
     "pass": colors.HexColor("#a63333"),
 }
@@ -47,6 +47,16 @@ DIRECTION_LABELS = {
     "consider_earlier": "Consider shifting earlier",
     "consider_later": "Consider shifting later",
 }
+SOURCE_LABELS = {
+    "sentiment": "sentiment", "web": "web sentiment", "youtube": "YouTube",
+    "competitive": "competitive landscape", "news": "production/cast news",
+    "cast": "cast reception", "marketing": "marketing analysis",
+}
+PHASE_LABELS = {
+    "pre_release": "Pre-release", "trailer": "Trailer",
+    "opening_weekend": "Opening Weekend", "week_two": "Week 2", "long_tail": "Long-tail",
+}
+PHASE_ORDER = ["pre_release", "trailer", "opening_weekend", "week_two", "long_tail"]
 
 
 def _styles() -> dict:
@@ -108,6 +118,7 @@ def build_pdf(data: dict) -> bytes:
     marketing = data.get("marketing") or {}
     cast = data.get("cast") or {}
     news = data.get("news") or {}
+    sentiment_synthesis = data.get("sentiment_synthesis") or {}
 
     title = entity.get("title", "Untitled")
     release_status = entity.get("release_status", "unclear")
@@ -143,7 +154,15 @@ def build_pdf(data: dict) -> bytes:
         ("BOTTOMPADDING", (0, 0), (-1, -1), 10),
     ]))
     story.append(verdict_table)
-    story.append(Spacer(1, 10))
+    story.append(Spacer(1, 6))
+
+    sources_used = result.get("sources_used") or []
+    confidence_rationale = result.get("confidence_rationale") or ""
+    sources_label = ", ".join(SOURCE_LABELS.get(s, s) for s in sources_used) if sources_used else "no upstream sources recorded"
+    basis_bits = [confidence_rationale] if confidence_rationale else []
+    basis_bits.append(f"Based on {len(sources_used)}/5 sources: {sources_label}.")
+    story.append(Paragraph(_esc(" ".join(basis_bits)), s["footer"]))
+    story.append(Spacer(1, 8))
 
     story.append(Paragraph(_esc(result.get("headline", "")), s["h2"]))
 
@@ -187,6 +206,18 @@ def build_pdf(data: dict) -> bytes:
             role_label = ROLE_LABELS.get(voice.get("role"), voice.get("role", ""))
             story.append(Paragraph(f"<b>{_esc(role_label)}</b>", s["h3"]))
             story.append(Paragraph(f"\u201c{_esc(voice.get('insight', ''))}\u201d", s["quote"]))
+
+    # --- Reputation timeline (previously missing from this export
+    # entirely, even though the frontend has always shown it) ---
+    timeline = sentiment_synthesis.get("timeline") or []
+    if timeline:
+        story.append(Paragraph("THE LIFE OF ITS REPUTATION", s["h2"]))
+        ordered = sorted(timeline, key=lambda e: PHASE_ORDER.index(e["phase"]) if e.get("phase") in PHASE_ORDER else len(PHASE_ORDER))
+        for entry in ordered:
+            phase_label = PHASE_LABELS.get(entry.get("phase"), entry.get("phase", ""))
+            date_bit = f" — {_esc(entry['date'])}" if entry.get("date") else ""
+            story.append(Paragraph(f"<b>{_esc(phase_label)}{date_bit}</b>", s["h3"]))
+            story.append(Paragraph(_esc(entry.get("note", "")), s["body"]))
 
     # --- Release window advisory ---
     rw = competitive.get("release_window") or {}

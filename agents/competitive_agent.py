@@ -79,6 +79,7 @@ async def get_competitive_landscape(
         search_queries = [
             f"{title} box office competition" + (f" {region_hint.split(',')[0]}" if region_hint else ""),
             f"films releasing same weekend as {title}",
+            f"major movie releases after {title} release date",
         ]
 
     search = await asyncio.to_thread(
@@ -154,7 +155,24 @@ competitive_agent = Agent(
         "is no real data for a date that didn't happen, only for the "
         "actual competitors you found. If the excerpts don't give you "
         "enough about competitors' specific dates/genres to reason about "
-        "this, set suggested_direction to 'unclear' rather than guessing."
+        "this, set suggested_direction to 'unclear' rather than guessing.\n\n"
+        "IMPORTANT — don't let this default toward 'earlier': your search "
+        "results are naturally weighted toward what's ALREADY known to be "
+        "competing in the CURRENT window, which makes 'earlier' look "
+        "supportable (you can point at named competitors it would avoid) "
+        "while 'later' looks unsupported by default (you have no evidence "
+        "either way about what's releasing further out). That asymmetry in "
+        "your evidence is not the same as 'earlier' actually being the "
+        "better call — it may just be the only direction you happened to "
+        "search for. Your reasoning field must explicitly address BOTH "
+        "directions: state what you found that supports (or rules out) "
+        "shifting earlier, AND separately state what you found (or didn't "
+        "find) about shifting later — for example, whether the excerpts "
+        "show anything already scheduled after the current window in this "
+        "market, or whether you simply have no data on that and should say "
+        "so plainly rather than silently omitting it. Only pick a "
+        "direction your reasoning actually defends on both sides, not the "
+        "one your search queries happened to surface more of."
     ),
     tools=[competitive_tool],
     output_schema=CompetitiveResult,

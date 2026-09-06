@@ -29,8 +29,8 @@
     --positive-dim: #dcebd5;
     --negative: #9c2b2b;
     --negative-dim: #f2dad1;
-    --neutral: #9c6a17;
-    --neutral-dim: #f5e4b0;
+    --neutral: #a85d0a;
+    --neutral-dim: #f6e4ce;
     --unclear: #736a58;
     --unclear-dim: #ece5d2;
 
@@ -377,6 +377,7 @@
   .verdict-badge.tone-neutral .verdict-dot { background: var(--neutral); }
 
   .confidence-wrap { display: flex; align-items: center; gap: 8px; font-family: var(--font-mono); font-size: 0.82rem; color: var(--text-muted); }
+  .confidence-basis { font-size: 0.82rem; color: var(--text-muted); margin: 4px 0 14px; }
   .confidence-bar { width: 90px; height: 6px; border-radius: 3px; background: var(--unclear-dim); overflow: hidden; }
   .confidence-bar-fill { height: 100%; border-radius: 3px; }
   .confidence-bar-fill.tone-positive { background: var(--positive); }
@@ -533,13 +534,11 @@
   .mini-card.marketing-accent { border-left: 3px solid var(--marketing-accent); background: var(--marketing-tint); }
 
   .export-row { text-align: center; margin-top: 24px; display: none; gap: 10px; justify-content: center; flex-wrap: wrap; }
-  #export-btn, #pdf-btn {
-    background: none; border: 1px solid var(--border); color: var(--text-muted);
+  #pdf-btn {
+    background: none; border: 1px solid var(--brand-c); color: var(--brand-c);
     font-family: var(--font-body); font-size: 0.85rem; padding: 9px 20px;
     border-radius: 8px; cursor: pointer; transition: all 0.15s ease;
   }
-  #export-btn:hover { border-color: var(--gold); color: var(--gold); }
-  #pdf-btn { border-color: var(--brand-c); color: var(--brand-c); }
   #pdf-btn:hover { background: var(--brand-c); color: var(--on-ink); }
   #pdf-btn:disabled { opacity: 0.5; cursor: default; }
 
@@ -667,7 +666,6 @@
     <div id="release-window-card" class="release-window-card"></div>
 
     <div class="export-row" id="export-row">
-      <button id="export-btn">Export / print memo</button>
       <button id="pdf-btn">Download PDF report</button>
     </div>
 
@@ -710,7 +708,6 @@ const evidenceCollectionsBtn = document.getElementById('evidence-collections-btn
 const evidenceCollections = document.getElementById('evidence-collections');
 const exampleChips = document.getElementById('example-chips');
 const exportRow = document.getElementById('export-row');
-const exportBtn = document.getElementById('export-btn');
 const pdfBtn = document.getElementById('pdf-btn');
 const cacheNote = document.getElementById('cache-note');
 
@@ -876,6 +873,15 @@ const VERDICT_LABELS = {
   pass: 'PASS',
 };
 
+// Matches sources_used values from main_synthesis.py's prompt sections
+// (SENTIMENT SYNTHESIS / COMPETITIVE LANDSCAPE / PRODUCTION-CAST NEWS /
+// CAST RECEPTION / MARKETING ANALYSIS) to plain labels for display.
+const SOURCE_LABELS = {
+  sentiment: 'sentiment', web: 'web sentiment', youtube: 'YouTube',
+  competitive: 'competitive landscape', news: 'production/cast news',
+  cast: 'cast reception', marketing: 'marketing analysis',
+};
+
 const ROLE_META = {
   director: { icon: '\u{1F3AC}', label: 'The Director' },
   producer: { icon: '\u{1F3AF}', label: 'The Producer' },
@@ -903,6 +909,15 @@ function renderGreenlightMemo(memo, releaseStatus) {
   const notableNews = (memo.notable_news || []).map(n => `<li>${n.claim}${sourceLink(n.url)}</li>`).join('');
   const newsBlock = notableNews ? `<div class="field"><div class="field-label">Notable news</div><ul class="plain">${notableNews}</ul></div>` : '';
 
+  const sourcesUsed = memo.sources_used || [];
+  const sourcesLabel = sourcesUsed.length
+    ? sourcesUsed.map(s => SOURCE_LABELS[s] || s).join(', ')
+    : 'no upstream sources recorded';
+  const confidenceBasisParts = [];
+  if (memo.confidence_rationale) confidenceBasisParts.push(memo.confidence_rationale);
+  confidenceBasisParts.push(`Based on ${sourcesUsed.length}/5 sources: ${sourcesLabel}.`);
+  const confidenceBasis = confidenceBasisParts.join(' ');
+
   greenlightCard.innerHTML = `
     <div class="verdict-row">
       <span class="verdict-badge tone-${tone}"><span class="verdict-dot"></span>${VERDICT_LABELS[memo.verdict] || 'VERDICT UNCLEAR'}</span>
@@ -911,6 +926,7 @@ function renderGreenlightMemo(memo, releaseStatus) {
         <span class="confidence-bar"><span class="confidence-bar-fill tone-${tone}" style="width:${memo.confidence}%"></span></span>
       </span>
     </div>
+    <div class="confidence-basis">${confidenceBasis}</div>
     <h2>${memo.headline || ''}</h2>
     <div class="field"><div class="field-label">Why</div><ul class="plain">${why}</ul></div>
     <div class="opp-risk-row">
@@ -961,7 +977,7 @@ function renderTimeline(timeline) {
     <div class="timeline-track">
       ${sorted.map(entry => `
         <div class="timeline-stop tone-${sentimentTone(entry.sentiment)}">
-          <div class="timeline-phase-label">${PHASE_LABELS[entry.phase] || entry.phase}</div>
+          <div class="timeline-phase-label">${PHASE_LABELS[entry.phase] || entry.phase}${entry.date ? ` — ${entry.date}` : ''}</div>
           <div class="timeline-note">${entry.note || ''}</div>
         </div>
       `).join('')}
@@ -1342,8 +1358,6 @@ exampleChips.addEventListener('click', (e) => {
   titleInput.value = chip.dataset.title;
   runBrief();
 });
-
-exportBtn.addEventListener('click', () => window.print());
 
 pdfBtn.addEventListener('click', async () => {
   if (!lastPayloadData) return;
