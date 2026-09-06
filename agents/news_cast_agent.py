@@ -60,7 +60,7 @@ async def get_production_news(
     search = await asyncio.to_thread(
         _client.search,
         objective=objective,
-        search_queries=[f"{title} production news", f"{title} cast news"],
+        search_queries=[f"{title} production news", f"{title} cast news", f"{title} casting rumor confirmed denied"],
         session_id=session_id or None,
         mode="fast",
     )
@@ -90,7 +90,28 @@ news_cast_agent = Agent(
         "(each attributed to a source URL, in your own words, categorized "
         "as casting/production/release/box_office/other), and rumors with "
         "anything that's speculation rather than confirmed reporting, "
-        "don't merge the two lists or omit the distinction. Your beat is "
+        "don't merge the two lists or omit the distinction.\n\n"
+        "CRITICAL — before filing ANYTHING as a fact, check your OWN "
+        "search results for disagreement first: if two excerpts make "
+        "different claims about the same specific thing (the same "
+        "actor's involvement, the same date, the same budget figure), "
+        "that is NOT a settled fact no matter how confidently either "
+        "excerpt states it — file it under rumors instead, with a note "
+        "that names the actual disagreement (e.g. 'Reports conflict on "
+        "whether X returns for this specific film or only its sequel'). "
+        "This matters most for casting/involvement claims specifically, "
+        "since a studio's own plans can leak, change, or get reported "
+        "prematurely — treat a single-outlet claim about someone's "
+        "casting or involvement as provisional (note it as reported by "
+        "that outlet, e.g. 'according to [source]', rather than flatly "
+        "stating it) unless a second, independent excerpt corroborates "
+        "it, and always check the excerpt's own language for hedging "
+        "('reportedly', 'sources say', 'rumored') — a hedged source claim "
+        "must not be flattened into a confident fact. A well-attributed, "
+        "clearly-flagged rumor is a correct and useful output; a "
+        "confidently-stated fact that turns out contested is not, even "
+        "though it reads better.\n\n"
+        "Your beat is "
         "PRODUCTION HISTORY, not promotional strategy (a marketing "
         "campaign's tactics belong to the marketing agent, not here, even "
         "when the same underlying event — like a trailer drop — could be "
