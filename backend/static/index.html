@@ -183,18 +183,126 @@
   #search-btn:disabled { opacity: 0.5; cursor: default; }
   #search-btn:focus-visible, #title-input:focus-visible { outline: 2px solid var(--brand-c); outline-offset: 2px; }
 
-  /* --- Progress checklist --- */
+  /* --- Progress / cinematic loading scene ---
+     #progress and its .visible toggle are UNCHANGED from before (see
+     runBrief() / the SSE handler) — only what renders inside it changed.
+     The old checklist markup (#progress-list, #activity-feed,
+     #progress-timer) still exists and is still driven by the exact same
+     resetProgress()/markStage()/appendActivity() functions; it's now
+     tucked into a collapsed "Technical log" <details> so the cinematic
+     scene is the primary experience while the real event log stays
+     available, not deleted. */
   .progress {
     display: none;
     margin: 28px auto 0;
-    max-width: 480px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 18px 20px;
+    max-width: 900px;
     text-align: left;
   }
   .progress.visible { display: block; }
+
+  .studio-scene {
+    position: relative;
+    background: linear-gradient(180deg, #101823 0%, #0b1119 55%, #0a0e14 100%);
+    border: 1px solid #1f2b3a;
+    border-radius: 12px;
+    overflow: hidden;
+    padding: 26px 24px 20px;
+    min-height: 380px;
+  }
+  .studio-vignette {
+    position: absolute; inset: 0; pointer-events: none; z-index: 4;
+    background: radial-gradient(ellipse at center, transparent 45%, rgba(4,6,10,0.65) 100%);
+  }
+  .studio-haze {
+    position: absolute; inset: -20% -10%; pointer-events: none; z-index: 1; opacity: 0.5;
+    background: radial-gradient(ellipse 500px 260px at 30% 30%, rgba(90,140,190,0.10), transparent 60%),
+                radial-gradient(ellipse 420px 240px at 75% 60%, rgba(231,183,92,0.06), transparent 60%);
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .studio-haze { animation: hazeDrift 22s ease-in-out infinite; }
+  }
+  @keyframes hazeDrift {
+    0%, 100% { transform: translate(0, 0); }
+    50% { transform: translate(2%, -2%); }
+  }
+
+  .studio-rig { position: absolute; top: 8px; left: 16px; right: 16px; height: 24px; z-index: 2; opacity: 0.55; }
+  .studio-rig-light { transform-origin: center; }
+  @media (prefers-reduced-motion: no-preference) {
+    .studio-rig-light.a { animation: rigPulse 5s ease-in-out infinite; }
+    .studio-rig-light.b { animation: rigPulse 6.5s ease-in-out infinite -2s; }
+  }
+  @keyframes rigPulse { 0%, 100% { opacity: 0.55; } 50% { opacity: 1; } }
+
+  .studio-header { position: relative; z-index: 3; text-align: center; margin-bottom: 18px; }
+  .studio-kicker { font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.08em; color: var(--gold-on-ink); text-transform: uppercase; }
+  .studio-title { font-family: var(--font-display); font-weight: 900; font-style: italic; font-size: 1.35rem; color: var(--on-ink); margin: 2px 0 6px; }
+  .studio-subtitle { font-family: var(--font-body); font-size: 0.92rem; color: var(--on-ink); }
+  .studio-subtitle b { color: var(--gold-on-ink); font-weight: 600; }
+  .studio-tagline { font-family: var(--font-mono); font-size: 0.72rem; color: var(--on-ink-muted); margin-top: 4px; }
+
+  /* Floor props — small SVGs, subtle looping motion, transform/opacity only */
+  .studio-floor { position: relative; z-index: 2; height: 64px; margin-bottom: 18px; opacity: 0.8; }
+  .studio-prop { position: absolute; bottom: 0; }
+  .studio-prop.camera-rig { left: 4%; width: 46px; }
+  .studio-prop.crane { left: 24%; width: 90px; transform-origin: 12px 58px; }
+  @media (prefers-reduced-motion: no-preference) { .studio-prop.crane { animation: craneSway 7s ease-in-out infinite; } }
+  @keyframes craneSway { 0%, 100% { transform: rotate(-2deg); } 50% { transform: rotate(2deg); } }
+  .studio-prop.reel { right: 26%; width: 34px; }
+  .studio-prop.reel .reel-inner { transform-origin: center; }
+  @media (prefers-reduced-motion: no-preference) { .studio-prop.reel .reel-inner { animation: reelSpin 6s linear infinite; } }
+  @keyframes reelSpin { from { transform: rotate(0); } to { transform: rotate(360deg); } }
+  .studio-prop.clapper { right: 6%; width: 38px; }
+  .studio-prop.clapper .clapper-top { transform-origin: 4px 6px; }
+  @media (prefers-reduced-motion: no-preference) { .studio-prop.clapper .clapper-top { animation: clapperTap 9s ease-in-out infinite; } }
+  @keyframes clapperTap { 0%, 85%, 100% { transform: rotate(0deg); } 90% { transform: rotate(-18deg); } 95% { transform: rotate(0deg); } }
+  .rec-dot { transform-origin: center; }
+  @media (prefers-reduced-motion: no-preference) { .rec-dot { animation: recBlink 1.4s ease-in-out infinite; } }
+  @keyframes recBlink { 0%, 100% { opacity: 1; } 50% { opacity: 0.25; } }
+  .monitor-bank { position: absolute; left: 46%; bottom: 4px; display: flex; gap: 4px; }
+  .monitor-bank rect.screen { transition: opacity 0.4s ease; }
+  @media (prefers-reduced-motion: no-preference) { .monitor-bank .screen.flicker { animation: monitorFlicker 3.2s ease-in-out infinite; } }
+  @keyframes monitorFlicker { 0%, 100% { opacity: 0.5; } 45% { opacity: 0.9; } 50% { opacity: 0.4; } 55% { opacity: 0.85; } }
+
+  /* Role stations — the real progress display, driven by the exact same
+     stageState the old checklist used. */
+  .role-row { position: relative; z-index: 3; display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; }
+  .role-station {
+    background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px;
+    padding: 10px 8px; text-align: center; transition: background 0.4s ease, border-color 0.4s ease, opacity 0.4s ease;
+    opacity: 0.55;
+  }
+  .role-station.active { opacity: 1; background: rgba(231,183,92,0.07); border-color: rgba(231,183,92,0.35); }
+  .role-station.done { opacity: 1; background: rgba(111,203,134,0.06); border-color: rgba(111,203,134,0.3); }
+  .role-light { width: 8px; height: 8px; border-radius: 50%; margin: 0 auto 6px; background: #3a4352; transition: background 0.4s ease, box-shadow 0.4s ease; }
+  .role-station.active .role-light { background: var(--gold-on-ink); box-shadow: 0 0 8px 1px rgba(231,183,92,0.6); }
+  @media (prefers-reduced-motion: no-preference) { .role-station.active .role-light { animation: pulse 1.2s ease-in-out infinite; } }
+  .role-station.done .role-light { background: var(--positive-on-ink, #6fcb86); box-shadow: 0 0 6px 1px rgba(111,203,134,0.5); }
+  .role-name { font-family: var(--font-mono); font-size: 0.66rem; letter-spacing: 0.02em; text-transform: uppercase; color: var(--on-ink); margin-bottom: 3px; }
+  .role-status { font-family: var(--font-body); font-size: 0.68rem; color: var(--on-ink-muted); line-height: 1.3; min-height: 2.2em; }
+
+  .studio-banner {
+    position: relative; z-index: 3; text-align: center; margin-top: 16px;
+    font-family: var(--font-mono); font-size: 0.78rem; letter-spacing: 0.06em; text-transform: uppercase;
+    color: var(--gold-on-ink); opacity: 0; max-height: 0; overflow: hidden; transition: opacity 0.5s ease, max-height 0.5s ease, margin 0.5s ease;
+  }
+  .studio-scene.converging .studio-banner { opacity: 1; max-height: 40px; margin-top: 16px; }
+  .studio-scene.converging .role-station:not(.analyst-station) { opacity: 0.35; }
+  .studio-scene.converging .role-station.analyst-station { opacity: 1; transform: scale(1.03); }
+
+  @media (max-width: 640px) {
+    .role-row { grid-template-columns: repeat(3, 1fr); }
+    .studio-prop.crane, .monitor-bank { display: none; }
+    .studio-floor { height: 46px; }
+  }
+
+  .tech-log-toggle { margin-top: 14px; }
+  .tech-log-toggle summary {
+    cursor: pointer; font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.03em;
+    text-transform: uppercase; color: var(--text-muted); padding: 6px 2px; user-select: none;
+  }
+  .tech-log-toggle[open] summary { margin-bottom: 8px; }
+  .tech-log-body { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px 18px; }
 
   .progress-title {
     font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.03em;
@@ -631,11 +739,113 @@
       </div>
 
       <div id="progress" class="progress">
-        <div class="progress-title">Pipeline progress</div>
-        <div id="progress-timer" class="progress-timer"><span class="progress-timer-dot"></span><span id="progress-timer-text">Running for 0s...</span></div>
-        <div id="progress-list"></div>
-        <div class="activity-feed-title">Live agent activity</div>
-        <div id="activity-feed" class="activity-feed"></div>
+        <div class="studio-scene" id="studioScene">
+          <div class="studio-haze"></div>
+          <svg class="studio-rig" viewBox="0 0 700 24" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+            <line x1="0" y1="2" x2="700" y2="2" stroke="#3a4352" stroke-width="2"/>
+            <circle class="studio-rig-light a" cx="180" cy="2" r="5" fill="#e7b75c"/>
+            <circle class="studio-rig-light b" cx="420" cy="2" r="5" fill="#e7b75c"/>
+            <circle class="studio-rig-light a" cx="580" cy="2" r="4" fill="#7fb0c9"/>
+          </svg>
+
+          <div class="studio-header">
+            <div class="studio-kicker">Filmecho</div>
+            <div class="studio-title">The Studio War Room</div>
+            <div class="studio-subtitle">Analyzing: <b id="studio-film-title">—</b></div>
+            <div class="studio-tagline" id="studio-tagline">Your AI production room is investigating...</div>
+          </div>
+
+          <div class="studio-floor">
+            <svg class="studio-prop camera-rig" viewBox="0 0 46 60" xmlns="http://www.w3.org/2000/svg">
+              <line x1="10" y1="58" x2="23" y2="30" stroke="#4a5566" stroke-width="2"/>
+              <line x1="36" y1="58" x2="23" y2="30" stroke="#4a5566" stroke-width="2"/>
+              <line x1="23" y1="58" x2="23" y2="30" stroke="#4a5566" stroke-width="2"/>
+              <rect x="12" y="16" width="24" height="16" rx="2" fill="#2b333f"/>
+              <circle cx="34" cy="24" r="5" fill="#12161c" stroke="#4a5566" stroke-width="1.5"/>
+              <circle class="rec-dot" cx="14" cy="18" r="2" fill="#c0392b"/>
+            </svg>
+            <svg class="studio-prop crane" viewBox="0 0 90 60" xmlns="http://www.w3.org/2000/svg">
+              <rect x="4" y="52" width="16" height="6" rx="1" fill="#2b333f"/>
+              <line x1="12" y1="52" x2="12" y2="12" stroke="#4a5566" stroke-width="3"/>
+              <line x1="12" y1="14" x2="80" y2="30" stroke="#4a5566" stroke-width="3"/>
+              <circle cx="80" cy="30" r="4" fill="#12161c" stroke="#4a5566" stroke-width="1.5"/>
+              <line x1="12" y1="14" x2="12" y2="4" stroke="#4a5566" stroke-width="2"/>
+              <line x1="12" y1="4" x2="46" y2="20" stroke="#3a4352" stroke-width="1.5"/>
+            </svg>
+            <svg class="studio-prop reel" viewBox="0 0 34 34" xmlns="http://www.w3.org/2000/svg">
+              <g class="reel-inner">
+                <circle cx="17" cy="17" r="15" fill="none" stroke="#4a5566" stroke-width="2.5"/>
+                <circle cx="17" cy="17" r="4" fill="#4a5566"/>
+                <circle cx="17" cy="5" r="2.6" fill="#2b333f" stroke="#4a5566" stroke-width="1"/>
+                <circle cx="27" cy="22" r="2.6" fill="#2b333f" stroke="#4a5566" stroke-width="1"/>
+                <circle cx="7" cy="22" r="2.6" fill="#2b333f" stroke="#4a5566" stroke-width="1"/>
+              </g>
+            </svg>
+            <svg class="studio-prop clapper" viewBox="0 0 38 34" xmlns="http://www.w3.org/2000/svg">
+              <rect x="2" y="12" width="34" height="20" rx="2" fill="#1c222b" stroke="#4a5566" stroke-width="1.5"/>
+              <line x1="6" y1="20" x2="32" y2="20" stroke="#4a5566" stroke-width="1"/>
+              <line x1="6" y1="26" x2="32" y2="26" stroke="#4a5566" stroke-width="1"/>
+              <g class="clapper-top">
+                <rect x="1" y="4" width="36" height="8" rx="1.5" fill="#2b333f" stroke="#4a5566" stroke-width="1.5"/>
+                <rect x="4" y="5" width="5" height="6" fill="#e7b75c"/>
+                <rect x="12" y="5" width="5" height="6" fill="#1c222b"/>
+                <rect x="20" y="5" width="5" height="6" fill="#e7b75c"/>
+                <rect x="28" y="5" width="5" height="6" fill="#1c222b"/>
+              </g>
+            </svg>
+            <svg class="monitor-bank" viewBox="0 0 60 20" width="60" height="20" xmlns="http://www.w3.org/2000/svg">
+              <rect class="screen flicker" x="0" y="0" width="16" height="12" rx="1" fill="#5fa8e0" opacity="0.5"/>
+              <rect class="screen flicker" x="20" y="0" width="16" height="12" rx="1" fill="#e7b75c" opacity="0.45" style="animation-delay:-1.1s"/>
+              <rect class="screen flicker" x="40" y="0" width="16" height="12" rx="1" fill="#6fcb86" opacity="0.4" style="animation-delay:-2s"/>
+            </svg>
+          </div>
+
+          <div class="role-row" id="roleRow">
+            <div class="role-station" data-role="director">
+              <div class="role-light"></div>
+              <div class="role-name">Director</div>
+              <div class="role-status">Standing by...</div>
+            </div>
+            <div class="role-station" data-role="market">
+              <div class="role-light"></div>
+              <div class="role-name">Market Intel</div>
+              <div class="role-status">Standing by...</div>
+            </div>
+            <div class="role-station" data-role="marketing">
+              <div class="role-light"></div>
+              <div class="role-name">Marketing</div>
+              <div class="role-status">Standing by...</div>
+            </div>
+            <div class="role-station" data-role="cast">
+              <div class="role-light"></div>
+              <div class="role-name">Cast</div>
+              <div class="role-status">Standing by...</div>
+            </div>
+            <div class="role-station" data-role="distribution">
+              <div class="role-light"></div>
+              <div class="role-name">Distribution</div>
+              <div class="role-status">Standing by...</div>
+            </div>
+            <div class="role-station analyst-station" data-role="analyst">
+              <div class="role-light"></div>
+              <div class="role-name">Analyst</div>
+              <div class="role-status">Waiting on the room...</div>
+            </div>
+          </div>
+
+          <div class="studio-banner" id="studioBanner">The room is deciding</div>
+        </div>
+
+        <details class="tech-log-toggle">
+          <summary>Technical log</summary>
+          <div class="tech-log-body">
+            <div class="progress-title">Pipeline progress</div>
+            <div id="progress-timer" class="progress-timer"><span class="progress-timer-dot"></span><span id="progress-timer-text">Running for 0s...</span></div>
+            <div id="progress-list"></div>
+            <div class="activity-feed-title">Live agent activity</div>
+            <div id="activity-feed" class="activity-feed"></div>
+          </div>
+        </details>
       </div>
       <div id="status" class="status"></div>
     </div>
@@ -759,6 +969,93 @@ function renderProgress() {
     const state = stageState[s.key];
     return `<div class="progress-item ${state}"><span class="progress-dot"></span>${s.label}</div>`;
   }).join('');
+  renderStudioScene();
+}
+
+// Maps each cinematic "role station" to the real stage key(s) that
+// actually drive it, and the copy to show at each of that key's real
+// states (pending/active/done). No new events, no fake progress — this
+// reads the exact same stageState the checklist above reads.
+//
+// Two roles intentionally share one real source: Market Intel and
+// Distribution both come from the competitive_agent branch (the same
+// way main_synthesis.py already derives both the producer and
+// distribution_executive War Room voices from COMPETITIVE LANDSCAPE),
+// so both stations light together, honestly, rather than one being
+// invented. Director is driven primarily by sentiment_synthesis (its
+// real source per main_synthesis.py), with web_sentiment/youtube
+// providing an earlier partial cue since sentiment_synthesis depends on
+// them. news_cast_agent has no dedicated hero station, matching the
+// product's own existing War Room persona set (director/producer/
+// marketing_chief/casting_executive/distribution_executive/analyst)
+// which likewise has no "news" voice — it still shows up in the
+// technical log via appendActivity(), just not as a hero visual.
+const ROLE_CONFIG = {
+  director: {
+    copy: {
+      pending: 'Standing by...',
+      web_sentiment_active: 'Listening to the audience...',
+      web_sentiment_done: 'Listening to the audience...',
+      youtube_done: 'Reading trailer reactions...',
+      sentiment_synthesis_active: 'Weighing it all together...',
+      sentiment_synthesis_done: 'Has the audience read.',
+    },
+    state() {
+      if (stageState.sentiment_synthesis === 'done') return 'done';
+      if (stageState.sentiment_synthesis === 'active' || stageState.web_sentiment !== 'pending') return 'active';
+      return 'pending';
+    },
+    label() {
+      if (stageState.sentiment_synthesis === 'done') return this.copy.sentiment_synthesis_done;
+      if (stageState.sentiment_synthesis === 'active') return this.copy.sentiment_synthesis_active;
+      if (stageState.youtube === 'done') return this.copy.youtube_done;
+      if (stageState.web_sentiment !== 'pending') return this.copy.web_sentiment_active;
+      return this.copy.pending;
+    },
+  },
+  market: {
+    copy: { pending: 'Standing by...', active: 'Scanning the competitive landscape...', done: 'Landscape mapped.' },
+    state() { return stageState.competitive; },
+    label() { return this.copy[stageState.competitive] || this.copy.pending; },
+  },
+  marketing: {
+    copy: { pending: 'Standing by...', active: 'Examining marketing signals...', done: 'Campaign reviewed.' },
+    state() { return stageState.marketing; },
+    label() { return this.copy[stageState.marketing] || this.copy.pending; },
+  },
+  cast: {
+    copy: { pending: 'Standing by...', active: 'Reading the conversation around the cast...', done: 'Reception logged.' },
+    state() { return stageState.cast; },
+    label() { return this.copy[stageState.cast] || this.copy.pending; },
+  },
+  distribution: {
+    copy: { pending: 'Standing by...', active: 'Mapping the release environment...', done: 'Window assessed.' },
+    state() { return stageState.competitive; },
+    label() { return this.copy[stageState.competitive] || this.copy.pending; },
+  },
+  analyst: {
+    copy: { pending: 'Waiting on the room...', active: 'Bringing the room together...', done: 'Brief ready.' },
+    state() { return stageState.main_synthesis; },
+    label() { return this.copy[stageState.main_synthesis] || this.copy.pending; },
+  },
+};
+
+function renderStudioScene() {
+  const scene = document.getElementById('studioScene');
+  if (!scene) return;
+  Object.entries(ROLE_CONFIG).forEach(([role, cfg]) => {
+    const el = scene.querySelector(`.role-station[data-role="${role}"]`);
+    if (!el) return;
+    const state = cfg.state();
+    el.classList.remove('pending', 'active', 'done');
+    el.classList.add(state);
+    const statusEl = el.querySelector('.role-status');
+    if (statusEl) statusEl.textContent = cfg.label();
+  });
+  // "The room is deciding": once main synthesis has genuinely started
+  // (every fetch branch has already resolved by this point in the real
+  // pipeline), converge the visual onto the Analyst station.
+  scene.classList.toggle('converging', stageState.main_synthesis !== 'pending');
 }
 
 const STAGE_LABEL_LOOKUP = Object.fromEntries(STAGES.map(s => [s.key, s.label]));
@@ -1252,6 +1549,10 @@ async function runBrief(forceRefresh = false) {
   cacheNote.classList.remove('visible');
   lastPayloadData = null;
   lastSearchedTitle = title;
+  const studioFilmTitle = document.getElementById('studio-film-title');
+  if (studioFilmTitle) studioFilmTitle.textContent = title;
+  const studioTagline = document.getElementById('studio-tagline');
+  if (studioTagline) studioTagline.textContent = 'Your AI production room is investigating...';
   heroBanner.classList.remove('visible');
   marqueeFallback.classList.remove('visible');
   greenlightCard.classList.remove('visible');
@@ -1278,6 +1579,12 @@ async function runBrief(forceRefresh = false) {
     if (payload.event === 'stage') {
       if (payload.stage === 'cache_hit' || payload.stage === 'cache_refresh') {
         progressTimerText.textContent = payload.message;
+        const studioTagline = document.getElementById('studio-tagline');
+        if (studioTagline) {
+          studioTagline.textContent = payload.stage === 'cache_hit'
+            ? 'Recalling the studio\u2019s records...'
+            : 'Reopening the file for a fresh read...';
+        }
       }
       markStage(payload.stage);
       return;
