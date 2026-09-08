@@ -45,15 +45,13 @@
     --news-accent: #fb923c;
     --news-tint: #fff1e4;
 
-    /* The one deliberately "loud" moment on the page: a marquee behind
-       the wordmark. Starts dark/neutral before any title is searched;
-       runBrief() overrides both this and --battle-gradient below with a
-       gradient derived from the searched title itself (see
-       applyMovieTheme() in JS) — deterministic per title, not random,
-       so the "based on the movie" theme is actually grounded in the
-       real input rather than reshuffling on every load. */
-    --marquee-bg: linear-gradient(120deg, #241c3f 0%, #2a1f52 55%, #1c1338 100%);
-    --battle-gradient: linear-gradient(135deg, #2a1f52 0%, #1c1338 55%, #150e2b 100%);
+    /* Apple-style frosted glass, not a color gradient: a flat
+       translucent dark tint + backdrop-filter blur. Genuinely tied to
+       the movie once we know it — see .marquee-photo/.battlefield-photo
+       in JS, which lay the real YouTube trailer thumbnail in behind the
+       glass the moment it's available (no color guessing beforehand). */
+    --glass-tint: rgba(20, 16, 36, 0.55);
+    --glass-border: rgba(255, 255, 255, 0.16);
 
     /* A small set of colors reserved for the few spots that are always
        a dark "chip" or overlay regardless of the overall light theme —
@@ -101,19 +99,35 @@
   .hero { max-width: 660px; margin: 0 auto; text-align: center; }
 
   /* The one loud moment on the page: a theater-marquee sign, sprocket
-     holes punched along its top and bottom edge like the filmstrip
-     bar, holding the wordmark instead of it just sitting on plain
-     paper. This is where the design should spend its boldness. */
+     holes punched along its top and bottom edge like the filmstrip bar,
+     holding the wordmark. Apple-style frosted glass — a flat translucent
+     tint blurred over whatever's behind it, not a color gradient — and,
+     once the real movie is known, a genuinely themed one: .marquee-photo
+     lays the actual YouTube trailer thumbnail in as a blurred backdrop
+     (see applyMoviePhoto() in JS), so the color is the real movie's,
+     not guessed. Before that's known, it's just neutral dark glass. */
   .marquee-band {
-    background: var(--marquee-bg);
+    background: var(--glass-tint);
+    backdrop-filter: blur(22px) saturate(160%);
+    -webkit-backdrop-filter: blur(22px) saturate(160%);
+    border: 1px solid var(--glass-border);
     border-radius: 22px;
     padding: 30px 24px 22px;
     position: relative;
     overflow: hidden;
-    box-shadow: 0 16px 40px rgba(124,58,237,0.28);
+    box-shadow: 0 16px 40px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.10);
   }
+  .marquee-photo {
+    position: absolute; inset: -20px; z-index: 0;
+    background-size: cover; background-position: center;
+    filter: blur(30px) brightness(0.6) saturate(1.25);
+    transform: scale(1.15);
+    opacity: 0; transition: opacity 0.8s ease;
+  }
+  .marquee-photo.visible { opacity: 1; }
+  .filmecho-logo, .tagline { position: relative; z-index: 1; }
   .marquee-band::before, .marquee-band::after {
-    content: ""; position: absolute; left: 0; right: 0; height: 10px;
+    content: ""; position: absolute; left: 0; right: 0; height: 10px; z-index: 1;
     background-image: radial-gradient(circle, var(--bg) 2.4px, transparent 2.6px);
     background-size: 20px 10px; background-position: center; background-repeat: repeat-x;
   }
@@ -246,9 +260,11 @@
     border-radius: 20px;
     overflow: hidden;
     padding: 4px 14px 14px;
-    background: var(--battle-gradient);
-    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.14), 0 16px 36px rgba(0,0,0,0.28);
-    transition: background 0.6s ease;
+    background: var(--glass-tint);
+    backdrop-filter: blur(22px) saturate(160%);
+    -webkit-backdrop-filter: blur(22px) saturate(160%);
+    border: 1px solid var(--glass-border);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.10), 0 16px 36px rgba(0,0,0,0.22);
   }
   .stage-floor {
     position: absolute; left: 0; right: 0; bottom: 0; height: 54px; z-index: 0;
@@ -544,8 +560,8 @@
      API in this pipeline. Sized large enough to actually convey
      something about the film at a glance, not a token icon. Falls back
      to a plain title card, never a distorted crop, when unavailable. */
-  .memo-poster { width: 100%; aspect-ratio: 16/9; border-radius: 14px; object-fit: cover; background: var(--marquee-bg); border: 1px solid var(--border); }
-  .memo-poster-fallback { width: 100%; aspect-ratio: 16/9; border-radius: 14px; background: var(--marquee-bg); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; color: var(--gold-on-ink); font-family: var(--font-mono); font-size: 0.72rem; text-align: center; padding: 8px; }
+  .memo-poster { width: 100%; aspect-ratio: 16/9; border-radius: 14px; object-fit: cover; background: var(--glass-tint); border: 1px solid var(--border); }
+  .memo-poster-fallback { width: 100%; aspect-ratio: 16/9; border-radius: 14px; background: var(--glass-tint); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; color: var(--gold-on-ink); font-family: var(--font-mono); font-size: 0.72rem; text-align: center; padding: 8px; }
   .memo-meta-pills { display: flex; flex-wrap: wrap; gap: 6px; margin: 2px 0; }
   .memo-header-right { display: flex; flex-direction: column; justify-content: center; gap: 8px; }
 
@@ -555,7 +571,7 @@
   #memo-synth-card { display: none; max-width: 900px; margin: 20px auto 0; }
   #memo-synth-card.visible { display: block; }
   .synth-callout {
-    background: var(--marquee-bg); color: var(--on-ink); border-radius: 16px;
+    background: var(--glass-tint); color: var(--on-ink); border-radius: 16px;
     padding: 14px 18px; font-family: var(--font-display);
     font-style: italic; font-size: 1.05rem; line-height: 1.4;
     box-shadow: 0 8px 22px rgba(124,58,237,0.22);
@@ -906,6 +922,7 @@
   <div class="page">
     <div class="hero">
       <div class="marquee-band">
+        <div class="marquee-photo" id="marqueePhoto"></div>
         <div class="filmecho-logo">
           <span class="logo-film">FILM</span>
           <div class="logo-echo-wrapper">
@@ -1580,6 +1597,10 @@ function renderGreenlightMemo(memo, releaseStatus, entity, youtubeData) {
     : `<div class="memo-poster-fallback">${(entity && entity.title) || 'FILM'}</div>`;
   const metaPillsHtml = entity ? buildMetaPills(entity) : '';
 
+  // Now that the real movie is actually known, theme the marquee with
+  // its real trailer thumbnail instead of leaving it neutral.
+  applyMoviePhoto(thumbUrl);
+
   // --- Header: thumbnail + verdict + confidence + opportunity/risk +
   // release-context pills. Everything someone needs at a glance. ---
   greenlightCard.innerHTML = `
@@ -2142,34 +2163,30 @@ function getRegionHint() {
   }
 }
 
-// Deterministic string -> hue derivation (not a random roll — the same
-// title always produces the same theme). A pixel-accurate "colors from
-// the poster" extraction was considered, but the YouTube thumbnails this
-// app already has don't send CORS headers, so canvas pixel reads on them
-// throw a SecurityError (tainted canvas) — this is the honest, reliably
-// working version of "themed by the movie": grounded in the real title
-// string that was actually searched, not a guess or a random gradient.
-function hashStringToInt(str) {
-  let h = 0;
-  for (let i = 0; i < str.length; i++) { h = (h * 31 + str.charCodeAt(i)) | 0; }
-  return Math.abs(h);
-}
-
-function applyMovieTheme(title) {
-  const seed = hashStringToInt(title.trim().toLowerCase());
-  const hue = seed % 360;
-  const hue2 = (hue + 35) % 360;
-  const hue3 = (hue + 70) % 360;
-  const gradient = `linear-gradient(135deg, hsl(${hue} 72% 52%) 0%, hsl(${hue2} 78% 50%) 50%, hsl(${hue3} 70% 48%) 100%)`;
-  document.documentElement.style.setProperty('--marquee-bg', gradient);
-  document.documentElement.style.setProperty('--battle-gradient', gradient);
+// The marquee's "themed by the movie" backdrop is the REAL YouTube
+// trailer thumbnail for this run — not a guessed color. Faking a
+// per-title color (e.g. hashing the title into a hue) was tried and
+// rejected: it produces a real gradient, but one with no actual
+// relationship to the movie, which reads as arbitrary. Using the actual
+// thumbnail as a blurred backdrop-image avoids that (and avoids the
+// canvas-pixel-read CORS problem too, since this only sets it as a CSS
+// background-image — no pixel access needed). The tradeoff is honest:
+// the thumbnail isn't known until results land, so the loading screen
+// stays neutral dark glass until then, rather than faking a color
+// before the real one exists.
+function applyMoviePhoto(url) {
+  const el = document.getElementById('marqueePhoto');
+  if (!el) return;
+  if (!url) { el.classList.remove('visible'); el.style.backgroundImage = ''; return; }
+  el.style.backgroundImage = `url("${url}")`;
+  el.classList.add('visible');
 }
 
 async function runBrief(forceRefresh = false) {
   const title = titleInput.value.trim();
   if (!title) { status.textContent = 'Enter a title first.'; status.classList.add('visible'); return; }
 
-  applyMovieTheme(title);
+  applyMoviePhoto(null);
 
   if (activeSource) { activeSource.close(); activeSource = null; }
 
