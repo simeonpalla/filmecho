@@ -255,8 +255,8 @@
      in that persona's voice instead of shown as a raw tool-call string.
      Because the six branches genuinely run concurrently on the backend,
      characters end up "talking" over each other for real. --- */
-  .cast-row { position: relative; z-index: 1; display: flex; justify-content: space-between; align-items: flex-end; gap: 6px; flex-wrap: wrap; padding: 60px 2px 4px; }
-  .character { position: relative; flex: 1 1 0; min-width: 68px; max-width: 108px; display: flex; flex-direction: column; align-items: center; opacity: 0.5; transition: opacity 0.3s ease; }
+  .cast-row { position: relative; z-index: 1; display: flex; justify-content: space-around; align-items: flex-end; gap: 18px; flex-wrap: wrap; padding: 68px 10px 4px; }
+  .character { position: relative; flex: 1 1 0; min-width: 84px; max-width: 140px; display: flex; flex-direction: column; align-items: center; opacity: 0.5; transition: opacity 0.3s ease; }
   .character.active, .character.done { opacity: 1; }
   .character[data-role="director"] { --role-color: var(--brand-b); }
   .character[data-role="market"] { --role-color: var(--gold); }
@@ -265,28 +265,28 @@
   .character[data-role="distribution"] { --role-color: var(--news-accent); }
   .character[data-role="analyst"] { --role-color: var(--brand-c); }
 
-  .char-figure { position: relative; width: 58px; height: 74px; }
+  .char-figure { position: relative; width: 68px; height: 86px; }
   @media (prefers-reduced-motion: no-preference) {
     .character.active .char-figure, .character.done .char-figure { animation: charBob 2.4s ease-in-out infinite; }
   }
   @keyframes charBob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
   .char-head {
     position: absolute; top: 0; left: 50%; transform: translateX(-50%);
-    width: 32px; height: 32px; border-radius: 50%; font-size: 1.05rem;
+    width: 38px; height: 38px; border-radius: 50%; font-size: 1.2rem;
     display: flex; align-items: center; justify-content: center;
     background: rgba(255,255,255,0.1); border: 2px solid rgba(255,255,255,0.2);
     transition: border-color 0.3s ease, box-shadow 0.3s ease;
   }
-  .character.active .char-head { border-color: var(--role-color); box-shadow: 0 0 0 4px color-mix(in srgb, var(--role-color) 30%, transparent); }
+  .character.active .char-head { border-color: var(--role-color); box-shadow: 0 0 0 5px color-mix(in srgb, var(--role-color) 30%, transparent); }
   .character.done .char-head { border-color: var(--positive-on-ink); }
   .char-body {
-    position: absolute; bottom: 4px; left: 50%; transform: translateX(-50%);
-    width: 36px; height: 34px; border-radius: 14px 14px 8px 8px; background: var(--role-color);
+    position: absolute; bottom: 6px; left: 50%; transform: translateX(-50%);
+    width: 42px; height: 40px; border-radius: 16px 16px 9px 9px; background: var(--role-color);
     opacity: 0.85;
   }
-  .char-arm { position: absolute; top: 36px; width: 7px; height: 22px; border-radius: 4px; background: var(--role-color); transform-origin: top center; opacity: 0.85; }
-  .char-arm.left { left: 4px; transform: rotate(14deg); }
-  .char-arm.right { right: 4px; transform: rotate(-14deg); }
+  .char-arm { position: absolute; top: 42px; width: 8px; height: 26px; border-radius: 5px; background: var(--role-color); transform-origin: top center; opacity: 0.85; }
+  .char-arm.left { left: 2px; transform: rotate(14deg); }
+  .char-arm.right { right: 2px; transform: rotate(-14deg); }
   @media (prefers-reduced-motion: no-preference) {
     .character.talking .char-arm.left { animation: argueArmLeft 0.5s ease-in-out infinite; }
     .character.talking .char-arm.right { animation: argueArmRight 0.5s ease-in-out infinite; }
@@ -296,11 +296,11 @@
 
   .char-bubble {
     position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%) translateY(8px) scale(0.92);
-    width: max-content; max-width: 150px; margin-bottom: 8px;
+    width: max-content; max-width: 170px; margin-bottom: 10px;
     background: #fff; color: var(--ink); border-radius: 4px 14px 14px 14px;
-    padding: 7px 11px; font-family: var(--font-body); font-size: 0.7rem; line-height: 1.35;
+    padding: 8px 12px; font-family: var(--font-body); font-size: 0.72rem; line-height: 1.4;
     text-align: left; opacity: 0; pointer-events: none; z-index: 3;
-    box-shadow: 0 8px 18px rgba(0,0,0,0.32);
+    box-shadow: 0 10px 22px rgba(0,0,0,0.35);
     transition: opacity 0.25s ease, transform 0.25s ease;
   }
   .char-bubble::after {
@@ -309,15 +309,16 @@
   }
   .char-bubble.showing { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
 
-  .char-name { font-family: var(--font-mono); font-size: 0.62rem; letter-spacing: 0.02em; text-transform: uppercase; color: var(--on-ink-muted); margin-top: 6px; transition: color 0.3s ease; }
+  .char-name { font-family: var(--font-mono); font-size: 0.66rem; letter-spacing: 0.02em; text-transform: uppercase; color: var(--on-ink-muted); margin-top: 8px; transition: color 0.3s ease; }
   .character.active .char-name, .character.done .char-name { color: #fff; }
-  .char-status { font-family: var(--font-body); font-size: 0.6rem; color: var(--on-ink-muted); text-align: center; line-height: 1.25; min-height: 2.2em; margin-top: 1px; }
+  .char-status { font-family: var(--font-body); font-size: 0.63rem; color: var(--on-ink-muted); text-align: center; line-height: 1.25; min-height: 2.2em; margin-top: 2px; }
 
   .battle-footer { display: flex; justify-content: space-between; align-items: center; padding: 10px 2px 0; position: relative; z-index: 1; }
   .battle-progress-label { font-family: var(--font-mono); font-size: 0.7rem; color: var(--on-ink-muted); }
 
   @media (max-width: 640px) {
-    .character { min-width: 30%; max-width: 30%; }
+    .cast-row { gap: 14px 10px; padding: 62px 4px 4px; }
+    .character { min-width: 28%; max-width: 30%; }
     .char-status { display: none; }
   }
 
@@ -595,7 +596,7 @@
     font-family: var(--font-display); font-weight: 700; font-size: 1rem;
     color: var(--text); text-align: center; margin-bottom: 18px;
   }
-  .war-room-chat { display: flex; flex-direction: column; gap: 14px; max-width: 660px; margin: 0 auto; }
+  .war-room-chat { display: flex; flex-direction: column; gap: 20px; max-width: 720px; margin: 0 auto; }
 
   .chat-typing { align-self: flex-start; display: flex; align-items: center; gap: 5px; padding: 10px 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 4px 16px 16px 16px; }
   .chat-typing span { width: 6px; height: 6px; border-radius: 50%; background: var(--text-muted); opacity: 0.5; animation: typingDot 1.1s ease-in-out infinite; }
@@ -604,22 +605,32 @@
   @keyframes typingDot { 0%, 60%, 100% { transform: translateY(0); opacity: 0.4; } 30% { transform: translateY(-3px); opacity: 1; } }
 
   .chat-disagree-flag {
-    align-self: center; font-family: var(--font-mono); font-weight: 700; font-size: 0.68rem;
+    align-self: center; display: inline-flex; align-items: center; gap: 6px;
+    font-family: var(--font-mono); font-weight: 700; font-size: 0.72rem;
     letter-spacing: 0.03em; text-transform: uppercase; color: #fff;
     background: linear-gradient(120deg, var(--negative), #f97362); border-radius: 999px;
-    padding: 5px 16px; box-shadow: 0 4px 12px rgba(239,68,68,0.28);
-    opacity: 0; transform: translateY(6px) scale(0.9); transition: opacity 0.3s ease, transform 0.3s ease;
+    padding: 6px 18px; box-shadow: 0 6px 16px rgba(239,68,68,0.32);
+    opacity: 0; transform: translateY(6px) scale(0.85); transition: opacity 0.3s ease, transform 0.3s ease;
   }
   .chat-disagree-flag.show { opacity: 1; transform: translateY(0) scale(1); }
+  @media (prefers-reduced-motion: no-preference) {
+    .chat-disagree-flag.show { animation: flagPop 0.5s cubic-bezier(.34,1.56,.64,1); }
+  }
+  @keyframes flagPop { 0% { transform: translateY(6px) scale(0.85); } 60% { transform: translateY(-2px) scale(1.08); } 100% { transform: translateY(0) scale(1); } }
 
+  /* Alternating horizontal offset per turn — a straight vertical column
+     of bubbles reads as a list; a slight left/right stagger reads as
+     people actually seated around a table taking turns. */
   .chat-row {
-    display: flex; align-items: flex-start; gap: 10px;
+    display: flex; align-items: flex-start; gap: 12px;
     opacity: 0; transform: translateY(10px); transition: opacity 0.35s ease, transform 0.35s ease;
   }
   .chat-row.show { opacity: 1; transform: translateY(0); }
+  .chat-row.offset-a { margin-right: 10%; }
+  .chat-row.offset-b { margin-left: 10%; }
   .chat-avatar {
-    flex-shrink: 0; width: 42px; height: 42px; border-radius: 50%;
-    display: flex; align-items: center; justify-content: center; font-size: 1.25rem;
+    flex-shrink: 0; width: 46px; height: 46px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center; font-size: 1.35rem;
     background: var(--surface); border: 2px solid var(--border); box-shadow: 0 3px 8px rgba(124,58,237,0.12);
   }
   .chat-row.role-director .chat-avatar { border-color: var(--brand-b); }
@@ -630,13 +641,17 @@
 
   .chat-bubble {
     background: var(--surface); border: 1px solid var(--border); border-radius: 4px 18px 18px 18px;
-    padding: 11px 16px; box-shadow: 0 3px 10px rgba(124,58,237,0.06); max-width: 78%;
+    padding: 12px 18px; box-shadow: 0 3px 10px rgba(124,58,237,0.06); max-width: 82%;
   }
-  .chat-name { font-family: var(--font-display); font-weight: 700; font-size: 0.85rem; margin-bottom: 3px; }
-  .chat-text { font-size: 0.95rem; line-height: 1.5; color: var(--text); }
+  .chat-name { font-family: var(--font-display); font-weight: 700; font-size: 0.87rem; margin-bottom: 3px; }
+  .chat-reply-to {
+    font-family: var(--font-mono); font-size: 0.66rem; color: var(--text-muted);
+    text-transform: uppercase; letter-spacing: 0.02em; margin-bottom: 4px; display: flex; align-items: center; gap: 4px;
+  }
+  .chat-text { font-size: 0.97rem; line-height: 1.55; color: var(--text); }
   .chat-row.tone-positive .chat-bubble { border-left: 3px solid var(--positive); background: linear-gradient(135deg, var(--positive-dim), var(--surface) 65%); }
-  .chat-row.tone-negative .chat-bubble { border-left: 3px solid var(--negative); background: linear-gradient(135deg, var(--negative-dim), var(--surface) 65%); }
   .chat-row.tone-positive .chat-name { color: var(--positive); }
+  .chat-row.tone-negative .chat-bubble { border-left: 4px solid var(--negative); background: linear-gradient(135deg, var(--negative-dim), var(--surface) 65%); box-shadow: 0 6px 16px rgba(239,68,68,0.14); }
   .chat-row.tone-negative .chat-name { color: var(--negative); }
 
   /* The Analyst's message is the room's synthesis, not another opinion —
@@ -654,6 +669,11 @@
     font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.9; margin-bottom: 10px;
   }
   .chat-final .chat-text { font-family: var(--font-display); font-weight: 600; font-size: 1.1rem; line-height: 1.5; color: #fff; }
+
+  @media (max-width: 620px) {
+    .chat-row.offset-a, .chat-row.offset-b { margin-left: 0; margin-right: 0; }
+    .chat-bubble { max-width: 100%; }
+  }
 
   /* --- Reputation timeline: zigzag, branching off a center spine —
      replicates the sketch directly (events alternate left/right,
@@ -1620,10 +1640,10 @@ function renderWarRoomTranscript(turns) {
   const analystTurn = [...turns].reverse().find(t => t.role === 'analyst');
 
   const reveal = [];
-  team.forEach(t => {
+  team.forEach((t, i) => {
     const meta = ROLE_META[t.role] || { icon: '\u{1F4AC}', label: t.role };
+    const respondingMeta = t.responding_to ? ROLE_META[t.responding_to] : null;
     if (t.disagreement) {
-      const respondingMeta = t.responding_to ? ROLE_META[t.responding_to] : null;
       const flag = document.createElement('div');
       flag.className = 'chat-disagree-flag';
       flag.textContent = respondingMeta ? `⚡ pushes back on ${respondingMeta.label}` : '⚡ pushes back';
@@ -1631,11 +1651,15 @@ function renderWarRoomTranscript(turns) {
       reveal.push({ el: flag, typing: false });
     }
     const row = document.createElement('div');
-    row.className = `chat-row role-${t.role}` + (t.disagreement ? ' tone-negative' : '');
+    row.className = `chat-row role-${t.role} ${i % 2 === 0 ? 'offset-a' : 'offset-b'}` + (t.disagreement ? ' tone-negative' : '');
+    const replyLine = respondingMeta
+      ? `<div class="chat-reply-to">${t.disagreement ? '💥' : '↳'} replying to ${respondingMeta.label}</div>`
+      : '';
     row.innerHTML = `
       <div class="chat-avatar">${meta.icon}</div>
       <div class="chat-bubble">
         <div class="chat-name">${meta.label}</div>
+        ${replyLine}
         <div class="chat-text"></div>
       </div>
     `;
@@ -1678,7 +1702,7 @@ function renderWarRoomFromVoices(voices) {
   });
 
   const reveal = [];
-  items.forEach(item => {
+  items.forEach((item, i) => {
     if (item.disagreesWithPrev) {
       const flag = document.createElement('div');
       flag.className = 'chat-disagree-flag';
@@ -1687,7 +1711,7 @@ function renderWarRoomFromVoices(voices) {
       reveal.push({ el: flag, typing: false });
     }
     const row = document.createElement('div');
-    row.className = `chat-row role-${item.v.role} tone-${item.tone}`;
+    row.className = `chat-row role-${item.v.role} tone-${item.tone} ${i % 2 === 0 ? 'offset-a' : 'offset-b'}`;
     row.innerHTML = `
       <div class="chat-avatar">${item.meta.icon}</div>
       <div class="chat-bubble">

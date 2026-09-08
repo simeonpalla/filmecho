@@ -456,26 +456,31 @@ class GreenlightMemo(BaseModel):
     )
     war_room_transcript: list[WarRoomTurn] = Field(
         default_factory=list,
-        max_length=14,
+        max_length=18,
         description=(
             "A real, continuous discussion among the War Room, grounded in "
             "the SAME five upstream sections as war_room above but written "
-            "as an actual back-and-forth rather than six isolated lines: "
-            "each of the five domain personas (director, producer, "
+            "as an actual back-and-forth meeting rather than six isolated "
+            "lines: each of the five domain personas (director, producer, "
             "marketing_chief, casting_executive, distribution_executive) "
-            "opens with their own real read, and at least one turn MUST "
-            "explicitly respond to (agree with or push back on) an earlier "
-            "speaker whenever two personas' real upstream sources are "
-            "actually in tension this run (e.g. CAST RECEPTION vs. "
-            "PRODUCTION/CAST NEWS disagreeing about the same person, or a "
-            "positive SENTIMENT SYNTHESIS read against a crowded "
-            "release_window). If the real data has no such tension this "
-            "run, do not invent one — just let the room be broadly "
-            "aligned. The analyst ALWAYS speaks last, closing the "
-            "discussion by synthesizing what was actually said into the "
-            "same verdict/confidence as the rest of this memo. Leave this "
-            "empty only if there isn't enough real upstream data to "
-            "support any discussion (mirrors the insufficient_data case)."
+            "opens with their own real read, then AT LEAST TWO separate "
+            "exchanges have a later speaker directly respond to (via "
+            "responding_to) an earlier one — including at least one full "
+            "push-and-reply pair, not a one-sided objection left hanging. "
+            "disagreement=true ONLY where two personas' real upstream "
+            "sources are actually in tension this run (e.g. CAST RECEPTION "
+            "vs. PRODUCTION/CAST NEWS disagreeing about the same person, or "
+            "a positive SENTIMENT SYNTHESIS read against a crowded "
+            "release_window) — actively check for this before defaulting "
+            "to agreement, since independently researched sources often do "
+            "pull in different directions. If the real data has no such "
+            "tension this run, do not invent one — just let the room be "
+            "broadly aligned. The analyst ALWAYS speaks last, closing the "
+            "discussion by synthesizing what was actually said (including "
+            "what did and didn't get agreement) into the same "
+            "verdict/confidence as the rest of this memo. Leave this empty "
+            "only if there isn't enough real upstream data to support any "
+            "discussion (mirrors the insufficient_data case)."
         ),
     )
     notable_news: list[SourceExcerpt] = Field(default_factory=list, max_length=4)

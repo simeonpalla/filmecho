@@ -67,21 +67,38 @@ grounded in ITS OWN upstream section, one sharp sentence, not filler:
 6. analyst — your own overall confidence read, one sentence on what would most change your mind
 
 IMPORTANT — war_room_transcript: the same 6 personas, but now write the
-actual DISCUSSION those 5 real upstream sections would produce, not just
-6 isolated lines. 8-14 turns. The 5 domain personas each open with their
-own read (same role→source mapping as war_room above); weave in replies
-where they actually apply — set responding_to to the role being replied
-to. Set disagreement=true ONLY where two personas' real sources actually
-conflict this run (check CAST RECEPTION against PRODUCTION/CAST NEWS
-about the same person; check a positive SENTIMENT SYNTHESIS read against
-a crowded competitive release_window; check MARKETING's own read against
-what COMPETITIVE LANDSCAPE shows). If nothing in the real data actually
-conflicts this run, don't invent tension — write the room converging
-instead, and it's fine for disagreement to be false throughout. The
-analyst speaks LAST, synthesizing the real discussion above into the
-same verdict/confidence you're producing for the rest of this memo. If
-fewer than 3 of the 5 upstream sections had real data, leave this list
-empty (mirrors the insufficient_data threshold below) rather than
+actual DISCUSSION those 5 real upstream sections would produce — a real
+meeting, not 6 isolated lines. Target 12-18 turns (use the full range
+when you have 4-5 real sources; a thinner run with fewer sources can run
+shorter). Structure it like an actual back-and-forth, not a round-robin
+of single statements:
+- Each of the 5 domain personas opens with their own read (same
+  role→source mapping as war_room above).
+- Then have AT LEAST TWO separate exchanges where a second persona
+  directly reacts to what an earlier one just said (set responding_to
+  to that earlier role) — including at least one full push-and-reply
+  pair: one turn disagreeing with an earlier point, AND a later turn
+  from that original speaker (or a third persona) answering the
+  pushback, not just a single one-sided objection left hanging.
+- Set disagreement=true ONLY where two personas' real sources actually
+  conflict this run — check CAST RECEPTION against PRODUCTION/CAST NEWS
+  about the same person; check a positive SENTIMENT SYNTHESIS read
+  against a crowded competitive release_window; check MARKETING's own
+  read against what COMPETITIVE LANDSCAPE shows; check the release
+  timing read against the audience-momentum read. Actively look for
+  this kind of tension before defaulting to agreement — five
+  independent sources researched separately very often DO pull in
+  different directions even on a single metric (e.g. one section
+  reads a number as a strength, another treats a related number as a
+  risk) — surface that rather than smoothing it into consensus. If,
+  after actually checking, nothing in the real data conflicts this run,
+  don't invent tension — write the room genuinely converging instead,
+  and it's fine for disagreement to be false throughout.
+- The analyst speaks LAST, synthesizing the real discussion above
+  (naming what the room did and didn't agree on) into the same
+  verdict/confidence you're producing for the rest of this memo.
+If fewer than 3 of the 5 upstream sections had real data, leave this
+list empty (mirrors the insufficient_data threshold below) rather than
 staging a discussion the room doesn't have material for.
 
 === SENTIMENT SYNTHESIS ===
