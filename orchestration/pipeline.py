@@ -50,7 +50,6 @@ from agents.entity_context import EntityContext, resolve_entity
 from agents.main_synthesis import build_main_synthesis_prompt, main_synthesis_agent
 from agents.marketing_agent import marketing_agent
 from agents.news_cast_agent import news_cast_agent
-from agents.poster_agent import fetch_poster
 from agents.schemas import (
     CastResult, CompetitiveResult, GreenlightMemo, MarketingResult,
     NewsResult, SentimentSynthesisResult, WebSentimentResult,
@@ -334,14 +333,6 @@ async def stream_pipeline(
     yield {"event": "stage", "stage": "fetch",
            "message": "Running web sentiment, competitive, news, cast, marketing, and YouTube agents..."}
 
-    # Fired alongside the six agent branches, not as a named branch among
-    # them — it's a plain image lookup with no LLM reasoning and no
-    # activity log to emit, so it doesn't need a "stage" event of its
-    # own (same treatment news_cast_agent's data gets: real, but not a
-    # dedicated hero signal in the progress UI). Degrades to None on any
-    # failure; a missing poster is a normal outcome, not a pipeline error.
-    poster_task = asyncio.ensure_future(fetch_poster(canonical_title, entity.release_year))
-
     branches = [
         _named("web_sentiment", _run_web_sentiment_branch(entity, user_id, region_hint)),
         _named("youtube", _run_youtube_branch(entity)),
@@ -356,12 +347,6 @@ async def stream_pipeline(
         branch_results[name] = parsed
         yield {"event": "stage", "stage": name, "message": _FETCH_STAGE_LABELS[name]}
         yield {"event": "activity", "stage": name, "log": log}
-
-    try:
-        poster_url = await poster_task
-    except Exception as exc:  # noqa: BLE001 - never let a poster lookup fail the whole run
-        print(f"[pipeline] poster fetch failed: {exc}")
-        poster_url = None
 
     web_sentiment: Optional[WebSentimentResult] = drop_if_refusal("web_sentiment", branch_results.get("web_sentiment"))
     youtube_data: dict = branch_results.get("youtube") or {}
@@ -409,7 +394,6 @@ async def stream_pipeline(
 
     payload = {
         "entity": entity.as_dict(),
-        "poster_url": poster_url,
         "web_sentiment": web_sentiment.model_dump() if web_sentiment else None,
         "youtube": youtube_data,
         "competitive": competitive.model_dump() if competitive else None,
