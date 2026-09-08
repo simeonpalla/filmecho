@@ -536,10 +536,15 @@
      all in one glanceable row instead of stacked full-width text —
      matches the "movie image / confidence / opportunity / risk" block
      from the layout sketch. */
-  .memo-header-row { display: grid; grid-template-columns: 84px 1fr; gap: 16px; margin-bottom: 18px; }
-  @media (max-width: 480px) { .memo-header-row { grid-template-columns: 64px 1fr; } }
-  .memo-poster { width: 100%; aspect-ratio: 2/3; border-radius: 6px; object-fit: cover; background: var(--marquee-bg); border: 1px solid var(--border); }
-  .memo-poster-fallback { width: 100%; aspect-ratio: 2/3; border-radius: 6px; background: var(--marquee-bg); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; color: var(--gold-on-ink); font-family: var(--font-mono); font-size: 0.6rem; text-align: center; padding: 4px; }
+  .memo-header-row { display: grid; grid-template-columns: 148px 1fr; gap: 16px; margin-bottom: 18px; }
+  @media (max-width: 480px) { .memo-header-row { grid-template-columns: 96px 1fr; } }
+  /* The only image source available is the YouTube trailer thumbnail
+     (genuinely 16:9 landscape) — there's no movie-poster API in this
+     pipeline. Showing it at its real aspect ratio instead of force-
+     cropping it into a 2:3 "poster" shape avoids a distorted, zoomed-in
+     crop of a video frame that doesn't actually look like a poster. */
+  .memo-poster { width: 100%; aspect-ratio: 16/9; border-radius: 6px; object-fit: cover; background: var(--marquee-bg); border: 1px solid var(--border); }
+  .memo-poster-fallback { width: 100%; aspect-ratio: 16/9; border-radius: 6px; background: var(--marquee-bg); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; color: var(--gold-on-ink); font-family: var(--font-mono); font-size: 0.6rem; text-align: center; padding: 4px; }
   .memo-header-right { display: flex; flex-direction: column; justify-content: center; gap: 8px; }
 
   /* "Synthesizer" callout: one crisp line instead of a full headline +
@@ -606,37 +611,46 @@
   .voice-icon { font-size: 1.1rem; }
   .voice-insight { font-family: var(--font-display); font-style: italic; font-size: 0.95rem; color: var(--text); line-height: 1.5; }
 
-  /* --- Reputation timeline (deferred feature, now built) --- */
-  .timeline-card { display: none; max-width: 1050px; margin: 22px auto 0; }
+  /* --- Reputation timeline: zigzag, branching off a center spine —
+     replicates the sketch directly (events alternate left/right,
+     oldest at top, newest at bottom) instead of a horizontal row. --- */
+  .timeline-card { display: none; max-width: 700px; margin: 22px auto 0; }
   .timeline-card.visible { display: block; }
   .timeline-title {
     font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.03em;
-    text-transform: uppercase; color: var(--text-muted); text-align: center; margin-bottom: 16px;
+    text-transform: uppercase; color: var(--text-muted); text-align: center; margin-bottom: 20px;
   }
-  .timeline-track { display: flex; flex-direction: column; gap: 0; }
-  @media (min-width: 760px) { .timeline-track { flex-direction: row; flex-wrap: wrap; align-items: stretch; } }
-  .timeline-stop { flex: 1; min-width: 160px; position: relative; padding: 0 0 0 26px; margin-bottom: 18px; }
-  @media (min-width: 760px) { .timeline-stop { padding: 26px 14px 0; margin-bottom: 22px; } }
-  .timeline-stop::before {
-    content: ""; position: absolute; left: 3px; top: 4px; width: 12px; height: 12px;
-    border-radius: 50%; border: 2px solid var(--surface-raised);
-  }
-  @media (min-width: 760px) { .timeline-stop::before { left: 50%; top: 0; margin-left: -7px; } }
-  .timeline-stop::after {
-    content: ""; position: absolute; left: 8px; top: 16px; bottom: -18px; width: 2px;
-    background: var(--border);
-  }
-  @media (min-width: 760px) { .timeline-stop::after { left: 0; right: 0; top: 6px; bottom: auto; width: auto; height: 2px; } }
-  .timeline-stop:last-child::after { display: none; }
-  .timeline-stop.tone-positive::before { background: var(--positive); }
-  .timeline-stop.tone-negative::before { background: var(--negative); }
-  .timeline-stop.tone-neutral::before { background: var(--neutral); }
-  .timeline-stop.tone-unclear::before { background: var(--unclear); }
+  .timeline-track { position: relative; padding: 4px 0; }
+  .timeline-spine { position: absolute; left: 50%; top: 0; bottom: 0; width: 2px; background: var(--border); transform: translateX(-50%); }
+  .timeline-row { display: grid; grid-template-columns: 1fr 22px 1fr; align-items: center; min-height: 64px; }
+  .timeline-dot { grid-column: 2; width: 12px; height: 12px; border-radius: 50%; justify-self: center; z-index: 1; border: 2px solid var(--surface-raised); }
+  .timeline-dot.tone-positive { background: var(--positive); }
+  .timeline-dot.tone-negative { background: var(--negative); }
+  .timeline-dot.tone-neutral { background: var(--neutral); }
+  .timeline-dot.tone-unclear { background: var(--unclear); }
+  .timeline-stop { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; max-width: 280px; }
+  .timeline-row.side-left .timeline-stop { grid-column: 1; justify-self: end; margin-right: 10px; }
+  .timeline-row.side-right .timeline-stop { grid-column: 3; justify-self: start; margin-left: 10px; }
   .timeline-phase-label {
-    font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.03em;
-    text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px;
+    font-family: var(--font-mono); font-size: 0.64rem; letter-spacing: 0.02em;
+    text-transform: uppercase; color: var(--text-muted); margin-bottom: 3px;
   }
-  .timeline-note { font-size: 0.9rem; color: var(--text); }
+  .timeline-note { font-size: 0.86rem; color: var(--text); line-height: 1.35; }
+  .timeline-newest-label {
+    text-align: center; font-family: var(--font-mono); font-size: 0.68rem;
+    color: var(--gold); margin-top: 6px;
+  }
+  @media (max-width: 560px) {
+    /* Not enough width for two side columns — collapse to a single
+       column, spine on the left, matching the sketch's spirit
+       (branching timeline) without the events overlapping the card edge. */
+    .timeline-row { grid-template-columns: 20px 1fr; }
+    .timeline-spine { left: 10px; transform: none; }
+    .timeline-dot { grid-column: 1; }
+    .timeline-row.side-left .timeline-stop, .timeline-row.side-right .timeline-stop {
+      grid-column: 2; justify-self: start; margin-left: 10px; margin-right: 0; max-width: none;
+    }
+  }
 
   /* --- Release window advisory --- */
   .release-window-card {
@@ -1508,13 +1522,20 @@ function renderTimeline(timeline) {
   el.innerHTML = `
     <div class="timeline-title">The Life of Its Reputation</div>
     <div class="timeline-track">
-      ${sorted.map(entry => `
-        <div class="timeline-stop tone-${sentimentTone(entry.sentiment)}">
-          <div class="timeline-phase-label">${entry.milestone || 'Milestone'}${entry.date ? ` — ${entry.date}` : ''}</div>
-          <div class="timeline-note">${entry.note || ''}</div>
-        </div>
-      `).join('')}
+      <div class="timeline-spine"></div>
+      ${sorted.map((entry, i) => {
+        const side = i % 2 === 0 ? 'side-right' : 'side-left';
+        return `
+        <div class="timeline-row ${side}">
+          <div class="timeline-stop tone-${sentimentTone(entry.sentiment)}">
+            <div class="timeline-phase-label">${entry.milestone || 'Milestone'}${entry.date ? ` — ${entry.date}` : ''}</div>
+            <div class="timeline-note">${entry.note || ''}</div>
+          </div>
+          <div class="timeline-dot tone-${sentimentTone(entry.sentiment)}"></div>
+        </div>`;
+      }).join('')}
     </div>
+    <div class="timeline-newest-label">↓ newest so far</div>
   `;
   el.classList.add('visible');
 }
