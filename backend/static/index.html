@@ -239,68 +239,86 @@
     position: relative;
     border-radius: 20px;
     overflow: hidden;
-    padding: 20px 18px 14px;
+    padding: 4px 14px 14px;
     background: linear-gradient(165deg, #2a1f52 0%, #1c1338 55%, #150e2b 100%);
     box-shadow: inset 0 0 0 1px rgba(255,255,255,0.07), 0 16px 36px rgba(124,58,237,0.22);
   }
-
-  /* --- Room roster: a compact status strip, not full battle sprites —
-     each chip pulses while its real stage is active and locks to a
-     solid ring the instant it's genuinely done. --- */
-  .room-roster { position: relative; z-index: 1; display: flex; justify-content: center; gap: 16px; flex-wrap: wrap; padding: 4px 2px 16px; }
-  .roster-chip { display: flex; flex-direction: column; align-items: center; gap: 5px; width: 78px; opacity: 0.55; transition: opacity 0.3s ease; }
-  .roster-chip.active, .roster-chip.done { opacity: 1; }
-  .roster-avatar {
-    width: 42px; height: 42px; border-radius: 50%; font-size: 1.2rem;
-    display: flex; align-items: center; justify-content: center;
-    background: rgba(255,255,255,0.08); border: 2px solid rgba(255,255,255,0.16);
-    transition: border-color 0.3s ease, box-shadow 0.3s ease, transform 0.2s ease;
+  .stage-floor {
+    position: absolute; left: 0; right: 0; bottom: 0; height: 54px; z-index: 0;
+    background: linear-gradient(0deg, rgba(255,255,255,0.07), transparent);
   }
-  .roster-chip.active .roster-avatar { border-color: var(--brand-a); box-shadow: 0 0 0 4px rgba(255,95,174,0.16); }
+
+  /* --- Cast row: standee characters that actually stand on the stage
+     and gesture while their real stage is active, with a speech bubble
+     over each — direct real activity lines (see appendActivity() /
+     conversationalLine() in JS), not fabricated dialogue, just phrased
+     in that persona's voice instead of shown as a raw tool-call string.
+     Because the six branches genuinely run concurrently on the backend,
+     characters end up "talking" over each other for real. --- */
+  .cast-row { position: relative; z-index: 1; display: flex; justify-content: space-between; align-items: flex-end; gap: 6px; flex-wrap: wrap; padding: 60px 2px 4px; }
+  .character { position: relative; flex: 1 1 0; min-width: 68px; max-width: 108px; display: flex; flex-direction: column; align-items: center; opacity: 0.5; transition: opacity 0.3s ease; }
+  .character.active, .character.done { opacity: 1; }
+  .character[data-role="director"] { --role-color: var(--brand-b); }
+  .character[data-role="market"] { --role-color: var(--gold); }
+  .character[data-role="marketing"] { --role-color: var(--marketing-accent); }
+  .character[data-role="cast"] { --role-color: var(--cast-accent); }
+  .character[data-role="distribution"] { --role-color: var(--news-accent); }
+  .character[data-role="analyst"] { --role-color: var(--brand-c); }
+
+  .char-figure { position: relative; width: 58px; height: 74px; }
   @media (prefers-reduced-motion: no-preference) {
-    .roster-chip.active .roster-avatar { animation: rosterPulse 1.5s ease-in-out infinite; }
+    .character.active .char-figure, .character.done .char-figure { animation: charBob 2.4s ease-in-out infinite; }
   }
-  @keyframes rosterPulse { 0%, 100% { box-shadow: 0 0 0 4px rgba(255,95,174,0.18); } 50% { box-shadow: 0 0 0 9px rgba(255,95,174,0.04); } }
-  .roster-chip.done .roster-avatar { border-color: var(--positive-on-ink); box-shadow: 0 0 0 3px rgba(134,239,172,0.18); }
-  .roster-name { font-family: var(--font-mono); font-size: 0.62rem; letter-spacing: 0.02em; text-transform: uppercase; color: var(--on-ink-muted); }
-  .roster-chip.active .roster-name, .roster-chip.done .roster-name { color: #fff; }
-  .roster-status { font-family: var(--font-body); font-size: 0.6rem; color: var(--on-ink-muted); text-align: center; line-height: 1.25; min-height: 2.2em; }
-
-  /* --- Live chat: the actual conversation, built from real streaming
-     activity lines, one persona-tagged bubble per real log line. --- */
-  .live-chat {
-    position: relative; z-index: 1; max-height: 280px; overflow-y: auto;
-    display: flex; flex-direction: column; gap: 9px;
-    padding: 6px 4px; scroll-behavior: smooth;
-  }
-  .live-chat-empty { font-family: var(--font-mono); font-size: 0.74rem; color: var(--on-ink-muted); text-align: center; padding: 24px 0; }
-  .live-msg { display: flex; align-items: flex-start; gap: 8px; }
-  @media (prefers-reduced-motion: no-preference) { .live-msg { animation: liveMsgIn 0.3s ease; } }
-  @keyframes liveMsgIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
-  .live-msg-avatar {
-    flex-shrink: 0; width: 26px; height: 26px; border-radius: 50%; font-size: 0.8rem;
+  @keyframes charBob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+  .char-head {
+    position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+    width: 32px; height: 32px; border-radius: 50%; font-size: 1.05rem;
     display: flex; align-items: center; justify-content: center;
-    background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.14);
+    background: rgba(255,255,255,0.1); border: 2px solid rgba(255,255,255,0.2);
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
   }
-  .live-msg-body {
-    background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.1);
-    border-radius: 3px 14px 14px 14px; padding: 7px 12px; max-width: 82%;
+  .character.active .char-head { border-color: var(--role-color); box-shadow: 0 0 0 4px color-mix(in srgb, var(--role-color) 30%, transparent); }
+  .character.done .char-head { border-color: var(--positive-on-ink); }
+  .char-body {
+    position: absolute; bottom: 4px; left: 50%; transform: translateX(-50%);
+    width: 36px; height: 34px; border-radius: 14px 14px 8px 8px; background: var(--role-color);
+    opacity: 0.85;
   }
-  .live-msg-name { font-family: var(--font-mono); font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.03em; color: var(--gold-on-ink); margin-bottom: 2px; }
-  .live-msg-text { font-family: var(--font-mono); font-size: 0.76rem; line-height: 1.4; color: var(--on-ink); word-break: break-word; }
-  .live-msg.system { justify-content: center; }
-  .live-msg.system .live-msg-body {
-    background: linear-gradient(120deg, var(--brand-b), var(--brand-a)); border: none;
-    border-radius: 999px; padding: 6px 16px; max-width: none;
+  .char-arm { position: absolute; top: 36px; width: 7px; height: 22px; border-radius: 4px; background: var(--role-color); transform-origin: top center; opacity: 0.85; }
+  .char-arm.left { left: 4px; transform: rotate(14deg); }
+  .char-arm.right { right: 4px; transform: rotate(-14deg); }
+  @media (prefers-reduced-motion: no-preference) {
+    .character.talking .char-arm.left { animation: argueArmLeft 0.5s ease-in-out infinite; }
+    .character.talking .char-arm.right { animation: argueArmRight 0.5s ease-in-out infinite; }
   }
-  .live-msg.system .live-msg-text { font-family: var(--font-mono); font-weight: 700; text-transform: uppercase; font-size: 0.68rem; letter-spacing: 0.03em; }
+  @keyframes argueArmLeft { 0%, 100% { transform: rotate(10deg); } 50% { transform: rotate(-32deg); } }
+  @keyframes argueArmRight { 0%, 100% { transform: rotate(-10deg); } 50% { transform: rotate(32deg); } }
+
+  .char-bubble {
+    position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%) translateY(8px) scale(0.92);
+    width: max-content; max-width: 150px; margin-bottom: 8px;
+    background: #fff; color: var(--ink); border-radius: 4px 14px 14px 14px;
+    padding: 7px 11px; font-family: var(--font-body); font-size: 0.7rem; line-height: 1.35;
+    text-align: left; opacity: 0; pointer-events: none; z-index: 3;
+    box-shadow: 0 8px 18px rgba(0,0,0,0.32);
+    transition: opacity 0.25s ease, transform 0.25s ease;
+  }
+  .char-bubble::after {
+    content: ""; position: absolute; top: 100%; left: 50%; transform: translateX(-50%);
+    border: 6px solid transparent; border-top-color: #fff;
+  }
+  .char-bubble.showing { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
+
+  .char-name { font-family: var(--font-mono); font-size: 0.62rem; letter-spacing: 0.02em; text-transform: uppercase; color: var(--on-ink-muted); margin-top: 6px; transition: color 0.3s ease; }
+  .character.active .char-name, .character.done .char-name { color: #fff; }
+  .char-status { font-family: var(--font-body); font-size: 0.6rem; color: var(--on-ink-muted); text-align: center; line-height: 1.25; min-height: 2.2em; margin-top: 1px; }
 
   .battle-footer { display: flex; justify-content: space-between; align-items: center; padding: 10px 2px 0; position: relative; z-index: 1; }
   .battle-progress-label { font-family: var(--font-mono); font-size: 0.7rem; color: var(--on-ink-muted); }
 
   @media (max-width: 640px) {
-    .roster-chip { width: 64px; }
-    .roster-status { display: none; }
+    .character { min-width: 30%; max-width: 30%; }
+    .char-status { display: none; }
   }
 
   .tech-log-toggle { margin-top: 14px; }
@@ -862,41 +880,74 @@
         </div>
 
         <div class="battlefield" id="battlefieldScene">
-          <div class="room-roster" id="roomRoster">
-            <div class="roster-chip" data-role="director">
-              <div class="roster-avatar">🎬</div>
-              <div class="roster-name">Director</div>
-              <div class="roster-status">Standing by...</div>
+          <div class="stage-floor"></div>
+          <div class="cast-row" id="castRow">
+            <div class="character" data-role="director">
+              <div class="char-bubble"></div>
+              <div class="char-figure">
+                <div class="char-arm left"></div>
+                <div class="char-arm right"></div>
+                <div class="char-head">🎬</div>
+                <div class="char-body"></div>
+              </div>
+              <div class="char-name">Director</div>
+              <div class="char-status">Standing by...</div>
             </div>
-            <div class="roster-chip" data-role="market">
-              <div class="roster-avatar">🎯</div>
-              <div class="roster-name">Market Intel</div>
-              <div class="roster-status">Standing by...</div>
+            <div class="character" data-role="market">
+              <div class="char-bubble"></div>
+              <div class="char-figure">
+                <div class="char-arm left"></div>
+                <div class="char-arm right"></div>
+                <div class="char-head">🎯</div>
+                <div class="char-body"></div>
+              </div>
+              <div class="char-name">Market Intel</div>
+              <div class="char-status">Standing by...</div>
             </div>
-            <div class="roster-chip" data-role="marketing">
-              <div class="roster-avatar">📣</div>
-              <div class="roster-name">Marketing</div>
-              <div class="roster-status">Standing by...</div>
+            <div class="character" data-role="marketing">
+              <div class="char-bubble"></div>
+              <div class="char-figure">
+                <div class="char-arm left"></div>
+                <div class="char-arm right"></div>
+                <div class="char-head">📣</div>
+                <div class="char-body"></div>
+              </div>
+              <div class="char-name">Marketing</div>
+              <div class="char-status">Standing by...</div>
             </div>
-            <div class="roster-chip" data-role="cast">
-              <div class="roster-avatar">🎭</div>
-              <div class="roster-name">Cast</div>
-              <div class="roster-status">Standing by...</div>
+            <div class="character" data-role="cast">
+              <div class="char-bubble"></div>
+              <div class="char-figure">
+                <div class="char-arm left"></div>
+                <div class="char-arm right"></div>
+                <div class="char-head">🎭</div>
+                <div class="char-body"></div>
+              </div>
+              <div class="char-name">Cast</div>
+              <div class="char-status">Standing by...</div>
             </div>
-            <div class="roster-chip" data-role="distribution">
-              <div class="roster-avatar">🗓️</div>
-              <div class="roster-name">Distribution</div>
-              <div class="roster-status">Standing by...</div>
+            <div class="character" data-role="distribution">
+              <div class="char-bubble"></div>
+              <div class="char-figure">
+                <div class="char-arm left"></div>
+                <div class="char-arm right"></div>
+                <div class="char-head">🗓️</div>
+                <div class="char-body"></div>
+              </div>
+              <div class="char-name">Distribution</div>
+              <div class="char-status">Standing by...</div>
             </div>
-            <div class="roster-chip" data-role="analyst">
-              <div class="roster-avatar">📊</div>
-              <div class="roster-name">Analyst</div>
-              <div class="roster-status">Waiting on the room...</div>
+            <div class="character" data-role="analyst">
+              <div class="char-bubble"></div>
+              <div class="char-figure">
+                <div class="char-arm left"></div>
+                <div class="char-arm right"></div>
+                <div class="char-head">📊</div>
+                <div class="char-body"></div>
+              </div>
+              <div class="char-name">Analyst</div>
+              <div class="char-status">Waiting on the room...</div>
             </div>
-          </div>
-
-          <div class="live-chat" id="liveChat">
-            <div class="live-chat-empty" id="liveChatEmpty">Waiting for the room to start talking…</div>
           </div>
 
           <div class="battle-footer">
@@ -1106,18 +1157,18 @@ const ROLE_CONFIG = {
 let prevAnalystState = 'pending';
 
 function renderBattlefield() {
-  const roster = document.getElementById('roomRoster');
-  if (!roster) return;
+  const castRow = document.getElementById('castRow');
+  if (!castRow) return;
 
   let doneCount = 0;
   ['director', 'market', 'marketing', 'cast', 'distribution'].forEach(role => {
     const cfg = ROLE_CONFIG[role];
-    const chip = roster.querySelector(`.roster-chip[data-role="${role}"]`);
-    if (!chip) return;
+    const el = castRow.querySelector(`.character[data-role="${role}"]`);
+    if (!el) return;
     const state = cfg.state();
-    chip.classList.remove('active', 'done');
-    if (state === 'active' || state === 'done') chip.classList.add(state === 'done' ? 'done' : 'active');
-    const statusEl = chip.querySelector('.roster-status');
+    el.classList.remove('active', 'done');
+    if (state === 'active' || state === 'done') el.classList.add(state === 'done' ? 'done' : 'active');
+    const statusEl = el.querySelector('.char-status');
     if (statusEl) statusEl.textContent = cfg.label();
 
     if (state === 'done') doneCount++;
@@ -1126,25 +1177,25 @@ function renderBattlefield() {
   const progressLabelEl = document.getElementById('battleProgressLabel');
   if (progressLabelEl) progressLabelEl.textContent = `${doneCount} / 5 in`;
 
-  // The Analyst's roster chip + a system beat in the live chat mark the
-  // real moment main_synthesis starts (every fetch branch has already
-  // resolved by then in the real pipeline) and the real moment it's done
-  // — each fires exactly once, on the genuine state transition.
-  const analystChip = roster.querySelector('.roster-chip[data-role="analyst"]');
+  // The Analyst's standee + a bubble mark the real moment main_synthesis
+  // starts (every fetch branch has already resolved by then in the real
+  // pipeline) and the real moment it's done — each fires exactly once,
+  // on the genuine state transition.
+  const analystEl = castRow.querySelector('.character[data-role="analyst"]');
   const analystCfg = ROLE_CONFIG.analyst;
   const analystState = analystCfg.state();
-  if (analystChip) {
-    analystChip.classList.remove('active', 'done');
-    if (analystState === 'active' || analystState === 'done') analystChip.classList.add(analystState === 'done' ? 'done' : 'active');
-    const statusEl = analystChip.querySelector('.roster-status');
+  if (analystEl) {
+    analystEl.classList.remove('active', 'done');
+    if (analystState === 'active' || analystState === 'done') analystEl.classList.add(analystState === 'done' ? 'done' : 'active');
+    const statusEl = analystEl.querySelector('.char-status');
     if (statusEl) statusEl.textContent = analystCfg.label();
   }
   if (analystState !== prevAnalystState) {
     if (analystState === 'active' && prevAnalystState === 'pending') {
-      postSystemMessage('📊 The Analyst has joined the room to bring it together...');
+      showCharBubble('analyst', 'Alright, let’s bring this together.');
     }
     if (analystState === 'done') {
-      postSystemMessage('🎬 Brief ready.');
+      showCharBubble('analyst', 'Brief’s ready.');
     }
     prevAnalystState = analystState;
   }
@@ -1160,19 +1211,73 @@ function activityLineHtml(line) {
   return cls ? `<span class="${cls}">${safe}</span>` : safe;
 }
 
-// Same stage-to-persona mapping used for the room roster (see
+// Same stage-to-persona mapping used for the standee row (see
 // renderBattlefield's ROLE_CONFIG comment) — competitive alternates
 // between Market Intel and Distribution since both are honestly built
-// from that one branch, so both get to visibly "say" something. Roster
-// icons (kept in sync with the markup above) so live-chat messages carry
-// the same avatar as the roster strip.
+// from that one branch, so both get to visibly "say" something.
 const STAGE_TO_MECH_ROLE = {
   web_sentiment: 'director', youtube: 'director', sentiment_synthesis: 'director',
   marketing: 'marketing', cast: 'cast', main_synthesis: 'analyst',
 };
-const ROSTER_ICON = { director: '🎬', market: '🎯', marketing: '📣', cast: '🎭', distribution: '🗓️', analyst: '📊' };
-const ROSTER_LABEL = { director: 'Director', market: 'Market Intel', marketing: 'Marketing', cast: 'Cast', distribution: 'Distribution', analyst: 'Analyst' };
+
+// Each real activity line is either a tool CALL ("calling
+// get_web_sentiment(...)") or a tool RESULT ("parsed ... response" /
+// "... returned" / "...complete") — see agents/*.py's own activity-log
+// calls. Rather than showing that raw string verbatim (which read as
+// "saying parsed" — not a conversation), each persona has a small bank
+// of in-voice phrasings for each of those two real moments. This is
+// honest phrasing of a real, current action — never an invented
+// finding or opinion; no bubble here ever states a result the pipeline
+// hasn't actually produced.
+const SPEAK_BANK = {
+  director: {
+    call: ['Let’s hear what the audience is actually saying...', 'Pulling up the sentiment now...', 'Time to listen to the room.'],
+    result: ['Okay, digesting these reactions.', 'Got some real opinions here.', 'Cross-checking the tone now.'],
+  },
+  market: {
+    call: ['Who else is releasing around this window?', 'Scanning the competitive landscape...', 'Let’s see who we’re up against.'],
+    result: ['Noted — checking the numbers.', 'Filing that away.', 'That shifts the picture a bit.'],
+  },
+  marketing: {
+    call: ['How’s this being marketed out there?', 'Digging into the campaign...', 'Let’s see what’s landing.'],
+    result: ['Some of this is working, some isn’t.', 'Got a read on the messaging.', 'Noting what’s resonating.'],
+  },
+  cast: {
+    call: ['What’s the word on the cast?', 'Checking how people feel about this lineup...', 'Let’s hear about the performances.'],
+    result: ['Strong reactions on a few of these.', 'Cross-checking the reception.', 'Noted who’s landing and who isn’t.'],
+  },
+  distribution: {
+    call: ['Mapping the release landscape...', 'Let’s see how crowded this window is.', 'Checking the calendar.'],
+    result: ['This window’s getting clearer.', 'Filing that under release strategy.', 'Good, that helps the timing call.'],
+  },
+  analyst: {
+    call: ['Reviewing everyone’s notes...', 'Let’s see how this all adds up...', 'Cross-referencing before I write this up...'],
+    result: ['Got it — that backs up what I’m seeing.', 'That lines up.', 'Noted, factoring that in.'],
+  },
+};
+
+// Cheap connectors so back-to-back speakers visibly acknowledge each
+// other instead of talking in isolation — real turn-taking structure
+// (who's replying to whom), even though the substance of each line is
+// still that persona's own real activity.
+const CROSS_TALK = ['Meanwhile —', 'While that’s happening —', 'Same page here —', 'Following up —', 'On my end —', 'Picking up from that —'];
+
+let lastSpeakerRole = null;
 let competitiveBubbleToggle = 0;
+
+function conversationalLine(role, rawLine) {
+  const bank = SPEAK_BANK[role];
+  if (!bank) return cleanBubbleText(rawLine);
+  const isResult = /parsed|returned|complete/i.test(rawLine || '');
+  const pool = isResult ? bank.result : bank.call;
+  let line = pool[Math.floor(Math.random() * pool.length)];
+  if (lastSpeakerRole && lastSpeakerRole !== role && Math.random() < 0.4) {
+    const connector = CROSS_TALK[Math.floor(Math.random() * CROSS_TALK.length)];
+    line = `${connector} ${line.charAt(0).toLowerCase()}${line.slice(1)}`;
+  }
+  lastSpeakerRole = role;
+  return line;
+}
 
 function cleanBubbleText(line) {
   let t = String(line || '').replace(/^calling\s+/i, '→ ').trim();
@@ -1180,62 +1285,33 @@ function cleanBubbleText(line) {
   return t;
 }
 
-// Appends one message into the live group-chat transcript — the exact
-// real activity line, tagged with the persona whose real stage produced
-// it. Multiple stages genuinely run concurrently on the backend, so
-// messages from different personas naturally interleave here as the
-// room fills up — that's the real pipeline's real concurrency, not a
-// scripted back-and-forth.
-function pushLiveMessage(role, text) {
-  const chat = document.getElementById('liveChat');
-  if (!chat || !text) return;
-  const empty = document.getElementById('liveChatEmpty');
-  if (empty) empty.remove();
+const bubbleTimers = {};
 
-  const row = document.createElement('div');
-  row.className = 'live-msg';
-  row.innerHTML = `
-    <div class="live-msg-avatar">${ROSTER_ICON[role] || '💬'}</div>
-    <div class="live-msg-body">
-      <div class="live-msg-name">${ROSTER_LABEL[role] || role}</div>
-      <div class="live-msg-text"></div>
-    </div>
-  `;
-  chat.appendChild(row);
-  row.querySelector('.live-msg-text').textContent = text;
-  chat.scrollTop = chat.scrollHeight;
+// Shows a speech bubble above the given persona's standee and makes
+// them "argue" (arm-gesture animation) for the moment they're talking.
+function showCharBubble(role, text) {
+  const castRow = document.getElementById('castRow');
+  const char = castRow && castRow.querySelector(`.character[data-role="${role}"]`);
+  const bubble = char && char.querySelector('.char-bubble');
+  if (!bubble || !text) return;
 
-  const roster = document.getElementById('roomRoster');
-  const chip = roster && roster.querySelector(`.roster-chip[data-role="${role}"] .roster-avatar`);
-  if (chip) {
-    chip.style.transform = 'scale(1.12)';
-    setTimeout(() => { chip.style.transform = ''; }, 220);
-  }
+  typewriterInto(bubble, text, 12);
+  bubble.classList.add('showing');
+  char.classList.add('talking');
 
-  // Cap the live transcript so a long-running pipeline doesn't grow the
-  // DOM unbounded — the full, uncapped history stays in the Technical
-  // log below.
-  while (chat.children.length > 40) chat.removeChild(chat.firstChild);
-}
-
-function postSystemMessage(text) {
-  const chat = document.getElementById('liveChat');
-  if (!chat) return;
-  const empty = document.getElementById('liveChatEmpty');
-  if (empty) empty.remove();
-  const row = document.createElement('div');
-  row.className = 'live-msg system';
-  row.innerHTML = `<div class="live-msg-body"><div class="live-msg-text"></div></div>`;
-  chat.appendChild(row);
-  row.querySelector('.live-msg-text').textContent = text;
-  chat.scrollTop = chat.scrollHeight;
+  clearTimeout(bubbleTimers[role]);
+  bubbleTimers[role] = setTimeout(() => {
+    bubble.classList.remove('showing');
+    char.classList.remove('talking');
+  }, 3400);
 }
 
 function resetLiveChat() {
-  const chat = document.getElementById('liveChat');
-  if (!chat) return;
-  chat.innerHTML = '<div class="live-chat-empty" id="liveChatEmpty">Waiting for the room to start talking…</div>';
+  Object.values(bubbleTimers).forEach(t => clearTimeout(t));
+  document.querySelectorAll('.char-bubble').forEach(b => { b.classList.remove('showing'); b.innerHTML = ''; });
+  document.querySelectorAll('.character').forEach(c => c.classList.remove('talking'));
   competitiveBubbleToggle = 0;
+  lastSpeakerRole = null;
 }
 
 function appendActivity(stage, log) {
@@ -1249,16 +1325,16 @@ function appendActivity(stage, log) {
   });
   activityFeed.scrollTop = activityFeed.scrollHeight;
 
-  // The exact same real line(s), also pushed into the live group-chat
-  // transcript from the matching War Room persona — not a separate or
-  // fabricated message, just a different presentation of what's already
-  // in the technical log above.
+  // The real activity line (whether it was a tool call or a tool
+  // result) drives a bubble from the matching War Room persona, phrased
+  // in their voice — see SPEAK_BANK / conversationalLine() above. Not a
+  // separate or fabricated message: same real event, different words.
   let role = STAGE_TO_MECH_ROLE[stage];
   if (stage === 'competitive') {
     role = competitiveBubbleToggle % 2 === 0 ? 'market' : 'distribution';
     competitiveBubbleToggle++;
   }
-  if (role) pushLiveMessage(role, cleanBubbleText(log[log.length - 1]));
+  if (role) showCharBubble(role, conversationalLine(role, log[log.length - 1]));
 }
 
 function markStage(key) {
