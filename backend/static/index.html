@@ -536,15 +536,14 @@
      all in one glanceable row instead of stacked full-width text —
      matches the "movie image / confidence / opportunity / risk" block
      from the layout sketch. */
-  .memo-header-row { display: grid; grid-template-columns: 148px 1fr; gap: 16px; margin-bottom: 18px; }
-  @media (max-width: 480px) { .memo-header-row { grid-template-columns: 96px 1fr; } }
-  /* The only image source available is the YouTube trailer thumbnail
-     (genuinely 16:9 landscape) — there's no movie-poster API in this
-     pipeline. Showing it at its real aspect ratio instead of force-
-     cropping it into a 2:3 "poster" shape avoids a distorted, zoomed-in
-     crop of a video frame that doesn't actually look like a poster. */
-  .memo-poster { width: 100%; aspect-ratio: 16/9; border-radius: 6px; object-fit: cover; background: var(--marquee-bg); border: 1px solid var(--border); }
-  .memo-poster-fallback { width: 100%; aspect-ratio: 16/9; border-radius: 6px; background: var(--marquee-bg); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; color: var(--gold-on-ink); font-family: var(--font-mono); font-size: 0.6rem; text-align: center; padding: 4px; }
+  .memo-header-row { display: grid; grid-template-columns: 84px 1fr; gap: 16px; margin-bottom: 18px; }
+  @media (max-width: 480px) { .memo-header-row { grid-template-columns: 64px 1fr; } }
+  /* Real poster from TMDB (agents/poster_agent.py) — genuinely portrait,
+     so object-fit: cover here is a correct crop, not a distortion. Falls
+     back to a plain title card (never the mis-shaped YouTube thumbnail)
+     when no poster was found. */
+  .memo-poster { width: 100%; aspect-ratio: 2/3; border-radius: 6px; object-fit: cover; background: var(--marquee-bg); border: 1px solid var(--border); }
+  .memo-poster-fallback { width: 100%; aspect-ratio: 2/3; border-radius: 6px; background: var(--marquee-bg); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; color: var(--gold-on-ink); font-family: var(--font-mono); font-size: 0.6rem; text-align: center; padding: 4px; }
   .memo-header-right { display: flex; flex-direction: column; justify-content: center; gap: 8px; }
 
   /* "Synthesizer" callout: one crisp line instead of a full headline +
@@ -1424,7 +1423,7 @@ function typewriterInto(el, text, speedMs) {
   tick();
 }
 
-function renderGreenlightMemo(memo, releaseStatus, entity, youtubeData) {
+function renderGreenlightMemo(memo, releaseStatus, entity, posterUrl) {
   if (!memo) {
     greenlightCard.innerHTML = '<p class="empty-state">No memo was returned for this run.</p>';
     greenlightCard.classList.add('visible');
@@ -1451,9 +1450,10 @@ function renderGreenlightMemo(memo, releaseStatus, entity, youtubeData) {
   confidenceBasisParts.push(`Based on ${sourcesUsed.length}/5 sources: ${sourcesLabel}.`);
   const confidenceBasis = confidenceBasisParts.join(' ');
 
-  // Poster thumbnail — reuses the same YouTube thumbnail already fetched
-  // for the hero banner, no new image source.
-  const posterUrl = youtubeData ? Object.values(youtubeData).map(v => v.thumbnail_url).find(u => u) : null;
+  // Real poster from TMDB (agents/poster_agent.py) — genuinely portrait,
+  // so this is a correct crop, not the distorted YouTube-thumbnail-as-
+  // poster crop this used to show. No poster found -> a clean title
+  // card, never a mis-shaped fallback image.
   const posterHtml = posterUrl
     ? `<img class="memo-poster" src="${posterUrl}" alt="${(entity && entity.title) || ''}">`
     : `<div class="memo-poster-fallback">${(entity && entity.title) || 'FILM'}</div>`;
@@ -1893,7 +1893,7 @@ async function runBrief(forceRefresh = false) {
       renderHero(entity, data.youtube);
       renderConfidenceNote(entity, result);
 
-      renderGreenlightMemo(result, entity.release_status, entity, data.youtube);
+      renderGreenlightMemo(result, entity.release_status, entity, data.poster_url);
       renderWarRoom(result.war_room);
       renderTimeline(data.sentiment_synthesis && data.sentiment_synthesis.timeline);
       renderReleaseWindow(data.competitive);
