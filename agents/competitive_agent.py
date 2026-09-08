@@ -82,17 +82,26 @@ async def get_competitive_landscape(
         ]
     else:
         objective = (
-            f"What other films or shows are releasing in the same window as {title}"
+            f"What other films or shows compete with {title}"
             + (f" ({release_year})" if release_year else "")
-            + ", competing for audience attention? Focus on same-weekend "
-            "releases, genre overlap, franchise fatigue commentary, and any "
-            "direct comparisons critics or audiences are already drawing "
-            "between this title and its competition." + region_clause
+            + " for audience attention — both the SAME weekend/window "
+            "specifically, AND, separately, the wider field of major "
+            "tentpole/genre-overlapping releases across the REST OF "
+            + (f"{release_year}" if release_year else "the same release year")
+            + " (before and after this title's own date), since a title "
+            "competes for a limited pool of audience attention and "
+            "spending across its whole release year, not only against "
+            "whatever else opens the exact same weekend. Genre overlap, "
+            "franchise fatigue commentary, and any direct comparisons "
+            "critics or audiences are already drawing between this title "
+            "and its competition." + region_clause
         )
         search_queries = [
-            f"{title} box office competition" + (f" {region_hint.split(',')[0]}" if region_hint else ""),
+            f"{title} box office competition" + (f" {release_year}" if release_year else ""),
             f"films releasing same weekend as {title}",
             f"major movie releases after {title} release date",
+            f"biggest movie releases {release_year}" if release_year else f"biggest upcoming movie releases",
+            f"{release_year} box office calendar major releases" if release_year else f"movies competing with {title} this year",
         ]
 
     # Franchise history is a genuinely different question from same-window
@@ -142,6 +151,19 @@ competitive_agent = Agent(
         "invented — and, ONLY for released titles, gross_estimate if the "
         "excerpts state a box office figure for that specific competitor, "
         "null otherwise), attention_assessment, and risk. "
+        "For an 'upcoming' title, don't limit competing_titles to same-"
+        "weekend releases only — your search results also cover major "
+        "titles releasing earlier and later across the rest of that "
+        "release year, since audience attention and spend is genuinely "
+        "shared across the whole year, not just one weekend. Pick the "
+        "5 most relevant real competitors the excerpts actually name "
+        "(a same-window release is usually most relevant, but a bigger "
+        "year-wide tentpole in the same genre can matter more than a "
+        "smaller same-weekend one) rather than defaulting only to "
+        "whichever query happened to return results first. Never invent "
+        "a competing title, date, or figure the excerpts don't state. "
+        "attention_assessment should reflect this whole-year view when "
+        "the excerpts support it, not just the immediate weekend.\n\n"
         "CRITICAL — risk means different things by release_status: for "
         "'upcoming', it's forward-looking (will attention be split by "
         "rivals). For 'released', it is NOT forward risk, it's a "
