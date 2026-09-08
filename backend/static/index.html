@@ -45,9 +45,15 @@
     --news-accent: #fb923c;
     --news-tint: #fff1e4;
 
-    /* The one deliberately "loud" moment on the page: a candy gradient
-       marquee behind the wordmark, instead of a solid oxblood band. */
-    --marquee-bg: linear-gradient(120deg, #7c3aed 0%, #ff5fae 55%, #f59e0b 100%);
+    /* The one deliberately "loud" moment on the page: a marquee behind
+       the wordmark. Starts dark/neutral before any title is searched;
+       runBrief() overrides both this and --battle-gradient below with a
+       gradient derived from the searched title itself (see
+       applyMovieTheme() in JS) — deterministic per title, not random,
+       so the "based on the movie" theme is actually grounded in the
+       real input rather than reshuffling on every load. */
+    --marquee-bg: linear-gradient(120deg, #241c3f 0%, #2a1f52 55%, #1c1338 100%);
+    --battle-gradient: linear-gradient(135deg, #2a1f52 0%, #1c1338 55%, #150e2b 100%);
 
     /* A small set of colors reserved for the few spots that are always
        a dark "chip" or overlay regardless of the overall light theme —
@@ -240,8 +246,9 @@
     border-radius: 20px;
     overflow: hidden;
     padding: 4px 14px 14px;
-    background: linear-gradient(135deg, #a855f7 0%, #ec4899 45%, #fb923c 100%);
-    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.16), 0 16px 36px rgba(168,85,247,0.28);
+    background: var(--battle-gradient);
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.14), 0 16px 36px rgba(0,0,0,0.28);
+    transition: background 0.6s ease;
   }
   .stage-floor {
     position: absolute; left: 0; right: 0; bottom: 0; height: 54px; z-index: 0;
@@ -249,14 +256,15 @@
   }
 
   /* --- Cast row: standee characters that actually stand on the stage
-     and gesture while their real stage is active. Their real activity
-     lines (see appendActivity() / conversationalLine() in JS) — phrased
-     in-voice, never fabricated — render in the full-width live-chat
-     transcript below (.loading-chat), not in a cramped bubble over each
-     head, so the text has real room instead of clipping. Because the
-     six branches genuinely run concurrently on the backend, messages
-     from different personas naturally interleave there for real. --- */
-  .cast-row { position: relative; z-index: 1; display: flex; justify-content: space-around; align-items: flex-end; gap: 18px; flex-wrap: wrap; padding: 20px 10px 4px; }
+     and gesture while their real stage is active, with a speech bubble
+     over each — direct real activity lines (see appendActivity() /
+     conversationalLine() in JS), not fabricated dialogue, just phrased
+     in-voice instead of shown as a raw tool-call string. Because the
+     six branches genuinely run concurrently on the backend, characters
+     end up "talking" over each other for real. Now that #progress
+     spans the full page width (not capped inside .hero), there's real
+     room on either side for this row to breathe. --- */
+  .cast-row { position: relative; z-index: 1; display: flex; justify-content: space-around; align-items: flex-end; gap: 24px; flex-wrap: wrap; padding: 64px 20px 4px; }
   .character { position: relative; flex: 1 1 0; min-width: 84px; max-width: 140px; display: flex; flex-direction: column; align-items: center; opacity: 0.5; transition: opacity 0.3s ease; }
   .character.active, .character.done { opacity: 1; }
   .character[data-role="director"] { --role-color: var(--brand-b); }
@@ -295,45 +303,30 @@
   @keyframes argueArmLeft { 0%, 100% { transform: rotate(10deg); } 50% { transform: rotate(-32deg); } }
   @keyframes argueArmRight { 0%, 100% { transform: rotate(-10deg); } 50% { transform: rotate(32deg); } }
 
-  /* A small talk-pulse ring on the head while a character is speaking —
-     the actual words live in the transcript below, this is just a
-     "who's talking right now" cue on the stage itself. */
-  @media (prefers-reduced-motion: no-preference) {
-    .character.talking .char-head { animation: talkPulse 0.6s ease-in-out infinite; }
+  .char-bubble {
+    position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%) translateY(8px) scale(0.92);
+    width: max-content; max-width: 190px; margin-bottom: 10px;
+    background: #fff; color: var(--ink); border-radius: 4px 14px 14px 14px;
+    padding: 9px 13px; font-family: var(--font-body); font-size: 0.75rem; line-height: 1.42;
+    text-align: left; opacity: 0; pointer-events: none; z-index: 3;
+    box-shadow: 0 10px 24px rgba(0,0,0,0.35);
+    transition: opacity 0.25s ease, transform 0.25s ease;
   }
-  @keyframes talkPulse { 0%, 100% { box-shadow: 0 0 0 5px color-mix(in srgb, var(--role-color) 35%, transparent); } 50% { box-shadow: 0 0 0 9px color-mix(in srgb, var(--role-color) 15%, transparent); } }
+  .char-bubble::after {
+    content: ""; position: absolute; top: 100%; left: 50%; transform: translateX(-50%);
+    border: 6px solid transparent; border-top-color: #fff;
+  }
+  .char-bubble.showing { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
 
   .char-name { font-family: var(--font-mono); font-size: 0.66rem; letter-spacing: 0.02em; text-transform: uppercase; color: var(--on-ink-muted); margin-top: 8px; transition: color 0.3s ease; }
   .character.active .char-name, .character.done .char-name { color: #fff; }
   .char-status { font-family: var(--font-body); font-size: 0.63rem; color: var(--on-ink-muted); text-align: center; line-height: 1.25; min-height: 2.2em; margin-top: 2px; }
 
-  /* --- Loading chat: the real conversation, full width, same visual
-     language as the post-result War Room chat below (avatar + name +
-     bubble) so the loading screen and the finished discussion feel like
-     one continuous experience rather than two different UIs. --- */
-  .loading-chat {
-    position: relative; z-index: 1; max-height: 260px; overflow-y: auto;
-    display: flex; flex-direction: column; gap: 12px;
-    padding: 8px 4px; margin-top: 8px; scroll-behavior: smooth;
-  }
-  .loading-chat-empty { font-family: var(--font-mono); font-size: 0.76rem; color: var(--on-ink-muted); text-align: center; padding: 20px 0; }
-  .loading-chat .chat-row { opacity: 1; transform: none; margin: 0; }
-  .loading-chat .chat-bubble { max-width: 88%; }
-  .loading-chat .chat-avatar { width: 36px; height: 36px; font-size: 1.05rem; }
-  .loading-chat .chat-name { font-size: 0.76rem; }
-  .loading-chat .chat-text { font-size: 0.86rem; }
-  .loading-chat .chat-row.role-market .chat-avatar { border-color: var(--gold); }
-  .loading-chat .chat-row.role-marketing .chat-avatar { border-color: var(--marketing-accent); }
-  .loading-chat .chat-row.role-cast .chat-avatar { border-color: var(--cast-accent); }
-  .loading-chat .chat-row.role-distribution .chat-avatar { border-color: var(--news-accent); }
-  .loading-chat .chat-row.role-director .chat-avatar { border-color: var(--brand-b); }
-  .loading-chat .chat-row.role-analyst .chat-avatar { border-color: var(--brand-c); }
-
   .battle-footer { display: flex; justify-content: space-between; align-items: center; padding: 10px 2px 0; position: relative; z-index: 1; }
   .battle-progress-label { font-family: var(--font-mono); font-size: 0.7rem; color: var(--on-ink-muted); }
 
   @media (max-width: 640px) {
-    .cast-row { gap: 14px 10px; padding: 16px 4px 4px; }
+    .cast-row { gap: 14px 10px; padding: 58px 4px 4px; }
     .character { min-width: 28%; max-width: 30%; }
     .char-status { display: none; }
   }
@@ -935,8 +928,13 @@
         <button class="example-chip" data-title="Haiwaan">Haiwaan</button>
         <button class="example-chip" data-title="Doomsday 2008">Doomsday (2008)</button>
       </div>
+    </div>
 
-      <div id="progress" class="progress">
+    <!-- Outside .hero (which caps at 660px for the search UI) so the
+         loading screen can actually use the page's full width instead
+         of being squeezed into the same narrow column as the search
+         box. -->
+    <div id="progress" class="progress">
         <div class="battle-header">
           <div class="battle-kicker">Filmecho</div>
           <div class="battle-title">The War Room</div>
@@ -948,6 +946,7 @@
           <div class="stage-floor"></div>
           <div class="cast-row" id="castRow">
             <div class="character" data-role="director">
+              <div class="char-bubble"></div>
               <div class="char-figure">
                 <div class="char-arm left"></div>
                 <div class="char-arm right"></div>
@@ -958,6 +957,7 @@
               <div class="char-status">Standing by...</div>
             </div>
             <div class="character" data-role="market">
+              <div class="char-bubble"></div>
               <div class="char-figure">
                 <div class="char-arm left"></div>
                 <div class="char-arm right"></div>
@@ -968,6 +968,7 @@
               <div class="char-status">Standing by...</div>
             </div>
             <div class="character" data-role="marketing">
+              <div class="char-bubble"></div>
               <div class="char-figure">
                 <div class="char-arm left"></div>
                 <div class="char-arm right"></div>
@@ -978,6 +979,7 @@
               <div class="char-status">Standing by...</div>
             </div>
             <div class="character" data-role="cast">
+              <div class="char-bubble"></div>
               <div class="char-figure">
                 <div class="char-arm left"></div>
                 <div class="char-arm right"></div>
@@ -988,6 +990,7 @@
               <div class="char-status">Standing by...</div>
             </div>
             <div class="character" data-role="distribution">
+              <div class="char-bubble"></div>
               <div class="char-figure">
                 <div class="char-arm left"></div>
                 <div class="char-arm right"></div>
@@ -998,6 +1001,7 @@
               <div class="char-status">Standing by...</div>
             </div>
             <div class="character" data-role="analyst">
+              <div class="char-bubble"></div>
               <div class="char-figure">
                 <div class="char-arm left"></div>
                 <div class="char-arm right"></div>
@@ -1007,10 +1011,6 @@
               <div class="char-name">Analyst</div>
               <div class="char-status">Waiting on the room...</div>
             </div>
-          </div>
-
-          <div class="loading-chat" id="loadingChat">
-            <div class="loading-chat-empty" id="loadingChatEmpty">Waiting for the room to start talking…</div>
           </div>
 
           <div class="battle-footer">
@@ -1029,8 +1029,7 @@
           </div>
         </details>
       </div>
-      <div id="status" class="status"></div>
-    </div>
+    <div id="status" class="status"></div>
 
     <div id="cache-note" class="cache-note"></div>
 
@@ -1356,67 +1355,31 @@ function cleanBubbleText(line) {
   return t;
 }
 
-const talkTimers = {};
+const bubbleTimers = {};
 
-// Icon/name for the loading-chat feed — same battlefield role keys as
-// STAGE_TO_MECH_ROLE (director/market/marketing/cast/distribution/
-// analyst), kept in sync with the standee markup above.
-const LOADING_CHAT_META = {
-  director: { icon: '🎬', label: 'Director' },
-  market: { icon: '🎯', label: 'Market Intel' },
-  marketing: { icon: '📣', label: 'Marketing' },
-  cast: { icon: '🎭', label: 'Cast' },
-  distribution: { icon: '🗓️', label: 'Distribution' },
-  analyst: { icon: '📊', label: 'Analyst' },
-};
-
-// Pulses the given persona's standee (talk-pulse ring + arm gesture) and
-// pushes their real, in-voice line into the full-width loading-chat
-// transcript below — same visual language (avatar + name + bubble) as
-// the post-result War Room chat, so the two feel like one continuous
-// experience instead of two different UIs, and the text has real room
-// to wrap instead of clipping in a tiny bubble over a standee's head.
+// Shows a speech bubble above the given persona's standee and makes
+// them "argue" (arm-gesture animation) for the moment they're talking.
 function showCharBubble(role, text) {
   const castRow = document.getElementById('castRow');
   const char = castRow && castRow.querySelector(`.character[data-role="${role}"]`);
-  if (char) {
-    char.classList.add('talking');
-    clearTimeout(talkTimers[role]);
-    talkTimers[role] = setTimeout(() => char.classList.remove('talking'), 1400);
-  }
-  pushLoadingChatMessage(role, text);
-}
+  const bubble = char && char.querySelector('.char-bubble');
+  if (!bubble || !text) return;
 
-function pushLoadingChatMessage(role, text) {
-  const chat = document.getElementById('loadingChat');
-  if (!chat || !text) return;
-  const empty = document.getElementById('loadingChatEmpty');
-  if (empty) empty.remove();
+  typewriterInto(bubble, text, 12);
+  bubble.classList.add('showing');
+  char.classList.add('talking');
 
-  const meta = LOADING_CHAT_META[role] || { icon: '💬', label: role };
-  const row = document.createElement('div');
-  row.className = `chat-row role-${role}`;
-  row.innerHTML = `
-    <div class="chat-avatar">${meta.icon}</div>
-    <div class="chat-bubble">
-      <div class="chat-name">${meta.label}</div>
-      <div class="chat-text"></div>
-    </div>
-  `;
-  chat.appendChild(row);
-  typewriterInto(row.querySelector('.chat-text'), text, 10);
-  chat.scrollTop = chat.scrollHeight;
-
-  // Cap the transcript so a long-running pipeline doesn't grow the DOM
-  // unbounded — the full, uncapped history stays in the Technical log.
-  while (chat.children.length > 30) chat.removeChild(chat.firstChild);
+  clearTimeout(bubbleTimers[role]);
+  bubbleTimers[role] = setTimeout(() => {
+    bubble.classList.remove('showing');
+    char.classList.remove('talking');
+  }, 3400);
 }
 
 function resetLiveChat() {
-  Object.values(talkTimers).forEach(t => clearTimeout(t));
+  Object.values(bubbleTimers).forEach(t => clearTimeout(t));
+  document.querySelectorAll('.char-bubble').forEach(b => { b.classList.remove('showing'); b.innerHTML = ''; });
   document.querySelectorAll('.character').forEach(c => c.classList.remove('talking'));
-  const chat = document.getElementById('loadingChat');
-  if (chat) chat.innerHTML = '<div class="loading-chat-empty" id="loadingChatEmpty">Waiting for the room to start talking…</div>';
   competitiveBubbleToggle = 0;
   lastSpeakerRole = null;
 }
@@ -2179,9 +2142,34 @@ function getRegionHint() {
   }
 }
 
+// Deterministic string -> hue derivation (not a random roll — the same
+// title always produces the same theme). A pixel-accurate "colors from
+// the poster" extraction was considered, but the YouTube thumbnails this
+// app already has don't send CORS headers, so canvas pixel reads on them
+// throw a SecurityError (tainted canvas) — this is the honest, reliably
+// working version of "themed by the movie": grounded in the real title
+// string that was actually searched, not a guess or a random gradient.
+function hashStringToInt(str) {
+  let h = 0;
+  for (let i = 0; i < str.length; i++) { h = (h * 31 + str.charCodeAt(i)) | 0; }
+  return Math.abs(h);
+}
+
+function applyMovieTheme(title) {
+  const seed = hashStringToInt(title.trim().toLowerCase());
+  const hue = seed % 360;
+  const hue2 = (hue + 35) % 360;
+  const hue3 = (hue + 70) % 360;
+  const gradient = `linear-gradient(135deg, hsl(${hue} 72% 52%) 0%, hsl(${hue2} 78% 50%) 50%, hsl(${hue3} 70% 48%) 100%)`;
+  document.documentElement.style.setProperty('--marquee-bg', gradient);
+  document.documentElement.style.setProperty('--battle-gradient', gradient);
+}
+
 async function runBrief(forceRefresh = false) {
   const title = titleInput.value.trim();
   if (!title) { status.textContent = 'Enter a title first.'; status.classList.add('visible'); return; }
+
+  applyMovieTheme(title);
 
   if (activeSource) { activeSource.close(); activeSource = null; }
 
