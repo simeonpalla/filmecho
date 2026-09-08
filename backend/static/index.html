@@ -1577,16 +1577,94 @@ function guessTone(text) {
   return 'neutral';
 }
 
-function renderWarRoomChat(voices) {
-  if (!voices || !voices.length) {
-    warRoom.classList.remove('visible');
+// Live, staggered reveal shared by both render paths below — a typing
+// indicator briefly stands in for each persona before their real text
+// types itself out, so the room reads as a conversation happening in
+// front of you, not a pre-rendered dump of cards at once.
+function revealChatItems(reveal) {
+  warRoom.classList.add('visible');
+  const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (reduceMotion) {
+    reveal.forEach(r => {
+      r.el.classList.add('show');
+      if (r.textEl) r.textEl.textContent = r.text;
+    });
     return;
   }
-  warRoomChat.innerHTML = '';
+  let delay = 200;
+  reveal.forEach(r => {
+    if (r.typing) {
+      const indicator = document.createElement('div');
+      indicator.className = 'chat-typing';
+      indicator.innerHTML = '<span></span><span></span><span></span>';
+      r.el.style.display = 'none';
+      r.el.parentNode.insertBefore(indicator, r.el);
+      setTimeout(() => { indicator.remove(); r.el.style.display = ''; r.el.classList.add('show'); typewriterInto(r.textEl, r.text || '', 10); }, delay);
+      delay += 550 + Math.min(1400, (r.text || '').length * 11);
+    } else {
+      setTimeout(() => r.el.classList.add('show'), delay);
+      delay += 400;
+    }
+  });
+}
 
-  // The Analyst is always last in the real war_room order — that's its
-  // actual synthesizing role, so it's pulled out and rendered as the
-  // pinned final-verdict card rather than another chat bubble.
+// Preferred path: main_synthesis_agent now writes war_room_transcript —
+// a REAL multi-turn discussion it authors from the same five upstream
+// JSON sections it already receives (see main_synthesis.py). It decides
+// disagreement itself, grounded in an actual conflict between two real
+// sources (e.g. cast reception vs. news facts about the same person) —
+// nothing here is guessed or invented on the frontend.
+function renderWarRoomTranscript(turns) {
+  warRoomChat.innerHTML = '';
+  const team = turns.filter(t => t.role !== 'analyst');
+  const analystTurn = [...turns].reverse().find(t => t.role === 'analyst');
+
+  const reveal = [];
+  team.forEach(t => {
+    const meta = ROLE_META[t.role] || { icon: '\u{1F4AC}', label: t.role };
+    if (t.disagreement) {
+      const respondingMeta = t.responding_to ? ROLE_META[t.responding_to] : null;
+      const flag = document.createElement('div');
+      flag.className = 'chat-disagree-flag';
+      flag.textContent = respondingMeta ? `⚡ pushes back on ${respondingMeta.label}` : '⚡ pushes back';
+      warRoomChat.appendChild(flag);
+      reveal.push({ el: flag, typing: false });
+    }
+    const row = document.createElement('div');
+    row.className = `chat-row role-${t.role}` + (t.disagreement ? ' tone-negative' : '');
+    row.innerHTML = `
+      <div class="chat-avatar">${meta.icon}</div>
+      <div class="chat-bubble">
+        <div class="chat-name">${meta.label}</div>
+        <div class="chat-text"></div>
+      </div>
+    `;
+    warRoomChat.appendChild(row);
+    reveal.push({ el: row, typing: true, text: t.message, textEl: row.querySelector('.chat-text') });
+  });
+
+  if (analystTurn) {
+    const finalRow = document.createElement('div');
+    finalRow.className = 'chat-final';
+    finalRow.innerHTML = `
+      <div class="chat-final-tag">\u{1F4CA} The Analyst — bringing it together</div>
+      <div class="chat-text"></div>
+    `;
+    warRoomChat.appendChild(finalRow);
+    reveal.push({ el: finalRow, typing: true, text: analystTurn.message, textEl: finalRow.querySelector('.chat-text') });
+  }
+
+  revealChatItems(reveal);
+}
+
+// Fallback path: older cached memos (released titles are cached
+// indefinitely, see orchestration/memo_cache.py) were generated before
+// war_room_transcript existed and only have the flat one-line-per-role
+// war_room. For those, fall back to a cheap keyword tone read on each
+// persona's real sentence, just enough to flag when two consecutive
+// real voices are pulling in different directions.
+function renderWarRoomFromVoices(voices) {
+  warRoomChat.innerHTML = '';
   const team = voices.filter(v => v.role !== 'analyst');
   const analystVoice = voices.find(v => v.role === 'analyst');
 
@@ -1621,9 +1699,8 @@ function renderWarRoomChat(voices) {
     reveal.push({ el: row, typing: true, text: item.v.insight, textEl: row.querySelector('.chat-text') });
   });
 
-  let finalRow = null;
   if (analystVoice) {
-    finalRow = document.createElement('div');
+    const finalRow = document.createElement('div');
     finalRow.className = 'chat-final';
     finalRow.innerHTML = `
       <div class="chat-final-tag">\u{1F4CA} The Analyst — bringing it together</div>
@@ -1633,36 +1710,19 @@ function renderWarRoomChat(voices) {
     reveal.push({ el: finalRow, typing: true, text: analystVoice.insight, textEl: finalRow.querySelector('.chat-text') });
   }
 
-  warRoom.classList.add('visible');
+  revealChatItems(reveal);
+}
 
-  // Live, staggered reveal — a typing indicator briefly stands in for
-  // each persona before their real sentence types itself out, so the
-  // room reads as a conversation happening in front of you, not a
-  // pre-rendered dump of six cards at once.
-  const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  if (reduceMotion) {
-    reveal.forEach(r => {
-      r.el.classList.add('show');
-      if (r.textEl) r.textEl.textContent = r.text;
-    });
+function renderWarRoomChat(voices, transcript) {
+  if (Array.isArray(transcript) && transcript.length) {
+    renderWarRoomTranscript(transcript);
     return;
   }
-
-  let delay = 200;
-  reveal.forEach(r => {
-    if (r.typing) {
-      const indicator = document.createElement('div');
-      indicator.className = 'chat-typing';
-      indicator.innerHTML = '<span></span><span></span><span></span>';
-      r.el.style.display = 'none';
-      r.el.parentNode.insertBefore(indicator, r.el);
-      setTimeout(() => { indicator.remove(); r.el.style.display = ''; r.el.classList.add('show'); typewriterInto(r.textEl, r.text || '', 10); }, delay);
-      delay += 550 + Math.min(1400, (r.text || '').length * 11);
-    } else {
-      setTimeout(() => r.el.classList.add('show'), delay);
-      delay += 400;
-    }
-  });
+  if (!voices || !voices.length) {
+    warRoom.classList.remove('visible');
+    return;
+  }
+  renderWarRoomFromVoices(voices);
 }
 
 function renderTimeline(timeline) {
@@ -2028,7 +2088,7 @@ async function runBrief(forceRefresh = false) {
 
       renderGreenlightMemo(result, entity.release_status, entity, data.youtube);
       renderTimeline(data.sentiment_synthesis && data.sentiment_synthesis.timeline);
-      renderWarRoomChat(result.war_room);
+      renderWarRoomChat(result.war_room, result.war_room_transcript);
       renderReleaseWindow(data.competitive);
 
       renderMarketing(data.marketing, entity.release_status);

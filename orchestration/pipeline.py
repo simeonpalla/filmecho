@@ -394,7 +394,7 @@ async def stream_pipeline(
     yield {"event": "activity", "stage": "main_synthesis", "log": main_log}
 
     result: dict = memo.model_dump() if memo else {
-        "verdict": None, "confidence": 0, "why": [], "war_room": [], "sources_used": [],
+        "verdict": None, "confidence": 0, "why": [], "war_room": [], "war_room_transcript": [], "sources_used": [],
     }
     result["entity_confidence"] = entity.confidence
     result["disambiguation_note"] = entity.disambiguation_note

@@ -66,6 +66,24 @@ grounded in ITS OWN upstream section, one sharp sentence, not filler:
 5. distribution_executive — from COMPETITIVE LANDSCAPE's release_window specifically (timing read; if release_window is unclear/not applicable, say so plainly rather than inventing a timing opinion)
 6. analyst — your own overall confidence read, one sentence on what would most change your mind
 
+IMPORTANT — war_room_transcript: the same 6 personas, but now write the
+actual DISCUSSION those 5 real upstream sections would produce, not just
+6 isolated lines. 8-14 turns. The 5 domain personas each open with their
+own read (same role→source mapping as war_room above); weave in replies
+where they actually apply — set responding_to to the role being replied
+to. Set disagreement=true ONLY where two personas' real sources actually
+conflict this run (check CAST RECEPTION against PRODUCTION/CAST NEWS
+about the same person; check a positive SENTIMENT SYNTHESIS read against
+a crowded competitive release_window; check MARKETING's own read against
+what COMPETITIVE LANDSCAPE shows). If nothing in the real data actually
+conflicts this run, don't invent tension — write the room converging
+instead, and it's fine for disagreement to be false throughout. The
+analyst speaks LAST, synthesizing the real discussion above into the
+same verdict/confidence you're producing for the rest of this memo. If
+fewer than 3 of the 5 upstream sections had real data, leave this list
+empty (mirrors the insufficient_data threshold below) rather than
+staging a discussion the room doesn't have material for.
+
 === SENTIMENT SYNTHESIS ===
 {sentiment_json}
 
@@ -158,7 +176,9 @@ main_synthesis_agent = Agent(
         "specific claim from your output entirely, or state plainly that "
         "reports conflict on it, and lower confidence accordingly (this "
         "is exactly the kind of conflicting signal confidence_rationale "
-        "should mention).\n\n"
+        "should mention — and, in war_room_transcript, exactly the kind "
+        "of real tension a disagreement=true turn should be grounded "
+        "in).\n\n"
         "Write like a strategy memo an executive would actually read: "
         "biggest_opportunity and biggest_risk must each be ONE specific, "
         "named thing, not a vague category. recommended_action must be a "

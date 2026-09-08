@@ -377,6 +377,31 @@ class WarRoomVoice(BaseModel):
     )
 
 
+class WarRoomTurn(BaseModel):
+    """One beat in a real, grounded back-and-forth discussion between the
+    War Room personas. Still NOT a separate agent call — main_synthesis
+    already has all five upstream agents' full JSON in front of it; this
+    asks it to write the discussion those five real datasets would
+    actually produce, including genuine disagreement where two personas'
+    real upstream sources are actually in tension (e.g. cast reception
+    vs. news facts about the same actor's involvement, or positive
+    sentiment vs. a crowded competitive window) — never a scripted
+    argument bolted on for effect."""
+
+    role: Literal["director", "producer", "marketing_chief", "casting_executive", "distribution_executive", "analyst"]
+    message: str = Field(
+        description="One conversational beat, at most two sentences, in this persona's voice. Grounded strictly in that persona's own upstream section (see the war_room role→source mapping), or — for a rebuttal — in the specific other section it's disagreeing with. Never invent a fact not present in the upstream JSON given to you."
+    )
+    responding_to: Optional[Literal["director", "producer", "marketing_chief", "casting_executive", "distribution_executive"]] = Field(
+        default=None,
+        description="Set ONLY when this turn is directly reacting to (agreeing with or pushing back on) a specific earlier speaker's point in THIS transcript — the role that earlier turn belongs to. Leave null for a turn that's introducing its own domain's read rather than replying to someone.",
+    )
+    disagreement: bool = Field(
+        default=False,
+        description="True only when this turn genuinely contradicts or complicates a point another real speaker just made, because their two upstream data sections are actually in tension. Never set true just for dramatic effect when the underlying data doesn't actually conflict.",
+    )
+
+
 class GreenlightMemo(BaseModel):
     """The single output of main_synthesis — one verdict-first memo,
     not two audience-split briefs. Every field must trace back to the
@@ -428,6 +453,30 @@ class GreenlightMemo(BaseModel):
     war_room: list[WarRoomVoice] = Field(
         min_length=6, max_length=6,
         description="Exactly 6 voices, one per role, in this order: director, producer, marketing_chief, casting_executive, distribution_executive, analyst.",
+    )
+    war_room_transcript: list[WarRoomTurn] = Field(
+        default_factory=list,
+        max_length=14,
+        description=(
+            "A real, continuous discussion among the War Room, grounded in "
+            "the SAME five upstream sections as war_room above but written "
+            "as an actual back-and-forth rather than six isolated lines: "
+            "each of the five domain personas (director, producer, "
+            "marketing_chief, casting_executive, distribution_executive) "
+            "opens with their own real read, and at least one turn MUST "
+            "explicitly respond to (agree with or push back on) an earlier "
+            "speaker whenever two personas' real upstream sources are "
+            "actually in tension this run (e.g. CAST RECEPTION vs. "
+            "PRODUCTION/CAST NEWS disagreeing about the same person, or a "
+            "positive SENTIMENT SYNTHESIS read against a crowded "
+            "release_window). If the real data has no such tension this "
+            "run, do not invent one — just let the room be broadly "
+            "aligned. The analyst ALWAYS speaks last, closing the "
+            "discussion by synthesizing what was actually said into the "
+            "same verdict/confidence as the rest of this memo. Leave this "
+            "empty only if there isn't enough real upstream data to "
+            "support any discussion (mirrors the insufficient_data case)."
+        ),
     )
     notable_news: list[SourceExcerpt] = Field(default_factory=list, max_length=4)
     sources_used: list[str] = Field(default_factory=list, description="Which of the five upstream sections actually had data this run.")
