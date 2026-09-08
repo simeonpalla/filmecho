@@ -238,7 +238,20 @@ class NewsItem(BaseModel):
 
     url: str = Field(description="Source URL the claim came from.")
     claim: str = Field(description="The specific claim, in your own words, not a verbatim quote.")
-    date: Optional[str] = Field(default=None, description="Date this was reported, if stated. Null if unknown.")
+    date: Optional[str] = Field(
+        default=None,
+        description=(
+            "The specific date this happened, normalized to YYYY-MM-DD when the "
+            "excerpt gives a full date, or just the year/month if that's all "
+            "that's stated. ACTIVELY extract this whenever the claim itself "
+            "names a date — 'production began in March 2025' has a date in it, "
+            "populate it, don't leave this null just because you didn't have "
+            "to look hard for it. This field is what lets a reputation timeline "
+            "get built from these facts downstream, so a populated date on an "
+            "ordinary production fact is more valuable than it looks in "
+            "isolation. Null only when the excerpt genuinely gives no date at all."
+        ),
+    )
     category: Literal["casting", "production", "release", "box_office", "other"] = Field(
         description="'casting' = who's in it or cast changes. 'production' = filming, crew, budget, behind-the-scenes logistics. 'release' = dates, distribution, platform. 'box_office' = ticket sales, revenue figures. 'other' = doesn't fit the above."
     )

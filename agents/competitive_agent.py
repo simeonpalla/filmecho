@@ -108,7 +108,10 @@ async def get_competitive_landscape(
         objective=objective,
         search_queries=search_queries,
         session_id=session_id or None,
-        mode="fast",
+        # "advanced" over "fast" — this branch now also carries franchise
+        # history (prior installments' box office), which benefits from
+        # the deeper cross-referencing "advanced" mode does.
+        mode="advanced",
     )
     return {
         "results": [

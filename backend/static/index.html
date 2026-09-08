@@ -536,14 +536,15 @@
      all in one glanceable row instead of stacked full-width text —
      matches the "movie image / confidence / opportunity / risk" block
      from the layout sketch. */
-  .memo-header-row { display: grid; grid-template-columns: 84px 1fr; gap: 16px; margin-bottom: 18px; }
-  @media (max-width: 480px) { .memo-header-row { grid-template-columns: 64px 1fr; } }
-  /* Real poster from TMDB (agents/poster_agent.py) — genuinely portrait,
-     so object-fit: cover here is a correct crop, not a distortion. Falls
-     back to a plain title card (never the mis-shaped YouTube thumbnail)
-     when no poster was found. */
-  .memo-poster { width: 100%; aspect-ratio: 2/3; border-radius: 6px; object-fit: cover; background: var(--marquee-bg); border: 1px solid var(--border); }
-  .memo-poster-fallback { width: 100%; aspect-ratio: 2/3; border-radius: 6px; background: var(--marquee-bg); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; color: var(--gold-on-ink); font-family: var(--font-mono); font-size: 0.6rem; text-align: center; padding: 4px; }
+  .memo-header-row { display: grid; grid-template-columns: 220px 1fr; gap: 18px; margin-bottom: 18px; }
+  @media (max-width: 600px) { .memo-header-row { grid-template-columns: 1fr; } }
+  /* Real YouTube trailer thumbnail (16:9, its true shape) — no poster
+     API in this pipeline. Sized large enough to actually convey
+     something about the film at a glance, not a token icon. Falls back
+     to a plain title card, never a distorted crop, when unavailable. */
+  .memo-poster { width: 100%; aspect-ratio: 16/9; border-radius: 6px; object-fit: cover; background: var(--marquee-bg); border: 1px solid var(--border); }
+  .memo-poster-fallback { width: 100%; aspect-ratio: 16/9; border-radius: 6px; background: var(--marquee-bg); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; color: var(--gold-on-ink); font-family: var(--font-mono); font-size: 0.72rem; text-align: center; padding: 8px; }
+  .memo-meta-pills { display: flex; flex-wrap: wrap; gap: 6px; margin: 2px 0; }
   .memo-header-right { display: flex; flex-direction: column; justify-content: center; gap: 8px; }
 
   /* "Synthesizer" callout: one crisp line instead of a full headline +
@@ -1010,28 +1011,18 @@
       <div id="status" class="status"></div>
     </div>
 
-    <div id="hero-banner" class="hero-banner">
-      <img id="hero-banner-img" alt="">
-      <div class="hero-banner-overlay">
-        <div id="hero-banner-title" class="hero-banner-title"></div>
-        <div id="hero-banner-meta" class="hero-banner-meta"></div>
-      </div>
-    </div>
-    <div id="marquee-fallback" class="marquee-fallback">
-      <div id="marquee-fallback-title" class="hero-banner-title"></div>
-      <div id="marquee-fallback-meta" class="hero-banner-meta"></div>
-    </div>
-
     <div id="cache-note" class="cache-note"></div>
 
     <div id="greenlight-card" class="greenlight-card"></div>
+
+    <div id="timeline-card" class="timeline-card"></div>
 
     <div id="war-room" class="war-room">
       <div class="war-room-title">The War Room</div>
       <div id="war-room-grid" class="war-room-grid"></div>
     </div>
 
-    <div id="timeline-card" class="timeline-card"></div>
+    <div id="memo-body-card" class="greenlight-card"></div>
 
     <div id="release-window-card" class="release-window-card"></div>
 
@@ -1063,14 +1054,8 @@ const progressList = document.getElementById('progress-list');
 const activityFeed = document.getElementById('activity-feed');
 const progressTimerText = document.getElementById('progress-timer-text');
 const status = document.getElementById('status');
-const heroBanner = document.getElementById('hero-banner');
-const heroBannerImg = document.getElementById('hero-banner-img');
-const heroBannerTitle = document.getElementById('hero-banner-title');
-const heroBannerMeta = document.getElementById('hero-banner-meta');
-const marqueeFallback = document.getElementById('marquee-fallback');
-const marqueeFallbackTitle = document.getElementById('marquee-fallback-title');
-const marqueeFallbackMeta = document.getElementById('marquee-fallback-meta');
 const greenlightCard = document.getElementById('greenlight-card');
+const memoBodyCard = document.getElementById('memo-body-card');
 const warRoom = document.getElementById('war-room');
 const warRoomGrid = document.getElementById('war-room-grid');
 const releaseWindowCard = document.getElementById('release-window-card');
@@ -1423,14 +1408,16 @@ function typewriterInto(el, text, speedMs) {
   tick();
 }
 
-function renderGreenlightMemo(memo, releaseStatus, entity, posterUrl) {
+function renderGreenlightMemo(memo, releaseStatus, entity, youtubeData) {
   if (!memo) {
     greenlightCard.innerHTML = '<p class="empty-state">No memo was returned for this run.</p>';
     greenlightCard.classList.add('visible');
+    memoBodyCard.classList.remove('visible');
     return;
   }
   const tone = verdictTone(memo.verdict);
   greenlightCard.className = `greenlight-card visible tone-${tone}`;
+  memoBodyCard.className = `greenlight-card visible tone-${tone}`;
 
   const why = (memo.why || []).map(w => `<li>${w}</li>`).join('') || '<li>No specific reasons surfaced.</li>';
   const changeLabel = releaseStatus === 'released' ? 'Lessons learned' : "What we'd change";
@@ -1450,14 +1437,18 @@ function renderGreenlightMemo(memo, releaseStatus, entity, posterUrl) {
   confidenceBasisParts.push(`Based on ${sourcesUsed.length}/5 sources: ${sourcesLabel}.`);
   const confidenceBasis = confidenceBasisParts.join(' ');
 
-  // Real poster from TMDB (agents/poster_agent.py) — genuinely portrait,
-  // so this is a correct crop, not the distorted YouTube-thumbnail-as-
-  // poster crop this used to show. No poster found -> a clean title
-  // card, never a mis-shaped fallback image.
-  const posterHtml = posterUrl
-    ? `<img class="memo-poster" src="${posterUrl}" alt="${(entity && entity.title) || ''}">`
+  // Small thumbnail only, using the real YouTube trailer thumbnail
+  // (16:9, its true shape) — no TMDB poster lookup, per request. Sized
+  // large enough to actually convey something about the film, not a
+  // token icon.
+  const thumbUrl = youtubeData ? Object.values(youtubeData).map(v => v.thumbnail_url).find(u => u) : null;
+  const posterHtml = thumbUrl
+    ? `<img class="memo-poster" src="${thumbUrl}" alt="${(entity && entity.title) || ''}">`
     : `<div class="memo-poster-fallback">${(entity && entity.title) || 'FILM'}</div>`;
+  const metaPillsHtml = entity ? buildMetaPills(entity) : '';
 
+  // --- Header: thumbnail + verdict + confidence + opportunity/risk +
+  // release-context pills. Everything someone needs at a glance. ---
   greenlightCard.innerHTML = `
     <div class="memo-header-row">
       ${posterHtml}
@@ -1469,13 +1460,20 @@ function renderGreenlightMemo(memo, releaseStatus, entity, posterUrl) {
             <span class="confidence-bar"><span class="confidence-bar-fill tone-${tone}" style="width:${memo.confidence}%"></span></span>
           </span>
         </div>
+        <div class="memo-meta-pills">${metaPillsHtml}</div>
         <div class="opp-risk-row" style="margin-bottom:0;">
           <div class="opp-risk-tile opportunity"><div class="opp-risk-label">Biggest opportunity</div><div class="field-value">${memo.biggest_opportunity || ''}</div></div>
           <div class="opp-risk-tile risk"><div class="opp-risk-label">Biggest risk</div><div class="field-value">${memo.biggest_risk || ''}</div></div>
         </div>
       </div>
     </div>
+  `;
 
+  // --- Body: synthesizer callout + the full reasoning — rendered into
+  // memo-body-card, which sits AFTER the timeline and War Room in the
+  // DOM, so the glanceable header comes first, then the evidence
+  // (timeline, War Room), then the complete written case. ---
+  memoBodyCard.innerHTML = `
     <div class="synth-callout">
       <span class="synth-tag">Synthesizing agent</span>
       <span id="synth-callout-text"></span>
@@ -1730,28 +1728,6 @@ function renderCollections(competitive, youtubeData) {
   `;
 }
 
-function renderHero(entity, youtubeData) {
-  const label = releaseLabel(entity);
-  const titleHtml = `${label}: ${entity.title || ''}`;
-  const metaHtml = buildMetaPills(entity);
-
-  const firstThumb = youtubeData ? Object.values(youtubeData).map(v => v.thumbnail_url).find(u => u) : null;
-
-  if (firstThumb) {
-    heroBannerImg.src = firstThumb;
-    heroBannerImg.alt = entity.title || '';
-    heroBannerTitle.textContent = titleHtml;
-    heroBannerMeta.innerHTML = metaHtml;
-    heroBanner.classList.add('visible');
-    marqueeFallback.classList.remove('visible');
-  } else {
-    marqueeFallbackTitle.textContent = titleHtml;
-    marqueeFallbackMeta.innerHTML = metaHtml;
-    marqueeFallback.classList.add('visible');
-    heroBanner.classList.remove('visible');
-  }
-}
-
 function renderConfidenceNote(entity, result) {
   if (!result.entity_confidence || result.entity_confidence === 'high') {
     status.classList.remove('visible');
@@ -1832,9 +1808,8 @@ async function runBrief(forceRefresh = false) {
   if (studioFilmTitle) studioFilmTitle.textContent = title;
   const studioTagline = document.getElementById('studio-tagline');
   if (studioTagline) studioTagline.textContent = 'Your AI production room is investigating...';
-  heroBanner.classList.remove('visible');
-  marqueeFallback.classList.remove('visible');
   greenlightCard.classList.remove('visible');
+  memoBodyCard.classList.remove('visible');
   warRoom.classList.remove('visible');
   document.getElementById('timeline-card').classList.remove('visible');
   releaseWindowCard.classList.remove('visible');
@@ -1890,12 +1865,11 @@ async function runBrief(forceRefresh = false) {
       const entity = data.entity || {};
       const result = data.result || {};
 
-      renderHero(entity, data.youtube);
       renderConfidenceNote(entity, result);
 
-      renderGreenlightMemo(result, entity.release_status, entity, data.poster_url);
-      renderWarRoom(result.war_room);
+      renderGreenlightMemo(result, entity.release_status, entity, data.youtube);
       renderTimeline(data.sentiment_synthesis && data.sentiment_synthesis.timeline);
+      renderWarRoom(result.war_room);
       renderReleaseWindow(data.competitive);
 
       renderMarketing(data.marketing, entity.release_status);

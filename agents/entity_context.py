@@ -153,7 +153,11 @@ def _search_excerpts(parallel_client: Parallel, title: str, extra_hint: str = ""
             f"{title} release date",
             f"{title} based on remake adaptation",
         ],
-        mode="fast",
+        # "advanced" over "fast" — a weak entity resolution here (wrong
+        # release_status, low confidence) cascades into every downstream
+        # agent's framing, so the extra depth pays for itself more than
+        # anywhere else in the pipeline.
+        mode="advanced",
     )
     excerpts = "\n\n".join(
         excerpt[:500]

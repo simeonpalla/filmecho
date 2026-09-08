@@ -62,7 +62,13 @@ async def get_production_news(
         objective=objective,
         search_queries=[f"{title} production news", f"{title} cast news", f"{title} casting rumor confirmed denied"],
         session_id=session_id or None,
-        mode="fast",
+        # "advanced" spends more time cross-referencing sources than the
+        # "fast" mode used elsewhere in this pipeline — worth the extra
+        # latency/cost here specifically, since this is the search that
+        # feeds the reputation timeline's dated milestones, and "fast"
+        # mode was visibly surfacing only 2-3 of them instead of the
+        # full production history (casting reveal, wrap, etc.).
+        mode="advanced",
     )
     return {
         "results": [
@@ -120,7 +126,19 @@ news_cast_agent = Agent(
         "and not individual performance reception (that's the cast agent's "
         "job). Do not add interpretation, predictions, or opinion about "
         "whether the news is good or bad for the film. Leave both lists "
-        "empty if nothing relevant was found, don't invent filler."
+        "empty if nothing relevant was found, don't invent filler.\n\n"
+        "IMPORTANT — populate each item's date field whenever the "
+        "underlying claim contains one (a casting announcement, "
+        "production start, wrap date, distributor deal, etc. usually all "
+        "have a specific or approximate date in the source even if you "
+        "weren't specifically asked to find one) — this is what a "
+        "downstream reputation timeline gets built from, so under-"
+        "populating dates here means real production milestones "
+        "silently disappear from that timeline even though you found "
+        "them. Don't limit yourself to just the release date and one or "
+        "two headline events; if the excerpts mention a casting reveal, "
+        "a director confirmation, a shoot start, or a wrap, each of "
+        "those is its own dated fact worth its own entry."
     ),
     tools=[news_cast_tool],
     output_schema=NewsResult,
