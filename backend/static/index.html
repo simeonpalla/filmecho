@@ -201,25 +201,25 @@
   #search-btn:disabled { opacity: 0.5; cursor: default; }
   #search-btn:focus-visible, #title-input:focus-visible { outline: 2px solid var(--brand-c); outline-offset: 2px; }
 
-  /* --- Progress / War Room battle scene ---
+  /* --- Progress / War Room live discussion ---
      #progress and its .visible toggle are UNCHANGED (see runBrief() /
      the SSE handler) — only what renders inside it changed. The old
      checklist markup (#progress-list, #activity-feed, #progress-timer)
      still exists and is still driven by the exact same resetProgress()/
      markStage()/appendActivity() functions; it's tucked into a collapsed
-     "Technical log" <details> so the battle scene is the primary
-     experience while the real event log stays available, not deleted.
+     "Technical log" <details> so the live chat is the primary experience
+     while the real event log stays available, not deleted.
 
-     The six War Room personas here are the SAME six already used
-     elsewhere in the product (director/producer/marketing_chief/
-     casting_executive/distribution_executive/analyst — see
-     main_synthesis.py's docstring for the real mapping). Producer/
-     Distribution both fire on the competitive branch completing (same
-     real data source, same as how main_synthesis.py itself derives both
-     those War Room voices from COMPETITIVE LANDSCAPE); Director fires on
-     sentiment_synthesis; Marketing and Cast fire on their own branches;
-     Analyst only walks on when the real final result is ready. See
-     renderBattlefield() below for the exact state→visual mapping. */
+     The battle-mech scene from an earlier pass is gone — it read as six
+     idols standing idle and firing independently, not as a discussion.
+     Instead, appendActivity() (below) now streams every REAL activity
+     line (actual tool calls/results, already sent over SSE) into a live
+     group-chat transcript, tagged with the persona whose real stage
+     produced it — so the room visibly fills up with overlapping
+     back-and-forth as the six branches genuinely run concurrently,
+     rather than six characters flashing once each. See renderRoster()
+     and appendActivity() in JS for the exact real-state→visual mapping;
+     no dialogue content is invented, only real log lines are shown. */
   .progress {
     display: none;
     margin: 28px auto 0;
@@ -237,153 +237,70 @@
 
   .battlefield {
     position: relative;
-    border-radius: 10px;
+    border-radius: 20px;
     overflow: hidden;
-    padding: 30px 20px 0;
-    background:
-      radial-gradient(ellipse 900px 400px at 50% 0%, rgba(184,39,42,0.22), transparent 65%),
-      linear-gradient(180deg, #1a0e14 0%, #100910 55%, #0c0710 100%);
-    box-shadow: inset 0 0 0 1px rgba(245,241,230,0.08);
+    padding: 20px 18px 14px;
+    background: linear-gradient(165deg, #2a1f52 0%, #1c1338 55%, #150e2b 100%);
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.07), 0 16px 36px rgba(124,58,237,0.22);
   }
-  .battlefield.shake { animation: bfShake 0.22s ease; }
-  @media (prefers-reduced-motion: reduce) { .battlefield.shake { animation: none; } }
-  @keyframes bfShake {
-    0%, 100% { transform: translate(0,0); }
-    20% { transform: translate(-3px, 1px); }
-    40% { transform: translate(3px, -1px); }
-    60% { transform: translate(-2px, 1px); }
-    80% { transform: translate(2px, 0); }
-  }
-  .grid-floor {
-    position: absolute; left: 0; right: 0; bottom: 0; height: 130px;
-    background-image:
-      linear-gradient(rgba(231,183,92,0.10) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(231,183,92,0.10) 1px, transparent 1px);
-    background-size: 34px 18px;
-    transform: perspective(280px) rotateX(55deg);
-    transform-origin: bottom;
-    opacity: 0.9;
-  }
-  .horizon-glow { position: absolute; left: 0; right: 0; bottom: 128px; height: 1px; background: linear-gradient(90deg, transparent, rgba(231,183,92,0.6), transparent); }
-  .tilt-band { position: absolute; left: 0; right: 0; z-index: 5; pointer-events: none; backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px); }
-  .tilt-band.top { top: 0; height: 18px; background: linear-gradient(rgba(12,7,10,0.35), transparent); }
-  .tilt-band.bottom { bottom: 0; height: 20px; background: linear-gradient(transparent, rgba(12,7,10,0.4)); }
-  .rig-silhouette { position: absolute; top: 4px; left: 0; right: 0; height: 12px; z-index: 1; opacity: 0.5; }
 
-  /* Continuous ambient atmosphere — always animating, independent of
-     any real event, so the scene reads as "alive" during the long
-     stretches between fires, not just during the brief fire moments. */
-  .ember {
-    position: absolute; bottom: 40px; width: 3px; height: 3px; border-radius: 50%;
-    background: #e7b75c; box-shadow: 0 0 5px 1.5px rgba(231,183,92,0.85); opacity: 0; z-index: 1;
+  /* --- Room roster: a compact status strip, not full battle sprites —
+     each chip pulses while its real stage is active and locks to a
+     solid ring the instant it's genuinely done. --- */
+  .room-roster { position: relative; z-index: 1; display: flex; justify-content: center; gap: 16px; flex-wrap: wrap; padding: 4px 2px 16px; }
+  .roster-chip { display: flex; flex-direction: column; align-items: center; gap: 5px; width: 78px; opacity: 0.55; transition: opacity 0.3s ease; }
+  .roster-chip.active, .roster-chip.done { opacity: 1; }
+  .roster-avatar {
+    width: 42px; height: 42px; border-radius: 50%; font-size: 1.2rem;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(255,255,255,0.08); border: 2px solid rgba(255,255,255,0.16);
+    transition: border-color 0.3s ease, box-shadow 0.3s ease, transform 0.2s ease;
   }
-  @media (prefers-reduced-motion: no-preference) { .ember { animation: emberRise linear infinite; } }
-  @keyframes emberRise {
-    0% { transform: translate(0, 0); opacity: 0; }
-    12% { opacity: 0.9; }
-    88% { opacity: 0.35; }
-    100% { transform: translate(var(--drift, 14px), -220px); opacity: 0; }
-  }
-  .scan-sweep {
-    position: absolute; top: 0; bottom: 0; width: 130px; z-index: 1; pointer-events: none;
-    background: linear-gradient(90deg, transparent, rgba(231,183,92,0.09), transparent);
-  }
-  @media (prefers-reduced-motion: no-preference) { .scan-sweep { animation: scanMove 8s ease-in-out infinite; } }
-  @keyframes scanMove { 0%, 100% { left: -150px; } 50% { left: 100%; } }
-
-  .squad-row { position: relative; display: flex; justify-content: space-between; align-items: flex-end; padding: 10px 2px 78px; z-index: 2; }
-  .mech-unit { position: relative; width: 17%; display: flex; flex-direction: column; align-items: center; }
-  /* A constant, low soft-color glow pooled at each unit's feet — reads
-     as "powered on and scanning" even at rest, rather than a flat dark
-     figure standing in a void. */
-  .mech-unit::before {
-    content: ""; position: absolute; bottom: 62px; left: 50%; width: 60%; height: 16px;
-    background: radial-gradient(ellipse, var(--burst-color, #e7b75c) 0%, transparent 72%);
-    opacity: 0.22; transform: translateX(-50%); filter: blur(3px); pointer-events: none;
-  }
-  .mech-svg { width: 100%; height: auto; filter: drop-shadow(0 6px 4px rgba(0,0,0,0.5)); position: relative; z-index: 1; }
+  .roster-chip.active .roster-avatar { border-color: var(--brand-a); box-shadow: 0 0 0 4px rgba(255,95,174,0.16); }
   @media (prefers-reduced-motion: no-preference) {
-    .mech-svg { animation: idleBob 2.6s ease-in-out infinite; }
-    .mech-unit:nth-child(even) .mech-svg { animation-delay: -1.3s; }
+    .roster-chip.active .roster-avatar { animation: rosterPulse 1.5s ease-in-out infinite; }
   }
-  @keyframes idleBob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
-  .mech-unit.firing .mech-svg { animation: mechRecoil 0.4s ease; }
-  @keyframes mechRecoil { 0% { transform: translateY(0) rotate(0); } 30% { transform: translateY(1px) rotate(-4deg) translateX(-3px); } 100% { transform: translateY(0) rotate(0); } }
-  /* Pending units aren't dark and inert — a slow alert-pulse reads as
-     "scanning/working" rather than "asleep," and it visibly locks to a
-     steady full glow the instant that unit's real data actually lands. */
-  .eye-glow { transition: fill 0.3s ease; opacity: 0.4; }
-  @media (prefers-reduced-motion: no-preference) { .eye-glow { animation: eyeIdlePulse 2.2s ease-in-out infinite; } }
-  @keyframes eyeIdlePulse { 0%, 100% { opacity: 0.35; } 50% { opacity: 0.65; } }
-  .mech-unit.done .eye-glow, .mech-unit.active .eye-glow { animation: none; opacity: 1; }
+  @keyframes rosterPulse { 0%, 100% { box-shadow: 0 0 0 4px rgba(255,95,174,0.18); } 50% { box-shadow: 0 0 0 9px rgba(255,95,174,0.04); } }
+  .roster-chip.done .roster-avatar { border-color: var(--positive-on-ink); box-shadow: 0 0 0 3px rgba(134,239,172,0.18); }
+  .roster-name { font-family: var(--font-mono); font-size: 0.62rem; letter-spacing: 0.02em; text-transform: uppercase; color: var(--on-ink-muted); }
+  .roster-chip.active .roster-name, .roster-chip.done .roster-name { color: #fff; }
+  .roster-status { font-family: var(--font-body); font-size: 0.6rem; color: var(--on-ink-muted); text-align: center; line-height: 1.25; min-height: 2.2em; }
 
-  .muzzle-flash {
-    position: absolute; width: 30px; height: 30px; top: 26%; left: 50%; border-radius: 50%;
-    background: radial-gradient(circle, #fff6d8 0%, var(--burst-color, #f0c15c) 40%, rgba(240,193,92,0) 72%);
-    transform: translate(-50%, -50%) scale(0); opacity: 0; pointer-events: none; z-index: 3;
+  /* --- Live chat: the actual conversation, built from real streaming
+     activity lines, one persona-tagged bubble per real log line. --- */
+  .live-chat {
+    position: relative; z-index: 1; max-height: 280px; overflow-y: auto;
+    display: flex; flex-direction: column; gap: 9px;
+    padding: 6px 4px; scroll-behavior: smooth;
   }
-  .mech-unit.firing .muzzle-flash { animation: mechFlash 0.4s ease; }
-  @keyframes mechFlash { 0% { transform: translate(-50%,-50%) scale(0); opacity: 0; } 35% { transform: translate(-50%,-50%) scale(1.6); opacity: 1; } 100% { transform: translate(-50%,-50%) scale(0.4); opacity: 0; } }
-  .impact-burst {
-    position: absolute; bottom: 66px; left: 50%; width: 34px; height: 34px; border-radius: 50%;
-    background: radial-gradient(circle, #ffe9c2 0%, var(--burst-color, #d9622e) 42%, rgba(184,39,42,0.4) 66%, rgba(184,39,42,0) 80%);
-    transform: translate(-50%, 0) scale(0); opacity: 0; pointer-events: none; z-index: 2;
+  .live-chat-empty { font-family: var(--font-mono); font-size: 0.74rem; color: var(--on-ink-muted); text-align: center; padding: 24px 0; }
+  .live-msg { display: flex; align-items: flex-start; gap: 8px; }
+  @media (prefers-reduced-motion: no-preference) { .live-msg { animation: liveMsgIn 0.3s ease; } }
+  @keyframes liveMsgIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+  .live-msg-avatar {
+    flex-shrink: 0; width: 26px; height: 26px; border-radius: 50%; font-size: 0.8rem;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.14);
   }
-  .mech-unit.firing .impact-burst { animation: mechImpact 0.55s ease 0.12s; }
-  @keyframes mechImpact { 0% { transform: translate(-50%,0) scale(0); opacity: 0; } 40% { transform: translate(-50%,0) scale(1.8); opacity: 1; } 100% { transform: translate(-50%,0) scale(2.5); opacity: 0; } }
-  .director-unit { --burst-color: #7fb0c9; }
-  .market-unit { --burst-color: #d4a72c; }
-  .marketing-unit { --burst-color: #ff5fae; }
-  .cast-unit { --burst-color: #f5f1e6; }
-  .distribution-unit { --burst-color: #8a6a3a; }
+  .live-msg-body {
+    background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 3px 14px 14px 14px; padding: 7px 12px; max-width: 82%;
+  }
+  .live-msg-name { font-family: var(--font-mono); font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.03em; color: var(--gold-on-ink); margin-bottom: 2px; }
+  .live-msg-text { font-family: var(--font-mono); font-size: 0.76rem; line-height: 1.4; color: var(--on-ink); word-break: break-word; }
+  .live-msg.system { justify-content: center; }
+  .live-msg.system .live-msg-body {
+    background: linear-gradient(120deg, var(--brand-b), var(--brand-a)); border: none;
+    border-radius: 999px; padding: 6px 16px; max-width: none;
+  }
+  .live-msg.system .live-msg-text { font-family: var(--font-mono); font-weight: 700; text-transform: uppercase; font-size: 0.68rem; letter-spacing: 0.03em; }
 
-  .mech-label { font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.02em; color: #c9c0a8; text-align: center; margin-top: 8px; transition: color 0.3s ease; position: relative; z-index: 1; }
-  .mech-unit.done .mech-label, .mech-unit.active .mech-label { color: #e7b75c; }
-  .mech-status { font-family: var(--font-body); font-size: 0.68rem; color: #a89a80; text-align: center; min-height: 1.6em; margin-top: 1px; position: relative; z-index: 1; }
-
-  /* Speech bubbles — real activity-log lines (actual tool calls/results
-     already streaming via SSE), shown as chatter from each character
-     instead of buried in the collapsed technical log. Not scripted
-     dialogue: each bubble's text is exactly what that agent really did. */
-  .speech-bubble {
-    position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%) translateY(6px) scale(0.94);
-    width: max-content; max-width: 150px; margin-bottom: 10px;
-    background: rgba(245,241,230,0.96); color: #211d17; border-radius: 10px;
-    padding: 7px 10px; font-family: var(--font-mono); font-size: 0.6rem; line-height: 1.35;
-    text-align: left; opacity: 0; pointer-events: none; z-index: 4;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.35);
-    transition: opacity 0.3s ease, transform 0.3s ease;
-  }
-  .speech-bubble::after {
-    content: ""; position: absolute; top: 100%; left: 50%; transform: translateX(-50%);
-    border: 6px solid transparent; border-top-color: rgba(245,241,230,0.96);
-  }
-  .speech-bubble.showing { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
-  .speech-bubble .bubble-tag { display: block; font-size: 0.54rem; text-transform: uppercase; letter-spacing: 0.03em; color: var(--brand-b); margin-bottom: 2px; }
-
-  .flag-scene { position: relative; height: 96px; z-index: 2; }
-  .analyst-mech-wrap { position: absolute; bottom: 70px; left: -60px; width: 62px; transition: left 1s cubic-bezier(.22,1,.36,1); }
-  .flag-scene.active .analyst-mech-wrap { left: calc(50% - 31px); }
-  .flag-pole-flag { transform-origin: left center; }
-  @media (prefers-reduced-motion: no-preference) {
-    .flag-scene.active .flag-pole-flag { animation: flagWave 1.4s ease-in-out infinite; animation-delay: 1s; }
-  }
-  @keyframes flagWave { 0%, 100% { transform: skewY(0deg); } 50% { transform: skewY(-6deg); } }
-  .brief-ribbon {
-    position: absolute; left: 50%; bottom: 6px; transform: translateX(-50%) translateY(10px); opacity: 0;
-    font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.04em; color: var(--ink);
-    background: var(--gold-on-ink); padding: 5px 14px; border-radius: 3px; white-space: nowrap;
-    transition: opacity 0.4s ease 1.6s, transform 0.4s ease 1.6s;
-  }
-  .flag-scene.active .brief-ribbon { opacity: 1; transform: translateX(-50%) translateY(0); }
-
-  .battle-footer { display: flex; justify-content: space-between; align-items: center; padding: 8px 2px 16px; position: relative; z-index: 2; }
-  .battle-progress-label { font-family: var(--font-mono); font-size: 0.7rem; color: #c9c0a8; }
+  .battle-footer { display: flex; justify-content: space-between; align-items: center; padding: 10px 2px 0; position: relative; z-index: 1; }
+  .battle-progress-label { font-family: var(--font-mono); font-size: 0.7rem; color: var(--on-ink-muted); }
 
   @media (max-width: 640px) {
-    .squad-row { flex-wrap: wrap; gap: 10px; justify-content: center; padding-bottom: 56px; }
-    .mech-unit { width: 28%; }
-    .grid-floor, .horizon-glow, .rig-silhouette { display: none; }
+    .roster-chip { width: 64px; }
+    .roster-status { display: none; }
   }
 
   .tech-log-toggle { margin-top: 14px; }
@@ -945,179 +862,46 @@
         </div>
 
         <div class="battlefield" id="battlefieldScene">
-          <div class="tilt-band top"></div>
-          <div class="grid-floor"></div>
-          <div class="horizon-glow"></div>
-          <svg class="rig-silhouette" viewBox="0 0 700 40" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
-            <line x1="0" y1="4" x2="700" y2="4" stroke="#c9c0a8" stroke-width="2"/>
-            <line x1="60" y1="4" x2="60" y2="26" stroke="#c9c0a8" stroke-width="2"/>
-            <line x1="220" y1="4" x2="220" y2="18" stroke="#c9c0a8" stroke-width="2"/>
-            <line x1="480" y1="4" x2="480" y2="22" stroke="#c9c0a8" stroke-width="2"/>
-            <line x1="640" y1="4" x2="640" y2="16" stroke="#c9c0a8" stroke-width="2"/>
-            <circle cx="220" cy="18" r="4" fill="#e7b75c"/>
-            <circle cx="480" cy="22" r="4" fill="#e7b75c"/>
-          </svg>
-          <div class="scan-sweep"></div>
-          <div class="ember" style="left:8%; animation-duration:6.5s; animation-delay:0s; --drift:10px;"></div>
-          <div class="ember" style="left:20%; animation-duration:8s; animation-delay:1.4s; --drift:-14px;"></div>
-          <div class="ember" style="left:34%; animation-duration:7.2s; animation-delay:2.6s; --drift:8px;"></div>
-          <div class="ember" style="left:48%; animation-duration:9s; animation-delay:0.8s; --drift:-10px;"></div>
-          <div class="ember" style="left:62%; animation-duration:6.8s; animation-delay:3.2s; --drift:12px;"></div>
-          <div class="ember" style="left:74%; animation-duration:7.6s; animation-delay:1.9s; --drift:-8px;"></div>
-          <div class="ember" style="left:88%; animation-duration:8.4s; animation-delay:0.3s; --drift:14px;"></div>
-
-          <div class="squad-row" id="squadRow">
-
-            <div class="mech-unit director-unit" data-role="director">
-              <div class="speech-bubble"></div>
-              <svg class="mech-svg" viewBox="0 0 70 110" xmlns="http://www.w3.org/2000/svg">
-                <rect x="24" y="86" width="8" height="20" rx="2" fill="#2b2620"/>
-                <rect x="40" y="86" width="8" height="20" rx="2" fill="#2b2620"/>
-                <rect x="18" y="50" width="36" height="38" rx="6" fill="#8a7a5c"/>
-                <rect x="18" y="50" width="10" height="38" rx="3" fill="#2f3a2a"/>
-                <rect x="44" y="50" width="10" height="38" rx="3" fill="#2f3a2a"/>
-                <rect x="6" y="54" width="8" height="20" rx="3" fill="#8a7a5c"/>
-                <circle cx="35" cy="30" r="14" fill="#d9a878"/>
-                <ellipse class="eye-glow" cx="32" cy="18" rx="15" ry="7" fill="#2b2620"/>
-                <path d="M50 24 L66 12 L66 36 Z" fill="#5a4f42"/>
-                <rect class="eye-glow" x="65" y="19" width="10" height="8" rx="2" fill="#7fb0c9"/>
-              </svg>
-              <div class="muzzle-flash"></div>
-              <div class="impact-burst"></div>
-              <div class="mech-label">Director</div>
-              <div class="mech-status">Standing by...</div>
+          <div class="room-roster" id="roomRoster">
+            <div class="roster-chip" data-role="director">
+              <div class="roster-avatar">🎬</div>
+              <div class="roster-name">Director</div>
+              <div class="roster-status">Standing by...</div>
             </div>
-
-            <div class="mech-unit market-unit" data-role="market">
-              <div class="speech-bubble"></div>
-              <svg class="mech-svg" viewBox="0 0 70 110" xmlns="http://www.w3.org/2000/svg">
-                <rect x="24" y="86" width="8" height="20" rx="2" fill="#2b2620"/>
-                <rect x="40" y="86" width="8" height="20" rx="2" fill="#2b2620"/>
-                <rect x="18" y="50" width="36" height="38" rx="6" fill="#242938"/>
-                <rect x="32" y="50" width="6" height="30" rx="2" fill="#8a2020"/>
-                <rect x="4" y="54" width="8" height="12" rx="2" fill="#242938"/>
-                <rect x="4" y="66" width="8" height="8" rx="2" fill="#d9a878"/>
-                <rect x="58" y="54" width="8" height="12" rx="2" fill="#242938"/>
-                <rect x="58" y="66" width="8" height="8" rx="2" fill="#d9a878"/>
-                <circle cx="35" cy="30" r="14" fill="#d9a878"/>
-                <rect x="44" y="30" width="8" height="3" rx="1" fill="#5a4030"/>
-                <rect x="52" y="29.5" width="3" height="2.5" rx="1" fill="#e08030"/>
-                <rect class="eye-glow" x="0" y="58" width="14" height="7" rx="2" fill="#d4a72c"/>
-                <rect class="eye-glow" x="56" y="58" width="14" height="7" rx="2" fill="#d4a72c"/>
-              </svg>
-              <div class="muzzle-flash"></div>
-              <div class="impact-burst"></div>
-              <div class="mech-label">Market Intel</div>
-              <div class="mech-status">Standing by...</div>
+            <div class="roster-chip" data-role="market">
+              <div class="roster-avatar">🎯</div>
+              <div class="roster-name">Market Intel</div>
+              <div class="roster-status">Standing by...</div>
             </div>
-
-            <div class="mech-unit marketing-unit" data-role="marketing">
-              <div class="speech-bubble"></div>
-              <svg class="mech-svg" viewBox="0 0 70 110" xmlns="http://www.w3.org/2000/svg">
-                <rect x="24" y="86" width="8" height="20" rx="2" fill="#2b2620"/>
-                <rect x="40" y="86" width="8" height="20" rx="2" fill="#2b2620"/>
-                <rect x="18" y="50" width="36" height="38" rx="6" fill="#8c4fae"/>
-                <rect class="eye-glow" x="18" y="64" width="36" height="6" fill="#ff5fae"/>
-                <rect x="6" y="54" width="8" height="20" rx="3" fill="#8c4fae"/>
-                <circle cx="35" cy="30" r="14" fill="#d9a878"/>
-                <path class="eye-glow" d="M50 24 L66 16 L66 34 Z" fill="#ff5fae"/>
-                <circle class="eye-glow" cx="68" cy="25" r="3" fill="#e7b75c"/>
-                <g opacity="0.9">
-                  <circle cx="10" cy="16" r="1.6" fill="#5fe0e0"/><circle cx="16" cy="14" r="1.6" fill="#5fe0e0"/>
-                  <line x1="10" y1="16" x2="16" y2="14" stroke="#5fe0e0" stroke-width="1"/>
-                  <circle cx="58" cy="8" r="1.6" fill="#5fe0e0"/><circle cx="64" cy="6" r="1.6" fill="#5fe0e0"/>
-                  <line x1="58" y1="8" x2="64" y2="6" stroke="#5fe0e0" stroke-width="1"/>
-                </g>
-              </svg>
-              <div class="muzzle-flash"></div>
-              <div class="impact-burst"></div>
-              <div class="mech-label">Marketing</div>
-              <div class="mech-status">Standing by...</div>
+            <div class="roster-chip" data-role="marketing">
+              <div class="roster-avatar">📣</div>
+              <div class="roster-name">Marketing</div>
+              <div class="roster-status">Standing by...</div>
             </div>
-
-            <div class="mech-unit cast-unit" data-role="cast">
-              <div class="speech-bubble"></div>
-              <svg class="mech-svg" viewBox="0 0 70 110" xmlns="http://www.w3.org/2000/svg">
-                <rect x="24" y="86" width="8" height="20" rx="2" fill="#2b2620"/>
-                <rect x="40" y="86" width="8" height="20" rx="2" fill="#2b2620"/>
-                <rect x="18" y="50" width="36" height="38" rx="6" fill="#5c4f42"/>
-                <circle cx="35" cy="30" r="14" fill="#d9a878"/>
-                <rect x="4" y="44" width="20" height="34" rx="2" fill="#c9b98a" stroke="#8a7a5c" stroke-width="1"/>
-                <line x1="8" y1="52" x2="20" y2="52" stroke="#8a7a5c" stroke-width="1.5"/>
-                <line x1="8" y1="58" x2="20" y2="58" stroke="#8a7a5c" stroke-width="1.5"/>
-                <line x1="8" y1="64" x2="16" y2="64" stroke="#8a7a5c" stroke-width="1.5"/>
-                <rect class="eye-glow" x="50" y="48" width="14" height="14" rx="1" fill="#f5f1e6" stroke="#2b2620" stroke-width="1.5"/>
-                <rect class="eye-glow" x="53" y="51" width="8" height="6" fill="#8fb4d8"/>
-              </svg>
-              <div class="muzzle-flash"></div>
-              <div class="impact-burst"></div>
-              <div class="mech-label">Cast</div>
-              <div class="mech-status">Standing by...</div>
+            <div class="roster-chip" data-role="cast">
+              <div class="roster-avatar">🎭</div>
+              <div class="roster-name">Cast</div>
+              <div class="roster-status">Standing by...</div>
             </div>
-
-            <div class="mech-unit distribution-unit" data-role="distribution">
-              <div class="speech-bubble"></div>
-              <svg class="mech-svg" viewBox="0 0 70 110" xmlns="http://www.w3.org/2000/svg">
-                <rect x="8" y="90" width="54" height="14" rx="4" fill="#2b2620"/>
-                <circle cx="16" cy="97" r="3" fill="#463e34"/><circle cx="30" cy="97" r="3" fill="#463e34"/>
-                <circle cx="44" cy="97" r="3" fill="#463e34"/><circle cx="56" cy="97" r="3" fill="#463e34"/>
-                <rect x="12" y="68" width="46" height="26" rx="4" fill="#4a5a3a"/>
-                <circle class="eye-glow" cx="35" cy="56" r="15" fill="#2b2620" stroke="#c9c0a8" stroke-width="2"/>
-                <circle cx="35" cy="56" r="3" fill="#c9c0a8"/>
-                <circle cx="35" cy="46" r="1.6" fill="#c9c0a8"/><circle cx="44" cy="56" r="1.6" fill="#c9c0a8"/>
-                <circle cx="35" cy="66" r="1.6" fill="#c9c0a8"/><circle cx="26" cy="56" r="1.6" fill="#c9c0a8"/>
-                <rect x="50" y="52" width="20" height="8" rx="2" fill="#3a332c"/>
-                <circle cx="35" cy="38" r="7" fill="#d9a878"/>
-              </svg>
-              <div class="muzzle-flash"></div>
-              <div class="impact-burst"></div>
-              <div class="mech-label">Distribution</div>
-              <div class="mech-status">Standing by...</div>
+            <div class="roster-chip" data-role="distribution">
+              <div class="roster-avatar">🗓️</div>
+              <div class="roster-name">Distribution</div>
+              <div class="roster-status">Standing by...</div>
             </div>
-
-            <div class="mech-unit analyst-placeholder" data-role="analyst" style="opacity: 0.28;">
-              <div class="speech-bubble"></div>
-              <svg class="mech-svg" viewBox="0 0 70 110" xmlns="http://www.w3.org/2000/svg" style="animation:none;">
-                <rect x="24" y="86" width="8" height="20" rx="2" fill="#2b2620"/>
-                <rect x="40" y="86" width="8" height="20" rx="2" fill="#2b2620"/>
-                <rect x="18" y="50" width="36" height="38" rx="6" fill="#5a6a5a"/>
-                <rect x="6" y="54" width="8" height="20" rx="3" fill="#5a6a5a"/>
-                <circle cx="35" cy="30" r="14" fill="#d9a878"/>
-                <rect x="26" y="26" width="9" height="6" rx="2" fill="none" stroke="#2b2620" stroke-width="2"/>
-                <rect x="36" y="26" width="9" height="6" rx="2" fill="none" stroke="#2b2620" stroke-width="2"/>
-                <line x1="35" y1="29" x2="36" y2="29" stroke="#2b2620" stroke-width="2"/>
-                <rect x="52" y="52" width="14" height="18" rx="1" fill="#2b2620"/>
-                <polyline points="55,66 58,60 61,63 64,56" stroke="#6fcb86" stroke-width="1.5" fill="none"/>
-              </svg>
-              <div class="mech-label">Analyst</div>
-              <div class="mech-status">Waiting on the room...</div>
+            <div class="roster-chip" data-role="analyst">
+              <div class="roster-avatar">📊</div>
+              <div class="roster-name">Analyst</div>
+              <div class="roster-status">Waiting on the room...</div>
             </div>
-
           </div>
 
-          <div class="flag-scene" id="flagScene">
-            <div class="analyst-mech-wrap">
-              <svg viewBox="0 0 70 110" xmlns="http://www.w3.org/2000/svg">
-                <rect x="24" y="86" width="8" height="20" rx="2" fill="#2b2620"/>
-                <rect x="40" y="86" width="8" height="20" rx="2" fill="#2b2620"/>
-                <rect x="18" y="50" width="36" height="38" rx="6" fill="#5a6a5a"/>
-                <circle cx="35" cy="30" r="14" fill="#d9a878"/>
-                <rect x="26" y="26" width="9" height="6" rx="2" fill="none" stroke="#2b2620" stroke-width="2"/>
-                <rect x="36" y="26" width="9" height="6" rx="2" fill="none" stroke="#2b2620" stroke-width="2"/>
-                <line x1="35" y1="29" x2="36" y2="29" stroke="#2b2620" stroke-width="2"/>
-                <rect x="4" y="52" width="13" height="17" rx="1" fill="#2b2620"/>
-                <polyline points="7,64 10,58 13,61 15,55" stroke="#6fcb86" stroke-width="1.4" fill="none"/>
-                <rect x="50" y="10" width="3" height="50" fill="#c9c0a8"/>
-                <path class="flag-pole-flag" d="M53 10 L74 16 L53 22 Z" fill="#f5f1e6"/>
-              </svg>
-            </div>
-            <div class="brief-ribbon">Brief ready</div>
+          <div class="live-chat" id="liveChat">
+            <div class="live-chat-empty" id="liveChatEmpty">Waiting for the room to start talking…</div>
           </div>
 
           <div class="battle-footer">
             <div class="battle-progress-label" id="battleProgressLabel">0 / 5 in</div>
           </div>
-          <div class="tilt-band bottom"></div>
         </div>
 
         <details class="tech-log-toggle">
@@ -1232,13 +1016,8 @@ function stopTimer() {
 function resetProgress() {
   stageState = {};
   STAGES.forEach(s => { stageState[s.key] = 'pending'; });
-  prevMechDone = { director: false, market: false, marketing: false, cast: false, distribution: false };
-  flagTriggered = false;
-  const battlefield = document.getElementById('battlefieldScene');
-  const flagScene = document.getElementById('flagScene');
-  if (battlefield) battlefield.classList.remove('shake');
-  if (flagScene) flagScene.classList.remove('active');
-  resetSpeechBubbles();
+  prevAnalystState = 'pending';
+  resetLiveChat();
   renderProgress();
   activityFeed.innerHTML = '';
   startTimer();
@@ -1321,63 +1100,53 @@ const ROLE_CONFIG = {
 };
 
 // Edge-detection state: renderBattlefield() runs on every stageState
-// change, but a mech should only play its "firing" animation ONCE, at
-// the exact moment its real stage transitions to done — not on every
-// re-render while it stays done.
-let prevMechDone = { director: false, market: false, marketing: false, cast: false, distribution: false };
-let flagTriggered = false;
-
-function fireMech(unitEl, burstMs) {
-  unitEl.classList.add('firing');
-  const battlefield = document.getElementById('battlefieldScene');
-  if (battlefield) {
-    battlefield.classList.add('shake');
-    setTimeout(() => battlefield.classList.remove('shake'), 220);
-  }
-  setTimeout(() => unitEl.classList.remove('firing'), burstMs || 500);
-}
-
-function walkAnalystIn() {
-  const placeholder = document.querySelector('.analyst-placeholder');
-  const flagScene = document.getElementById('flagScene');
-  if (placeholder) {
-    placeholder.style.opacity = '1';
-    const statusEl = placeholder.querySelector('.mech-status');
-    if (statusEl) statusEl.textContent = 'Writing the memo...';
-  }
-  if (flagScene) setTimeout(() => flagScene.classList.add('active'), 500);
-}
+// change, but the Analyst should only post its "joined"/"done" system
+// beats ONCE, at the exact moment its real stage transitions — not on
+// every re-render while it stays in that state.
+let prevAnalystState = 'pending';
 
 function renderBattlefield() {
-  const battlefield = document.getElementById('battlefieldScene');
-  if (!battlefield) return;
+  const roster = document.getElementById('roomRoster');
+  if (!roster) return;
 
   let doneCount = 0;
   ['director', 'market', 'marketing', 'cast', 'distribution'].forEach(role => {
     const cfg = ROLE_CONFIG[role];
-    const el = battlefield.querySelector(`.mech-unit[data-role="${role}"]`);
-    if (!el) return;
+    const chip = roster.querySelector(`.roster-chip[data-role="${role}"]`);
+    if (!chip) return;
     const state = cfg.state();
-    el.classList.remove('active', 'done');
-    if (state === 'active' || state === 'done') el.classList.add(state === 'done' ? 'done' : 'active');
-    const statusEl = el.querySelector('.mech-status');
+    chip.classList.remove('active', 'done');
+    if (state === 'active' || state === 'done') chip.classList.add(state === 'done' ? 'done' : 'active');
+    const statusEl = chip.querySelector('.roster-status');
     if (statusEl) statusEl.textContent = cfg.label();
 
-    const isDone = state === 'done';
-    if (isDone) doneCount++;
-    if (isDone && !prevMechDone[role]) fireMech(el);
-    prevMechDone[role] = isDone;
+    if (state === 'done') doneCount++;
   });
 
   const progressLabelEl = document.getElementById('battleProgressLabel');
   if (progressLabelEl) progressLabelEl.textContent = `${doneCount} / 5 in`;
 
-  // Analyst walks in only once, the moment main_synthesis genuinely
-  // starts (every fetch branch has already resolved by then in the
-  // real pipeline) — not on every re-render afterward.
-  if (stageState.main_synthesis !== 'pending' && !flagTriggered) {
-    flagTriggered = true;
-    walkAnalystIn();
+  // The Analyst's roster chip + a system beat in the live chat mark the
+  // real moment main_synthesis starts (every fetch branch has already
+  // resolved by then in the real pipeline) and the real moment it's done
+  // — each fires exactly once, on the genuine state transition.
+  const analystChip = roster.querySelector('.roster-chip[data-role="analyst"]');
+  const analystCfg = ROLE_CONFIG.analyst;
+  const analystState = analystCfg.state();
+  if (analystChip) {
+    analystChip.classList.remove('active', 'done');
+    if (analystState === 'active' || analystState === 'done') analystChip.classList.add(analystState === 'done' ? 'done' : 'active');
+    const statusEl = analystChip.querySelector('.roster-status');
+    if (statusEl) statusEl.textContent = analystCfg.label();
+  }
+  if (analystState !== prevAnalystState) {
+    if (analystState === 'active' && prevAnalystState === 'pending') {
+      postSystemMessage('📊 The Analyst has joined the room to bring it together...');
+    }
+    if (analystState === 'done') {
+      postSystemMessage('🎬 Brief ready.');
+    }
+    prevAnalystState = analystState;
   }
 }
 
@@ -1391,37 +1160,81 @@ function activityLineHtml(line) {
   return cls ? `<span class="${cls}">${safe}</span>` : safe;
 }
 
-// Same stage-to-persona mapping used for the battlefield mech units
-// (see renderBattlefield's ROLE_CONFIG comment) — competitive alternates
+// Same stage-to-persona mapping used for the room roster (see
+// renderBattlefield's ROLE_CONFIG comment) — competitive alternates
 // between Market Intel and Distribution since both are honestly built
-// from that one branch, so both get to visibly "say" something.
+// from that one branch, so both get to visibly "say" something. Roster
+// icons (kept in sync with the markup above) so live-chat messages carry
+// the same avatar as the roster strip.
 const STAGE_TO_MECH_ROLE = {
   web_sentiment: 'director', youtube: 'director', sentiment_synthesis: 'director',
   marketing: 'marketing', cast: 'cast', main_synthesis: 'analyst',
 };
+const ROSTER_ICON = { director: '🎬', market: '🎯', marketing: '📣', cast: '🎭', distribution: '🗓️', analyst: '📊' };
+const ROSTER_LABEL = { director: 'Director', market: 'Market Intel', marketing: 'Marketing', cast: 'Cast', distribution: 'Distribution', analyst: 'Analyst' };
 let competitiveBubbleToggle = 0;
-const bubbleTimers = {};
 
 function cleanBubbleText(line) {
   let t = String(line || '').replace(/^calling\s+/i, '→ ').trim();
-  if (t.length > 70) t = t.slice(0, 68) + '…';
+  if (t.length > 90) t = t.slice(0, 88) + '…';
   return t;
 }
 
-function showSpeechBubble(role, text, tagLabel) {
-  const scene = document.getElementById('battlefieldScene');
-  const unit = scene && scene.querySelector(`.mech-unit[data-role="${role}"]`);
-  const bubble = unit && unit.querySelector('.speech-bubble');
-  if (!bubble || !text) return;
-  bubble.innerHTML = `<span class="bubble-tag">${tagLabel}</span>${text}`;
-  bubble.classList.add('showing');
-  clearTimeout(bubbleTimers[role]);
-  bubbleTimers[role] = setTimeout(() => bubble.classList.remove('showing'), 3200);
+// Appends one message into the live group-chat transcript — the exact
+// real activity line, tagged with the persona whose real stage produced
+// it. Multiple stages genuinely run concurrently on the backend, so
+// messages from different personas naturally interleave here as the
+// room fills up — that's the real pipeline's real concurrency, not a
+// scripted back-and-forth.
+function pushLiveMessage(role, text) {
+  const chat = document.getElementById('liveChat');
+  if (!chat || !text) return;
+  const empty = document.getElementById('liveChatEmpty');
+  if (empty) empty.remove();
+
+  const row = document.createElement('div');
+  row.className = 'live-msg';
+  row.innerHTML = `
+    <div class="live-msg-avatar">${ROSTER_ICON[role] || '💬'}</div>
+    <div class="live-msg-body">
+      <div class="live-msg-name">${ROSTER_LABEL[role] || role}</div>
+      <div class="live-msg-text"></div>
+    </div>
+  `;
+  chat.appendChild(row);
+  row.querySelector('.live-msg-text').textContent = text;
+  chat.scrollTop = chat.scrollHeight;
+
+  const roster = document.getElementById('roomRoster');
+  const chip = roster && roster.querySelector(`.roster-chip[data-role="${role}"] .roster-avatar`);
+  if (chip) {
+    chip.style.transform = 'scale(1.12)';
+    setTimeout(() => { chip.style.transform = ''; }, 220);
+  }
+
+  // Cap the live transcript so a long-running pipeline doesn't grow the
+  // DOM unbounded — the full, uncapped history stays in the Technical
+  // log below.
+  while (chat.children.length > 40) chat.removeChild(chat.firstChild);
 }
 
-function resetSpeechBubbles() {
-  Object.values(bubbleTimers).forEach(t => clearTimeout(t));
-  document.querySelectorAll('.speech-bubble').forEach(b => { b.classList.remove('showing'); b.innerHTML = ''; });
+function postSystemMessage(text) {
+  const chat = document.getElementById('liveChat');
+  if (!chat) return;
+  const empty = document.getElementById('liveChatEmpty');
+  if (empty) empty.remove();
+  const row = document.createElement('div');
+  row.className = 'live-msg system';
+  row.innerHTML = `<div class="live-msg-body"><div class="live-msg-text"></div></div>`;
+  chat.appendChild(row);
+  row.querySelector('.live-msg-text').textContent = text;
+  chat.scrollTop = chat.scrollHeight;
+}
+
+function resetLiveChat() {
+  const chat = document.getElementById('liveChat');
+  if (!chat) return;
+  chat.innerHTML = '<div class="live-chat-empty" id="liveChatEmpty">Waiting for the room to start talking…</div>';
   competitiveBubbleToggle = 0;
 }
 
@@ -1436,15 +1249,16 @@ function appendActivity(stage, log) {
   });
   activityFeed.scrollTop = activityFeed.scrollHeight;
 
-  // The exact same real line, also shown as a speech bubble from the
-  // matching War Room character — not a separate/fabricated message,
-  // just a different presentation of the one already in the log above.
+  // The exact same real line(s), also pushed into the live group-chat
+  // transcript from the matching War Room persona — not a separate or
+  // fabricated message, just a different presentation of what's already
+  // in the technical log above.
   let role = STAGE_TO_MECH_ROLE[stage];
   if (stage === 'competitive') {
     role = competitiveBubbleToggle % 2 === 0 ? 'market' : 'distribution';
     competitiveBubbleToggle++;
   }
-  if (role) showSpeechBubble(role, cleanBubbleText(log[log.length - 1]), label);
+  if (role) pushLiveMessage(role, cleanBubbleText(log[log.length - 1]));
 }
 
 function markStage(key) {
