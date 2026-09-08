@@ -6,60 +6,63 @@
 <title>Filmecho</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
   :root {
-    /* Editorial "trade paper" palette — a studio intelligence memo, not
-       a dashboard, so the base is paper and ink rather than a dark UI. */
-    --bg: #f1ecdf;
-    --bg-wash: radial-gradient(ellipse 1400px 700px at 50% -12%, rgba(156,43,43,0.05), transparent 60%);
-    --surface: #faf7ef;
-    --surface-raised: #fffdf8;
-    --border: #ddd2b4;
-    --text: #211d17;
-    --text-muted: #736a58;
+    /* GenZ "studio group chat" palette — bright, colorful, light —
+       a mesh-gradient paper base with saturated candy accents instead
+       of the old oxblood/paper editorial look. */
+    --bg: #fdf6ff;
+    --bg-wash:
+      radial-gradient(ellipse 900px 600px at 8% -6%, rgba(255,95,174,0.16), transparent 60%),
+      radial-gradient(ellipse 900px 600px at 96% 0%, rgba(124,58,237,0.14), transparent 55%),
+      radial-gradient(ellipse 1000px 700px at 50% 100%, rgba(6,182,212,0.12), transparent 55%);
+    --surface: #ffffff;
+    --surface-raised: #ffffff;
+    --border: #ece4fb;
+    --text: #221a3a;
+    --text-muted: #6f6488;
 
-    --brand-a: #d9622e;
-    --brand-b: #b8272a;
-    --brand-c: #23415c;
+    --brand-a: #ff5fae;
+    --brand-b: #7c3aed;
+    --brand-c: #06b6d4;
 
-    --gold: #9c6a17;
+    --gold: #f59e0b;
 
-    --positive: #2f6e3e;
-    --positive-dim: #dcebd5;
-    --negative: #9c2b2b;
-    --negative-dim: #f2dad1;
-    --neutral: #a85d0a;
-    --neutral-dim: #f6e4ce;
-    --unclear: #736a58;
-    --unclear-dim: #ece5d2;
+    --positive: #16a34a;
+    --positive-dim: #dcfce7;
+    --negative: #ef4444;
+    --negative-dim: #fee2e2;
+    --neutral: #f59e0b;
+    --neutral-dim: #fef3c7;
+    --unclear: #8b81a8;
+    --unclear-dim: #f1edfb;
 
-    --marketing-accent: #6c4f8c;
-    --marketing-tint: #f0eaf7;
-    --cast-accent: #1f6e7a;
-    --cast-tint: #e4f1f1;
-    --news-accent: #b0512d;
-    --news-tint: #f8e9df;
+    --marketing-accent: #a855f7;
+    --marketing-tint: #f5ecff;
+    --cast-accent: #0ea5e9;
+    --cast-tint: #e6f6ff;
+    --news-accent: #fb923c;
+    --news-tint: #fff1e4;
 
-    /* A deep oxblood, distinct from --ink, reserved for the marquee
-       band behind the wordmark — the one deliberately "loud" moment
-       on the page, styled like an actual theater marquee sign. */
-    --marquee-bg: #3b1220;
+    /* The one deliberately "loud" moment on the page: a candy gradient
+       marquee behind the wordmark, instead of a solid oxblood band. */
+    --marquee-bg: linear-gradient(120deg, #7c3aed 0%, #ff5fae 55%, #f59e0b 100%);
 
     /* A small set of colors reserved for the few spots that are always
-       a dark "chip" or overlay regardless of the overall (now light)
-       theme — a poster-image caption bar and the live activity log —
-       so those keep working as dark surfaces with light text. */
-    --ink: #211d17;
-    --on-ink: #f5f1e6;
-    --on-ink-muted: #c9c0a8;
-    --gold-on-ink: #e7b75c;
-    --brand-c-on-ink: #8fb4d8;
-    --positive-on-ink: #6fcb86;
-    --negative-on-ink: #ff8a78;
-    --neutral-on-ink: #f0c15c;
+       a dark "chip" or overlay regardless of the overall light theme —
+       the marquee band and the live activity log — so those keep
+       working as dark/vivid surfaces with light text. */
+    --ink: #221a3a;
+    --on-ink: #ffffff;
+    --on-ink-muted: #e4defc;
+    --gold-on-ink: #ffe08a;
+    --brand-c-on-ink: #a6f0ff;
+    --positive-on-ink: #86efac;
+    --negative-on-ink: #ff9d9d;
+    --neutral-on-ink: #ffd479;
 
-    --font-display: "Fraunces", Georgia, serif;
+    --font-display: "Space Grotesk", "Inter", system-ui, sans-serif;
     --font-body: "Inter", system-ui, sans-serif;
     --font-mono: "IBM Plex Mono", monospace;
   }
@@ -97,10 +100,11 @@
      paper. This is where the design should spend its boldness. */
   .marquee-band {
     background: var(--marquee-bg);
-    border-radius: 10px;
+    border-radius: 22px;
     padding: 30px 24px 22px;
     position: relative;
     overflow: hidden;
+    box-shadow: 0 16px 40px rgba(124,58,237,0.28);
   }
   .marquee-band::before, .marquee-band::after {
     content: ""; position: absolute; left: 0; right: 0; height: 10px;
@@ -118,7 +122,7 @@
   .filmecho-logo {
     font-family: var(--font-display);
     font-size: clamp(2.1rem, 8vw, 3.6rem);
-    font-weight: 900;
+    font-weight: 800;
     display: flex;
     align-items: baseline;
     justify-content: center;
@@ -170,29 +174,30 @@
     color: var(--text);
     font-family: var(--font-body);
     font-size: 1rem;
-    padding: 14px 16px;
-    border-radius: 8px;
+    padding: 14px 18px;
+    border-radius: 14px;
     outline: none;
     transition: border-color 0.15s ease, box-shadow 0.15s ease;
   }
 
-  #title-input:focus { border-color: var(--brand-c); box-shadow: 0 0 0 3px rgba(35,65,92,0.16); }
+  #title-input:focus { border-color: var(--brand-b); box-shadow: 0 0 0 3px rgba(124,58,237,0.16); }
   #title-input::placeholder { color: var(--text-muted); }
 
   #search-btn {
     background: linear-gradient(90deg, var(--brand-a), var(--brand-b));
     color: var(--on-ink);
     border: none;
-    font-family: var(--font-body);
+    font-family: var(--font-display);
     font-weight: 700;
     font-size: 0.95rem;
     padding: 0 28px;
-    border-radius: 8px;
+    border-radius: 14px;
     cursor: pointer;
-    transition: opacity 0.15s ease, transform 0.15s ease;
+    box-shadow: 0 6px 16px rgba(255,95,174,0.28);
+    transition: opacity 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
   }
 
-  #search-btn:hover:not(:disabled) { opacity: 0.9; transform: translateY(-1px); }
+  #search-btn:hover:not(:disabled) { opacity: 0.95; transform: translateY(-1px); box-shadow: 0 8px 20px rgba(255,95,174,0.36); }
   #search-btn:disabled { opacity: 0.5; cursor: default; }
   #search-btn:focus-visible, #title-input:focus-visible { outline: 2px solid var(--brand-c); outline-offset: 2px; }
 
@@ -225,7 +230,7 @@
 
   .battle-header { text-align: center; margin-bottom: 14px; }
   .battle-kicker { font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.08em; color: var(--gold-on-ink); text-transform: uppercase; }
-  .battle-title { font-family: var(--font-display); font-weight: 900; font-style: italic; font-size: 1.3rem; color: var(--text); margin: 2px 0 6px; }
+  .battle-title { font-family: var(--font-display); font-weight: 800; font-style: italic; font-size: 1.3rem; color: var(--text); margin: 2px 0 6px; }
   .battle-subtitle { font-family: var(--font-body); font-size: 0.9rem; color: var(--text); }
   .battle-subtitle b { color: var(--brand-b); font-weight: 600; }
   .battle-tagline { font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-muted); margin-top: 4px; }
@@ -234,9 +239,9 @@
     position: relative;
     border-radius: 10px;
     overflow: hidden;
-    padding: 24px 20px 0;
+    padding: 30px 20px 0;
     background:
-      radial-gradient(ellipse 900px 400px at 50% 0%, rgba(184,39,42,0.18), transparent 65%),
+      radial-gradient(ellipse 900px 400px at 50% 0%, rgba(184,39,42,0.22), transparent 65%),
       linear-gradient(180deg, #1a0e14 0%, #100910 55%, #0c0710 100%);
     box-shadow: inset 0 0 0 1px rgba(245,241,230,0.08);
   }
@@ -250,24 +255,53 @@
     80% { transform: translate(2px, 0); }
   }
   .grid-floor {
-    position: absolute; left: 0; right: 0; bottom: 0; height: 120px;
+    position: absolute; left: 0; right: 0; bottom: 0; height: 130px;
     background-image:
-      linear-gradient(rgba(245,241,230,0.06) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(245,241,230,0.06) 1px, transparent 1px);
+      linear-gradient(rgba(231,183,92,0.10) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(231,183,92,0.10) 1px, transparent 1px);
     background-size: 34px 18px;
     transform: perspective(280px) rotateX(55deg);
     transform-origin: bottom;
-    opacity: 0.8;
+    opacity: 0.9;
   }
-  .horizon-glow { position: absolute; left: 0; right: 0; bottom: 118px; height: 1px; background: linear-gradient(90deg, transparent, rgba(231,183,92,0.5), transparent); }
+  .horizon-glow { position: absolute; left: 0; right: 0; bottom: 128px; height: 1px; background: linear-gradient(90deg, transparent, rgba(231,183,92,0.6), transparent); }
   .tilt-band { position: absolute; left: 0; right: 0; z-index: 5; pointer-events: none; backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px); }
   .tilt-band.top { top: 0; height: 18px; background: linear-gradient(rgba(12,7,10,0.35), transparent); }
   .tilt-band.bottom { bottom: 0; height: 20px; background: linear-gradient(transparent, rgba(12,7,10,0.4)); }
   .rig-silhouette { position: absolute; top: 4px; left: 0; right: 0; height: 12px; z-index: 1; opacity: 0.5; }
 
-  .squad-row { position: relative; display: flex; justify-content: space-between; align-items: flex-end; padding: 0 2px 70px; z-index: 2; }
-  .mech-unit { position: relative; width: 15.5%; display: flex; flex-direction: column; align-items: center; }
-  .mech-svg { width: 100%; height: auto; filter: drop-shadow(0 6px 4px rgba(0,0,0,0.5)); }
+  /* Continuous ambient atmosphere — always animating, independent of
+     any real event, so the scene reads as "alive" during the long
+     stretches between fires, not just during the brief fire moments. */
+  .ember {
+    position: absolute; bottom: 40px; width: 3px; height: 3px; border-radius: 50%;
+    background: #e7b75c; box-shadow: 0 0 5px 1.5px rgba(231,183,92,0.85); opacity: 0; z-index: 1;
+  }
+  @media (prefers-reduced-motion: no-preference) { .ember { animation: emberRise linear infinite; } }
+  @keyframes emberRise {
+    0% { transform: translate(0, 0); opacity: 0; }
+    12% { opacity: 0.9; }
+    88% { opacity: 0.35; }
+    100% { transform: translate(var(--drift, 14px), -220px); opacity: 0; }
+  }
+  .scan-sweep {
+    position: absolute; top: 0; bottom: 0; width: 130px; z-index: 1; pointer-events: none;
+    background: linear-gradient(90deg, transparent, rgba(231,183,92,0.09), transparent);
+  }
+  @media (prefers-reduced-motion: no-preference) { .scan-sweep { animation: scanMove 8s ease-in-out infinite; } }
+  @keyframes scanMove { 0%, 100% { left: -150px; } 50% { left: 100%; } }
+
+  .squad-row { position: relative; display: flex; justify-content: space-between; align-items: flex-end; padding: 10px 2px 78px; z-index: 2; }
+  .mech-unit { position: relative; width: 17%; display: flex; flex-direction: column; align-items: center; }
+  /* A constant, low soft-color glow pooled at each unit's feet — reads
+     as "powered on and scanning" even at rest, rather than a flat dark
+     figure standing in a void. */
+  .mech-unit::before {
+    content: ""; position: absolute; bottom: 62px; left: 50%; width: 60%; height: 16px;
+    background: radial-gradient(ellipse, var(--burst-color, #e7b75c) 0%, transparent 72%);
+    opacity: 0.22; transform: translateX(-50%); filter: blur(3px); pointer-events: none;
+  }
+  .mech-svg { width: 100%; height: auto; filter: drop-shadow(0 6px 4px rgba(0,0,0,0.5)); position: relative; z-index: 1; }
   @media (prefers-reduced-motion: no-preference) {
     .mech-svg { animation: idleBob 2.6s ease-in-out infinite; }
     .mech-unit:nth-child(even) .mech-svg { animation-delay: -1.3s; }
@@ -275,32 +309,57 @@
   @keyframes idleBob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
   .mech-unit.firing .mech-svg { animation: mechRecoil 0.4s ease; }
   @keyframes mechRecoil { 0% { transform: translateY(0) rotate(0); } 30% { transform: translateY(1px) rotate(-4deg) translateX(-3px); } 100% { transform: translateY(0) rotate(0); } }
-  .eye-glow { transition: fill 0.3s ease, opacity 0.3s ease; opacity: 0.35; }
-  .mech-unit.done .eye-glow, .mech-unit.active .eye-glow { opacity: 1; }
+  /* Pending units aren't dark and inert — a slow alert-pulse reads as
+     "scanning/working" rather than "asleep," and it visibly locks to a
+     steady full glow the instant that unit's real data actually lands. */
+  .eye-glow { transition: fill 0.3s ease; opacity: 0.4; }
+  @media (prefers-reduced-motion: no-preference) { .eye-glow { animation: eyeIdlePulse 2.2s ease-in-out infinite; } }
+  @keyframes eyeIdlePulse { 0%, 100% { opacity: 0.35; } 50% { opacity: 0.65; } }
+  .mech-unit.done .eye-glow, .mech-unit.active .eye-glow { animation: none; opacity: 1; }
 
   .muzzle-flash {
-    position: absolute; width: 24px; height: 24px; top: 26%; left: 50%; border-radius: 50%;
+    position: absolute; width: 30px; height: 30px; top: 26%; left: 50%; border-radius: 50%;
     background: radial-gradient(circle, #fff6d8 0%, var(--burst-color, #f0c15c) 40%, rgba(240,193,92,0) 72%);
     transform: translate(-50%, -50%) scale(0); opacity: 0; pointer-events: none; z-index: 3;
   }
-  .mech-unit.firing .muzzle-flash { animation: mechFlash 0.35s ease; }
-  @keyframes mechFlash { 0% { transform: translate(-50%,-50%) scale(0); opacity: 0; } 35% { transform: translate(-50%,-50%) scale(1.4); opacity: 1; } 100% { transform: translate(-50%,-50%) scale(0.4); opacity: 0; } }
+  .mech-unit.firing .muzzle-flash { animation: mechFlash 0.4s ease; }
+  @keyframes mechFlash { 0% { transform: translate(-50%,-50%) scale(0); opacity: 0; } 35% { transform: translate(-50%,-50%) scale(1.6); opacity: 1; } 100% { transform: translate(-50%,-50%) scale(0.4); opacity: 0; } }
   .impact-burst {
-    position: absolute; bottom: 66px; left: 50%; width: 28px; height: 28px; border-radius: 50%;
+    position: absolute; bottom: 66px; left: 50%; width: 34px; height: 34px; border-radius: 50%;
     background: radial-gradient(circle, #ffe9c2 0%, var(--burst-color, #d9622e) 42%, rgba(184,39,42,0.4) 66%, rgba(184,39,42,0) 80%);
     transform: translate(-50%, 0) scale(0); opacity: 0; pointer-events: none; z-index: 2;
   }
-  .mech-unit.firing .impact-burst { animation: mechImpact 0.5s ease 0.12s; }
-  @keyframes mechImpact { 0% { transform: translate(-50%,0) scale(0); opacity: 0; } 40% { transform: translate(-50%,0) scale(1.6); opacity: 1; } 100% { transform: translate(-50%,0) scale(2.2); opacity: 0; } }
+  .mech-unit.firing .impact-burst { animation: mechImpact 0.55s ease 0.12s; }
+  @keyframes mechImpact { 0% { transform: translate(-50%,0) scale(0); opacity: 0; } 40% { transform: translate(-50%,0) scale(1.8); opacity: 1; } 100% { transform: translate(-50%,0) scale(2.5); opacity: 0; } }
   .director-unit { --burst-color: #7fb0c9; }
   .market-unit { --burst-color: #d4a72c; }
   .marketing-unit { --burst-color: #ff5fae; }
   .cast-unit { --burst-color: #f5f1e6; }
   .distribution-unit { --burst-color: #8a6a3a; }
 
-  .mech-label { font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 0.02em; color: #c9c0a8; text-align: center; margin-top: 6px; transition: color 0.3s ease; }
+  .mech-label { font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.02em; color: #c9c0a8; text-align: center; margin-top: 8px; transition: color 0.3s ease; position: relative; z-index: 1; }
   .mech-unit.done .mech-label, .mech-unit.active .mech-label { color: #e7b75c; }
-  .mech-status { font-family: var(--font-body); font-size: 0.62rem; color: #a89a80; text-align: center; min-height: 1.6em; margin-top: 1px; }
+  .mech-status { font-family: var(--font-body); font-size: 0.68rem; color: #a89a80; text-align: center; min-height: 1.6em; margin-top: 1px; position: relative; z-index: 1; }
+
+  /* Speech bubbles — real activity-log lines (actual tool calls/results
+     already streaming via SSE), shown as chatter from each character
+     instead of buried in the collapsed technical log. Not scripted
+     dialogue: each bubble's text is exactly what that agent really did. */
+  .speech-bubble {
+    position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%) translateY(6px) scale(0.94);
+    width: max-content; max-width: 150px; margin-bottom: 10px;
+    background: rgba(245,241,230,0.96); color: #211d17; border-radius: 10px;
+    padding: 7px 10px; font-family: var(--font-mono); font-size: 0.6rem; line-height: 1.35;
+    text-align: left; opacity: 0; pointer-events: none; z-index: 4;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.35);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+  }
+  .speech-bubble::after {
+    content: ""; position: absolute; top: 100%; left: 50%; transform: translateX(-50%);
+    border: 6px solid transparent; border-top-color: rgba(245,241,230,0.96);
+  }
+  .speech-bubble.showing { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
+  .speech-bubble .bubble-tag { display: block; font-size: 0.54rem; text-transform: uppercase; letter-spacing: 0.03em; color: var(--brand-b); margin-bottom: 2px; }
 
   .flag-scene { position: relative; height: 96px; z-index: 2; }
   .analyst-mech-wrap { position: absolute; bottom: 70px; left: -60px; width: 62px; transition: left 1s cubic-bezier(.22,1,.36,1); }
@@ -394,7 +453,7 @@
   /* --- Frozen-memo note (released titles are served from cache) --- */
   .cache-note {
     display: none; max-width: 900px; margin: 20px auto 0;
-    background: var(--unclear-dim); border: 1px solid var(--border); border-radius: 4px;
+    background: var(--unclear-dim); border: 1px solid var(--border); border-radius: 14px;
     padding: 10px 16px; font-size: 0.85rem; color: var(--text);
     align-items: center; gap: 12px; flex-wrap: wrap; justify-content: space-between;
   }
@@ -453,8 +512,8 @@
 
   .meta-pill {
     font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.02em;
-    padding: 5px 12px; border-radius: 4px; border: 1px solid rgba(245,241,230,0.25);
-    color: var(--on-ink-muted); background: rgba(33,29,23,0.55);
+    padding: 5px 12px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.3);
+    color: var(--on-ink-muted); background: rgba(34,26,58,0.45);
   }
   .meta-pill.info { border-color: var(--brand-c-on-ink); color: var(--brand-c-on-ink); }
   .meta-pill.confidence-high { border-color: var(--positive-on-ink); color: var(--positive-on-ink); }
@@ -489,36 +548,34 @@
     display: none;
     max-width: 900px; margin: 34px auto 0;
     background: var(--surface-raised); border: 1px solid var(--border);
-    border-radius: 4px; padding: 34px 32px;
-    box-shadow: 0 8px 24px rgba(33,29,23,0.10);
+    border-radius: 20px; padding: 34px 32px;
+    box-shadow: 0 12px 32px rgba(124,58,237,0.10);
   }
   .greenlight-card.visible { display: block; }
-  .greenlight-card.tone-positive { border-left: 4px solid var(--positive); }
-  .greenlight-card.tone-negative { border-left: 4px solid var(--negative); }
-  .greenlight-card.tone-neutral { border-left: 4px solid var(--neutral); }
-  .greenlight-card.tone-insufficient { border-left: 4px dashed var(--border); }
+  .greenlight-card.tone-positive { border-left: 5px solid var(--positive); }
+  .greenlight-card.tone-negative { border-left: 5px solid var(--negative); }
+  .greenlight-card.tone-neutral { border-left: 5px solid var(--neutral); }
+  .greenlight-card.tone-insufficient { border-left: 5px dashed var(--border); }
 
   .verdict-row { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; margin-bottom: 6px; }
 
-  /* A rubber-stamp mark, not a rounded status pill — this is a studio
-     memo being "stamped" approved/held, not a dashboard badge. */
+  /* A bold gradient pill — a punchy "stamp of approval" for the GenZ
+     redesign, rather than the old ink-stamp mark or a flat status pill. */
   .verdict-badge {
-    font-family: var(--font-mono); font-weight: 700; font-size: 0.85rem;
-    letter-spacing: 0.03em; text-transform: uppercase; padding: 7px 16px;
-    border: 2px solid; border-radius: 3px; transform: rotate(-2deg);
-    display: inline-flex; align-items: center; gap: 8px; background: none;
+    font-family: var(--font-display); font-weight: 700; font-size: 0.85rem;
+    letter-spacing: 0.02em; text-transform: uppercase; padding: 8px 18px;
+    border: none; border-radius: 999px; color: #fff;
+    display: inline-flex; align-items: center; gap: 8px;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.15);
   }
-  .verdict-dot { width: 9px; height: 9px; border-radius: 50%; }
-  .verdict-badge.tone-positive { border-color: var(--positive); color: var(--positive); }
-  .verdict-badge.tone-negative { border-color: var(--negative); color: var(--negative); }
-  .verdict-badge.tone-neutral { border-color: var(--neutral); color: var(--neutral); }
-  .verdict-badge.tone-positive .verdict-dot { background: var(--positive); }
-  .verdict-badge.tone-negative .verdict-dot { background: var(--negative); }
-  .verdict-badge.tone-neutral .verdict-dot { background: var(--neutral); }
-  /* Deliberately not a solid, confident-looking stamp — dashed border,
-     no rotation, muted color — since this state means "we didn't
-     analyze enough to say anything," not a graded recommendation. */
-  .verdict-badge.tone-insufficient { border-style: dashed; border-color: var(--text-muted); color: var(--text-muted); transform: none; }
+  .verdict-dot { width: 9px; height: 9px; border-radius: 50%; background: rgba(255,255,255,0.85); }
+  .verdict-badge.tone-positive { background: linear-gradient(120deg, #16a34a, #22d3a5); }
+  .verdict-badge.tone-negative { background: linear-gradient(120deg, #ef4444, #f97362); }
+  .verdict-badge.tone-neutral { background: linear-gradient(120deg, #f59e0b, #fbbf24); }
+  /* Deliberately not a bright gradient — dashed, muted, no fill — since
+     this state means "we didn't analyze enough to say anything," not a
+     graded recommendation. */
+  .verdict-badge.tone-insufficient { border: 2px dashed var(--text-muted); color: var(--text-muted); background: none; box-shadow: none; }
   .verdict-badge.tone-insufficient .verdict-dot { background: var(--text-muted); }
 
   .confidence-wrap { display: flex; align-items: center; gap: 8px; font-family: var(--font-mono); font-size: 0.82rem; color: var(--text-muted); }
@@ -542,18 +599,21 @@
      API in this pipeline. Sized large enough to actually convey
      something about the film at a glance, not a token icon. Falls back
      to a plain title card, never a distorted crop, when unavailable. */
-  .memo-poster { width: 100%; aspect-ratio: 16/9; border-radius: 6px; object-fit: cover; background: var(--marquee-bg); border: 1px solid var(--border); }
-  .memo-poster-fallback { width: 100%; aspect-ratio: 16/9; border-radius: 6px; background: var(--marquee-bg); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; color: var(--gold-on-ink); font-family: var(--font-mono); font-size: 0.72rem; text-align: center; padding: 8px; }
+  .memo-poster { width: 100%; aspect-ratio: 16/9; border-radius: 14px; object-fit: cover; background: var(--marquee-bg); border: 1px solid var(--border); }
+  .memo-poster-fallback { width: 100%; aspect-ratio: 16/9; border-radius: 14px; background: var(--marquee-bg); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; color: var(--gold-on-ink); font-family: var(--font-mono); font-size: 0.72rem; text-align: center; padding: 8px; }
   .memo-meta-pills { display: flex; flex-wrap: wrap; gap: 6px; margin: 2px 0; }
   .memo-header-right { display: flex; flex-direction: column; justify-content: center; gap: 8px; }
 
   /* "Synthesizer" callout: one crisp line instead of a full headline +
      paragraph — the confidence rationale already says why, this says
      what, compactly. */
+  #memo-synth-card { display: none; max-width: 900px; margin: 20px auto 0; }
+  #memo-synth-card.visible { display: block; }
   .synth-callout {
-    background: var(--marquee-bg); color: var(--on-ink); border-radius: 6px;
-    padding: 14px 18px; margin-bottom: 20px; font-family: var(--font-display);
+    background: var(--marquee-bg); color: var(--on-ink); border-radius: 16px;
+    padding: 14px 18px; font-family: var(--font-display);
     font-style: italic; font-size: 1.05rem; line-height: 1.4;
+    box-shadow: 0 8px 22px rgba(124,58,237,0.22);
   }
   .synth-callout .synth-tag { font-family: var(--font-mono); font-style: normal; font-size: 0.6rem; text-transform: uppercase; color: var(--gold-on-ink); display: block; margin-bottom: 6px; letter-spacing: 0.04em; }
   .synth-callout .typewriter-cursor { display: inline-block; width: 2px; height: 1em; background: var(--gold-on-ink); vertical-align: text-bottom; margin-left: 2px; }
@@ -583,33 +643,82 @@
   .opp-risk-tile.opportunity .opp-risk-label { color: var(--positive); }
   .opp-risk-tile.risk .opp-risk-label { color: var(--negative); }
 
-  /* --- War Room --- */
+  /* --- War Room: a live group-chat thread, not a static grid. Each
+     bubble is the REAL war_room voice text from main_synthesis (already
+     grounded in that persona's own upstream data, in the model's fixed
+     order director→producer→marketing_chief→casting_executive→
+     distribution_executive→analyst) — nothing here is invented dialogue.
+     A lightweight keyword-tone read on each real sentence (see
+     guessTone() in JS) decides bubble color and whether consecutive
+     voices visually "disagree," and the room reveals message-by-message
+     with a typing indicator for a live conversational feel. The Analyst
+     always speaks last and is rendered as a distinct, pinned verdict
+     card since that's its real synthesizing role. --- */
   .war-room { display: none; max-width: 1180px; margin: 24px auto 0; }
   .war-room.visible { display: block; }
   .war-room-title {
-    font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.03em;
-    text-transform: uppercase; color: var(--text-muted); text-align: center; margin-bottom: 16px;
+    font-family: var(--font-display); font-weight: 700; font-size: 1rem;
+    color: var(--text); text-align: center; margin-bottom: 18px;
   }
-  .war-room-grid { display: grid; grid-template-columns: 1fr; gap: 14px; }
-  @media (min-width: 700px) { .war-room-grid { grid-template-columns: 1fr 1fr; } }
-  @media (min-width: 1050px) { .war-room-grid { grid-template-columns: 1fr 1fr 1fr; } }
-  /* Each seat at the table gets its own accent rather than an identical
-     box, so the grid reads as six distinct voices, not six repeats. */
-  .voice-card {
-    background: var(--surface); border: 1px solid var(--border); border-top: 3px solid var(--border);
-    border-radius: 4px; padding: 16px 18px; box-shadow: 0 3px 10px rgba(33,29,23,0.06);
-    transition: transform 0.18s ease, box-shadow 0.18s ease;
+  .war-room-chat { display: flex; flex-direction: column; gap: 14px; max-width: 660px; margin: 0 auto; }
+
+  .chat-typing { align-self: flex-start; display: flex; align-items: center; gap: 5px; padding: 10px 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 4px 16px 16px 16px; }
+  .chat-typing span { width: 6px; height: 6px; border-radius: 50%; background: var(--text-muted); opacity: 0.5; animation: typingDot 1.1s ease-in-out infinite; }
+  .chat-typing span:nth-child(2) { animation-delay: 0.15s; }
+  .chat-typing span:nth-child(3) { animation-delay: 0.3s; }
+  @keyframes typingDot { 0%, 60%, 100% { transform: translateY(0); opacity: 0.4; } 30% { transform: translateY(-3px); opacity: 1; } }
+
+  .chat-disagree-flag {
+    align-self: center; font-family: var(--font-mono); font-weight: 700; font-size: 0.68rem;
+    letter-spacing: 0.03em; text-transform: uppercase; color: #fff;
+    background: linear-gradient(120deg, var(--negative), #f97362); border-radius: 999px;
+    padding: 5px 16px; box-shadow: 0 4px 12px rgba(239,68,68,0.28);
+    opacity: 0; transform: translateY(6px) scale(0.9); transition: opacity 0.3s ease, transform 0.3s ease;
   }
-  .voice-card:hover { transform: translateY(-2px); box-shadow: 0 8px 18px rgba(33,29,23,0.10); }
-  .voice-card.role-director { border-top-color: var(--brand-b); }
-  .voice-card.role-producer { border-top-color: var(--ink); }
-  .voice-card.role-marketing_chief { border-top-color: var(--marketing-accent); }
-  .voice-card.role-casting_executive { border-top-color: var(--cast-accent); }
-  .voice-card.role-distribution_executive { border-top-color: var(--gold); }
-  .voice-card.role-analyst { border-top-color: var(--brand-c); }
-  .voice-role { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 0.9rem; margin-bottom: 8px; }
-  .voice-icon { font-size: 1.1rem; }
-  .voice-insight { font-family: var(--font-display); font-style: italic; font-size: 0.95rem; color: var(--text); line-height: 1.5; }
+  .chat-disagree-flag.show { opacity: 1; transform: translateY(0) scale(1); }
+
+  .chat-row {
+    display: flex; align-items: flex-start; gap: 10px;
+    opacity: 0; transform: translateY(10px); transition: opacity 0.35s ease, transform 0.35s ease;
+  }
+  .chat-row.show { opacity: 1; transform: translateY(0); }
+  .chat-avatar {
+    flex-shrink: 0; width: 42px; height: 42px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center; font-size: 1.25rem;
+    background: var(--surface); border: 2px solid var(--border); box-shadow: 0 3px 8px rgba(124,58,237,0.12);
+  }
+  .chat-row.role-director .chat-avatar { border-color: var(--brand-b); }
+  .chat-row.role-producer .chat-avatar { border-color: var(--gold); }
+  .chat-row.role-marketing_chief .chat-avatar { border-color: var(--marketing-accent); }
+  .chat-row.role-casting_executive .chat-avatar { border-color: var(--cast-accent); }
+  .chat-row.role-distribution_executive .chat-avatar { border-color: var(--news-accent); }
+
+  .chat-bubble {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 4px 18px 18px 18px;
+    padding: 11px 16px; box-shadow: 0 3px 10px rgba(124,58,237,0.06); max-width: 78%;
+  }
+  .chat-name { font-family: var(--font-display); font-weight: 700; font-size: 0.85rem; margin-bottom: 3px; }
+  .chat-text { font-size: 0.95rem; line-height: 1.5; color: var(--text); }
+  .chat-row.tone-positive .chat-bubble { border-left: 3px solid var(--positive); background: linear-gradient(135deg, var(--positive-dim), var(--surface) 65%); }
+  .chat-row.tone-negative .chat-bubble { border-left: 3px solid var(--negative); background: linear-gradient(135deg, var(--negative-dim), var(--surface) 65%); }
+  .chat-row.tone-positive .chat-name { color: var(--positive); }
+  .chat-row.tone-negative .chat-name { color: var(--negative); }
+
+  /* The Analyst's message is the room's synthesis, not another opinion —
+     styled as a pinned, gradient verdict card instead of a chat bubble. */
+  .chat-final {
+    margin-top: 4px; padding: 20px 22px; border-radius: 18px;
+    background: linear-gradient(135deg, var(--brand-b), var(--brand-a) 65%, var(--gold));
+    color: #fff; box-shadow: 0 14px 30px rgba(124,58,237,0.30);
+    opacity: 0; transform: translateY(10px) scale(0.98);
+    transition: opacity 0.4s ease, transform 0.4s ease;
+  }
+  .chat-final.show { opacity: 1; transform: translateY(0) scale(1); }
+  .chat-final-tag {
+    display: flex; align-items: center; gap: 8px; font-family: var(--font-mono);
+    font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.9; margin-bottom: 10px;
+  }
+  .chat-final .chat-text { font-family: var(--font-display); font-weight: 600; font-size: 1.1rem; line-height: 1.5; color: #fff; }
 
   /* --- Reputation timeline: zigzag, branching off a center spine —
      replicates the sketch directly (events alternate left/right,
@@ -723,7 +832,7 @@
   .card-list { display: grid; grid-template-columns: 1fr; gap: 12px; }
   @media (min-width: 720px) { .card-list { grid-template-columns: 1fr 1fr; } }
 
-  .mini-card { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 14px 16px; box-shadow: 0 2px 8px rgba(33,29,23,0.05); transition: transform 0.15s ease, box-shadow 0.15s ease; }
+  .mini-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 14px 16px; box-shadow: 0 2px 8px rgba(124,58,237,0.06); transition: transform 0.15s ease, box-shadow 0.15s ease; }
   .mini-card:hover { transform: translateY(-2px); box-shadow: 0 6px 14px rgba(33,29,23,0.08); }
   .mini-card-title { font-weight: 600; font-size: 0.92rem; margin-bottom: 4px; }
   .mini-card.cast-accent { border-left: 3px solid var(--cast-accent); background: var(--cast-tint); }
@@ -772,7 +881,7 @@
        leaving a large gap and effectively re-sorting the section order
        on the printed page. That's what was showing up as sections
        being split apart oddly. */
-    .voice-card, .mini-card { break-inside: avoid; }
+    .chat-row, .chat-final, .mini-card { break-inside: avoid; }
 
     /* The rotated "stamp" look is a screen-only flourish; keeping a
        rotated element in the print layout can shift how its text gets
@@ -848,10 +957,19 @@
             <circle cx="220" cy="18" r="4" fill="#e7b75c"/>
             <circle cx="480" cy="22" r="4" fill="#e7b75c"/>
           </svg>
+          <div class="scan-sweep"></div>
+          <div class="ember" style="left:8%; animation-duration:6.5s; animation-delay:0s; --drift:10px;"></div>
+          <div class="ember" style="left:20%; animation-duration:8s; animation-delay:1.4s; --drift:-14px;"></div>
+          <div class="ember" style="left:34%; animation-duration:7.2s; animation-delay:2.6s; --drift:8px;"></div>
+          <div class="ember" style="left:48%; animation-duration:9s; animation-delay:0.8s; --drift:-10px;"></div>
+          <div class="ember" style="left:62%; animation-duration:6.8s; animation-delay:3.2s; --drift:12px;"></div>
+          <div class="ember" style="left:74%; animation-duration:7.6s; animation-delay:1.9s; --drift:-8px;"></div>
+          <div class="ember" style="left:88%; animation-duration:8.4s; animation-delay:0.3s; --drift:14px;"></div>
 
           <div class="squad-row" id="squadRow">
 
             <div class="mech-unit director-unit" data-role="director">
+              <div class="speech-bubble"></div>
               <svg class="mech-svg" viewBox="0 0 70 110" xmlns="http://www.w3.org/2000/svg">
                 <rect x="24" y="86" width="8" height="20" rx="2" fill="#2b2620"/>
                 <rect x="40" y="86" width="8" height="20" rx="2" fill="#2b2620"/>
@@ -871,6 +989,7 @@
             </div>
 
             <div class="mech-unit market-unit" data-role="market">
+              <div class="speech-bubble"></div>
               <svg class="mech-svg" viewBox="0 0 70 110" xmlns="http://www.w3.org/2000/svg">
                 <rect x="24" y="86" width="8" height="20" rx="2" fill="#2b2620"/>
                 <rect x="40" y="86" width="8" height="20" rx="2" fill="#2b2620"/>
@@ -893,6 +1012,7 @@
             </div>
 
             <div class="mech-unit marketing-unit" data-role="marketing">
+              <div class="speech-bubble"></div>
               <svg class="mech-svg" viewBox="0 0 70 110" xmlns="http://www.w3.org/2000/svg">
                 <rect x="24" y="86" width="8" height="20" rx="2" fill="#2b2620"/>
                 <rect x="40" y="86" width="8" height="20" rx="2" fill="#2b2620"/>
@@ -916,6 +1036,7 @@
             </div>
 
             <div class="mech-unit cast-unit" data-role="cast">
+              <div class="speech-bubble"></div>
               <svg class="mech-svg" viewBox="0 0 70 110" xmlns="http://www.w3.org/2000/svg">
                 <rect x="24" y="86" width="8" height="20" rx="2" fill="#2b2620"/>
                 <rect x="40" y="86" width="8" height="20" rx="2" fill="#2b2620"/>
@@ -935,6 +1056,7 @@
             </div>
 
             <div class="mech-unit distribution-unit" data-role="distribution">
+              <div class="speech-bubble"></div>
               <svg class="mech-svg" viewBox="0 0 70 110" xmlns="http://www.w3.org/2000/svg">
                 <rect x="8" y="90" width="54" height="14" rx="4" fill="#2b2620"/>
                 <circle cx="16" cy="97" r="3" fill="#463e34"/><circle cx="30" cy="97" r="3" fill="#463e34"/>
@@ -954,6 +1076,7 @@
             </div>
 
             <div class="mech-unit analyst-placeholder" data-role="analyst" style="opacity: 0.28;">
+              <div class="speech-bubble"></div>
               <svg class="mech-svg" viewBox="0 0 70 110" xmlns="http://www.w3.org/2000/svg" style="animation:none;">
                 <rect x="24" y="86" width="8" height="20" rx="2" fill="#2b2620"/>
                 <rect x="40" y="86" width="8" height="20" rx="2" fill="#2b2620"/>
@@ -1018,13 +1141,15 @@
     <div id="timeline-card" class="timeline-card"></div>
 
     <div id="war-room" class="war-room">
-      <div class="war-room-title">The War Room</div>
-      <div id="war-room-grid" class="war-room-grid"></div>
+      <div class="war-room-title">🎬 The War Room — Live Discussion</div>
+      <div id="war-room-chat" class="war-room-chat"></div>
     </div>
 
-    <div id="memo-body-card" class="greenlight-card"></div>
+    <div id="memo-synth-card"></div>
 
     <div id="release-window-card" class="release-window-card"></div>
+
+    <div id="memo-body-card" class="greenlight-card"></div>
 
     <div class="export-row" id="export-row">
       <button id="pdf-btn">Export</button>
@@ -1056,8 +1181,9 @@ const progressTimerText = document.getElementById('progress-timer-text');
 const status = document.getElementById('status');
 const greenlightCard = document.getElementById('greenlight-card');
 const memoBodyCard = document.getElementById('memo-body-card');
+const memoSynthCard = document.getElementById('memo-synth-card');
 const warRoom = document.getElementById('war-room');
-const warRoomGrid = document.getElementById('war-room-grid');
+const warRoomChat = document.getElementById('war-room-chat');
 const releaseWindowCard = document.getElementById('release-window-card');
 const evidenceSection = document.getElementById('evidence-section');
 const evidenceCollectionsBtn = document.getElementById('evidence-collections-btn');
@@ -1112,6 +1238,7 @@ function resetProgress() {
   const flagScene = document.getElementById('flagScene');
   if (battlefield) battlefield.classList.remove('shake');
   if (flagScene) flagScene.classList.remove('active');
+  resetSpeechBubbles();
   renderProgress();
   activityFeed.innerHTML = '';
   startTimer();
@@ -1264,6 +1391,40 @@ function activityLineHtml(line) {
   return cls ? `<span class="${cls}">${safe}</span>` : safe;
 }
 
+// Same stage-to-persona mapping used for the battlefield mech units
+// (see renderBattlefield's ROLE_CONFIG comment) — competitive alternates
+// between Market Intel and Distribution since both are honestly built
+// from that one branch, so both get to visibly "say" something.
+const STAGE_TO_MECH_ROLE = {
+  web_sentiment: 'director', youtube: 'director', sentiment_synthesis: 'director',
+  marketing: 'marketing', cast: 'cast', main_synthesis: 'analyst',
+};
+let competitiveBubbleToggle = 0;
+const bubbleTimers = {};
+
+function cleanBubbleText(line) {
+  let t = String(line || '').replace(/^calling\s+/i, '→ ').trim();
+  if (t.length > 70) t = t.slice(0, 68) + '…';
+  return t;
+}
+
+function showSpeechBubble(role, text, tagLabel) {
+  const scene = document.getElementById('battlefieldScene');
+  const unit = scene && scene.querySelector(`.mech-unit[data-role="${role}"]`);
+  const bubble = unit && unit.querySelector('.speech-bubble');
+  if (!bubble || !text) return;
+  bubble.innerHTML = `<span class="bubble-tag">${tagLabel}</span>${text}`;
+  bubble.classList.add('showing');
+  clearTimeout(bubbleTimers[role]);
+  bubbleTimers[role] = setTimeout(() => bubble.classList.remove('showing'), 3200);
+}
+
+function resetSpeechBubbles() {
+  Object.values(bubbleTimers).forEach(t => clearTimeout(t));
+  document.querySelectorAll('.speech-bubble').forEach(b => { b.classList.remove('showing'); b.innerHTML = ''; });
+  competitiveBubbleToggle = 0;
+}
+
 function appendActivity(stage, log) {
   if (!log || !log.length) return;
   const label = STAGE_LABEL_LOOKUP[stage] || stage;
@@ -1274,6 +1435,16 @@ function appendActivity(stage, log) {
     activityFeed.appendChild(el);
   });
   activityFeed.scrollTop = activityFeed.scrollHeight;
+
+  // The exact same real line, also shown as a speech bubble from the
+  // matching War Room character — not a separate/fabricated message,
+  // just a different presentation of the one already in the log above.
+  let role = STAGE_TO_MECH_ROLE[stage];
+  if (stage === 'competitive') {
+    role = competitiveBubbleToggle % 2 === 0 ? 'market' : 'distribution';
+    competitiveBubbleToggle++;
+  }
+  if (role) showSpeechBubble(role, cleanBubbleText(log[log.length - 1]), label);
 }
 
 function markStage(key) {
@@ -1413,11 +1584,13 @@ function renderGreenlightMemo(memo, releaseStatus, entity, youtubeData) {
     greenlightCard.innerHTML = '<p class="empty-state">No memo was returned for this run.</p>';
     greenlightCard.classList.add('visible');
     memoBodyCard.classList.remove('visible');
+    memoSynthCard.classList.remove('visible');
     return;
   }
   const tone = verdictTone(memo.verdict);
   greenlightCard.className = `greenlight-card visible tone-${tone}`;
   memoBodyCard.className = `greenlight-card visible tone-${tone}`;
+  memoSynthCard.className = 'visible';
 
   const why = (memo.why || []).map(w => `<li>${w}</li>`).join('') || '<li>No specific reasons surfaced.</li>';
   const changeLabel = releaseStatus === 'released' ? 'Lessons learned' : "What we'd change";
@@ -1469,15 +1642,20 @@ function renderGreenlightMemo(memo, releaseStatus, entity, youtubeData) {
     </div>
   `;
 
-  // --- Body: synthesizer callout + the full reasoning — rendered into
-  // memo-body-card, which sits AFTER the timeline and War Room in the
-  // DOM, so the glanceable header comes first, then the evidence
-  // (timeline, War Room), then the complete written case. ---
-  memoBodyCard.innerHTML = `
+  // --- Synthesizing-agent callout: its own card, positioned directly
+  // before Release Window Advisory in the DOM, so that's the very next
+  // thing after it — not after the whole written case. ---
+  memoSynthCard.innerHTML = `
     <div class="synth-callout">
       <span class="synth-tag">Synthesizing agent</span>
       <span id="synth-callout-text"></span>
     </div>
+  `;
+
+  // --- Body: the rest of the written case — confidence basis, why,
+  // recommended action, changes, notable news. Sits after Release
+  // Window Advisory in the DOM. ---
+  memoBodyCard.innerHTML = `
     <div class="confidence-basis">${confidenceBasis}</div>
 
     <div class="field"><div class="field-label">Why</div><ul class="plain">${why}</ul></div>
@@ -1490,21 +1668,111 @@ function renderGreenlightMemo(memo, releaseStatus, entity, youtubeData) {
   if (synthTextEl) typewriterInto(synthTextEl, memo.headline || '', 12);
 }
 
-function renderWarRoom(voices) {
+// Cheap, honest keyword read on each persona's REAL sentence (never on
+// invented text) — just enough to decide bubble color and to flag when
+// two consecutive real voices are pulling in different directions, so
+// the room visually reads as people disagreeing rather than a lineup of
+// identical-looking cards.
+const TONE_WORDS = {
+  positive: ['strong', 'confiden', 'soar', 'win', 'hit', 'buzz', 'excit', 'love', 'praise', 'positive', 'boost', 'anticipat', 'momentum', 'favorable', 'promis'],
+  negative: ['risk', 'concern', 'weak', 'struggl', 'underwhelm', 'crowd', 'congest', 'doubt', 'soften', 'backlash', 'negative', 'miss', 'fade', 'thin', 'uncertain', 'shaky', 'skeptic'],
+};
+function guessTone(text) {
+  const t = String(text || '').toLowerCase();
+  let pos = 0, neg = 0;
+  TONE_WORDS.positive.forEach(w => { if (t.includes(w)) pos++; });
+  TONE_WORDS.negative.forEach(w => { if (t.includes(w)) neg++; });
+  if (pos > neg) return 'positive';
+  if (neg > pos) return 'negative';
+  return 'neutral';
+}
+
+function renderWarRoomChat(voices) {
   if (!voices || !voices.length) {
     warRoom.classList.remove('visible');
     return;
   }
-  warRoomGrid.innerHTML = voices.map(v => {
+  warRoomChat.innerHTML = '';
+
+  // The Analyst is always last in the real war_room order — that's its
+  // actual synthesizing role, so it's pulled out and rendered as the
+  // pinned final-verdict card rather than another chat bubble.
+  const team = voices.filter(v => v.role !== 'analyst');
+  const analystVoice = voices.find(v => v.role === 'analyst');
+
+  let prevTone = null;
+  const items = team.map(v => {
     const meta = ROLE_META[v.role] || { icon: '\u{1F4AC}', label: v.role };
-    return `
-      <div class="voice-card role-${v.role}">
-        <div class="voice-role"><span class="voice-icon">${meta.icon}</span>${meta.label}</div>
-        <div class="voice-insight">&ldquo;${v.insight}&rdquo;</div>
+    const tone = guessTone(v.insight);
+    const disagreesWithPrev = prevTone && tone !== 'neutral' && prevTone !== 'neutral' && tone !== prevTone;
+    prevTone = tone;
+    return { v, meta, tone, disagreesWithPrev };
+  });
+
+  const reveal = [];
+  items.forEach(item => {
+    if (item.disagreesWithPrev) {
+      const flag = document.createElement('div');
+      flag.className = 'chat-disagree-flag';
+      flag.textContent = '⚡ pushes back';
+      warRoomChat.appendChild(flag);
+      reveal.push({ el: flag, typing: false });
+    }
+    const row = document.createElement('div');
+    row.className = `chat-row role-${item.v.role} tone-${item.tone}`;
+    row.innerHTML = `
+      <div class="chat-avatar">${item.meta.icon}</div>
+      <div class="chat-bubble">
+        <div class="chat-name">${item.meta.label}</div>
+        <div class="chat-text"></div>
       </div>
     `;
-  }).join('');
+    warRoomChat.appendChild(row);
+    reveal.push({ el: row, typing: true, text: item.v.insight, textEl: row.querySelector('.chat-text') });
+  });
+
+  let finalRow = null;
+  if (analystVoice) {
+    finalRow = document.createElement('div');
+    finalRow.className = 'chat-final';
+    finalRow.innerHTML = `
+      <div class="chat-final-tag">\u{1F4CA} The Analyst — bringing it together</div>
+      <div class="chat-text"></div>
+    `;
+    warRoomChat.appendChild(finalRow);
+    reveal.push({ el: finalRow, typing: true, text: analystVoice.insight, textEl: finalRow.querySelector('.chat-text') });
+  }
+
   warRoom.classList.add('visible');
+
+  // Live, staggered reveal — a typing indicator briefly stands in for
+  // each persona before their real sentence types itself out, so the
+  // room reads as a conversation happening in front of you, not a
+  // pre-rendered dump of six cards at once.
+  const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (reduceMotion) {
+    reveal.forEach(r => {
+      r.el.classList.add('show');
+      if (r.textEl) r.textEl.textContent = r.text;
+    });
+    return;
+  }
+
+  let delay = 200;
+  reveal.forEach(r => {
+    if (r.typing) {
+      const indicator = document.createElement('div');
+      indicator.className = 'chat-typing';
+      indicator.innerHTML = '<span></span><span></span><span></span>';
+      r.el.style.display = 'none';
+      r.el.parentNode.insertBefore(indicator, r.el);
+      setTimeout(() => { indicator.remove(); r.el.style.display = ''; r.el.classList.add('show'); typewriterInto(r.textEl, r.text || '', 10); }, delay);
+      delay += 550 + Math.min(1400, (r.text || '').length * 11);
+    } else {
+      setTimeout(() => r.el.classList.add('show'), delay);
+      delay += 400;
+    }
+  });
 }
 
 function renderTimeline(timeline) {
@@ -1810,6 +2078,7 @@ async function runBrief(forceRefresh = false) {
   if (studioTagline) studioTagline.textContent = 'Your AI production room is investigating...';
   greenlightCard.classList.remove('visible');
   memoBodyCard.classList.remove('visible');
+  memoSynthCard.classList.remove('visible');
   warRoom.classList.remove('visible');
   document.getElementById('timeline-card').classList.remove('visible');
   releaseWindowCard.classList.remove('visible');
@@ -1869,7 +2138,7 @@ async function runBrief(forceRefresh = false) {
 
       renderGreenlightMemo(result, entity.release_status, entity, data.youtube);
       renderTimeline(data.sentiment_synthesis && data.sentiment_synthesis.timeline);
-      renderWarRoom(result.war_room);
+      renderWarRoomChat(result.war_room);
       renderReleaseWindow(data.competitive);
 
       renderMarketing(data.marketing, entity.release_status);
