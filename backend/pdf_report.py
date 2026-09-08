@@ -68,9 +68,15 @@ SOURCE_LABELS = {
 def _styles() -> dict:
     base = getSampleStyleSheet()
     return {
-        "brandmark": ParagraphStyle("brandmark", parent=base["Normal"], fontSize=20, fontName="Helvetica-Bold", textColor=colors.white, spaceAfter=2),
-        "brandtag": ParagraphStyle("brandtag", parent=base["Normal"], fontSize=8.5, textColor=colors.HexColor("#e4defc")),
-        "title": ParagraphStyle("title", parent=base["Title"], fontSize=20, spaceAfter=2, textColor=INK, fontName="Helvetica-Bold"),
+        # ReportLab's fontSize and leading (line height) are independent —
+        # base["Normal"] carries leading=12 for its own fontSize=10, so
+        # bumping fontSize here without also setting leading left the
+        # 20pt wordmark and the tagline below it overlapping (leading
+        # stayed at 12pt, well under the 20pt glyphs it was supposed to
+        # hold). Explicit leading on both fixes the actual bug.
+        "brandmark": ParagraphStyle("brandmark", parent=base["Normal"], fontSize=22, leading=26, fontName="Helvetica-Bold", textColor=colors.white, spaceAfter=2),
+        "brandtag": ParagraphStyle("brandtag", parent=base["Normal"], fontSize=8.5, leading=12, textColor=colors.HexColor("#e4defc")),
+        "title": ParagraphStyle("title", parent=base["Title"], fontSize=20, leading=24, spaceAfter=2, textColor=INK, fontName="Helvetica-Bold"),
         "subtitle": ParagraphStyle("subtitle", parent=base["Normal"], fontSize=10, textColor=TEXT_MUTED, spaceAfter=4),
         "h2": ParagraphStyle("h2", parent=base["Heading2"], fontSize=14, spaceBefore=16, spaceAfter=8, textColor=BRAND_VIOLET, fontName="Helvetica-Bold"),
         "h3": ParagraphStyle("h3", parent=base["Heading3"], fontSize=11, spaceBefore=10, spaceAfter=4, textColor=INK),
@@ -79,7 +85,7 @@ def _styles() -> dict:
         "label": ParagraphStyle("label", parent=base["Normal"], fontSize=8, textColor=BRAND_PINK, spaceAfter=2, spaceBefore=6, fontName="Helvetica-Bold"),
         "quote": ParagraphStyle("quote", parent=base["Normal"], fontSize=10, leading=14, leftIndent=10, textColor=INK, fontName="Helvetica-Oblique"),
         "footer": ParagraphStyle("footer", parent=base["Normal"], fontSize=8, textColor=TEXT_MUTED),
-        "vlabel": ParagraphStyle("vlabel", parent=base["Normal"], textColor=colors.white, fontSize=13, fontName="Helvetica-Bold"),
+        "vlabel": ParagraphStyle("vlabel", parent=base["Normal"], textColor=colors.white, fontSize=13, leading=16, fontName="Helvetica-Bold"),
         "vconf": ParagraphStyle("vconf", parent=base["Normal"], textColor=colors.white, fontSize=10, alignment=TA_LEFT),
     }
 
@@ -143,8 +149,8 @@ def build_pdf(data: dict) -> bytes:
     brand_band.setStyle(TableStyle([
         ("BACKGROUND", (0, 0), (-1, -1), BRAND_VIOLET),
         ("LEFTPADDING", (0, 0), (-1, -1), 14), ("RIGHTPADDING", (0, 0), (-1, -1), 14),
-        ("TOPPADDING", (0, 0), (0, 0), 10), ("BOTTOMPADDING", (0, 0), (0, 0), 2),
-        ("TOPPADDING", (0, 1), (0, 1), 0), ("BOTTOMPADDING", (0, 1), (0, 1), 10),
+        ("TOPPADDING", (0, 0), (0, 0), 12), ("BOTTOMPADDING", (0, 0), (0, 0), 4),
+        ("TOPPADDING", (0, 1), (0, 1), 2), ("BOTTOMPADDING", (0, 1), (0, 1), 12),
     ]))
     story.append(brand_band)
     story.append(Spacer(1, 12))
