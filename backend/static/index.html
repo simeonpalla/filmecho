@@ -1000,13 +1000,7 @@
         <button id="search-btn">Run brief</button>
       </div>
 
-      <div id="example-chips" class="example-chips">
-        <span class="example-chips-label">Try:</span>
-        <button class="example-chip" data-title="Dune Part Three">Dune Part Three</button>
-        <button class="example-chip" data-title="Avengers Doomsday">Avengers Doomsday</button>
-        <button class="example-chip" data-title="Haiwaan">Haiwaan</button>
-        <button class="example-chip" data-title="Doomsday 2008">Doomsday (2008)</button>
-      </div>
+      <div id="example-chips" class="example-chips"></div>
     </div>
 
     <!-- Outside .hero (which caps at 660px for the search UI) so the
@@ -1181,6 +1175,51 @@ let lastPayloadData = null;
 let lastSearchedTitle = '';
 let pendingWarRoomReveal = null;
 let warRoomObserver = null;
+
+// The example chips default to a fixed set of titles the first time
+// anyone opens the app (nothing searched yet to show), then switch to
+// that browser's own actual recent searches — genuinely "yours," not
+// a curated example list, per-viewer via localStorage (never sent
+// anywhere, never shared across devices).
+const SEARCH_HISTORY_KEY = 'filmecho_recent_searches';
+const SEARCH_HISTORY_MAX = 5;
+const DEFAULT_EXAMPLE_TITLES = ['Dune Part Three', 'Avengers Doomsday', 'Haiwaan', 'Doomsday (2008)'];
+
+function getSearchHistory() {
+  try {
+    const raw = localStorage.getItem(SEARCH_HISTORY_KEY);
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function addToSearchHistory(title) {
+  const trimmed = title.trim();
+  if (!trimmed) return;
+  try {
+    const existing = getSearchHistory().filter(t => t.toLowerCase() !== trimmed.toLowerCase());
+    existing.unshift(trimmed);
+    localStorage.setItem(SEARCH_HISTORY_KEY, JSON.stringify(existing.slice(0, SEARCH_HISTORY_MAX)));
+  } catch {
+    // Private browsing / storage disabled — the chips just won't
+    // remember between visits, which is a fine, silent degrade.
+  }
+  renderExampleChips();
+}
+
+function renderExampleChips() {
+  if (!exampleChips) return;
+  const history = getSearchHistory();
+  const hasHistory = history.length > 0;
+  const label = hasHistory ? 'Recent:' : 'Try:';
+  const titles = hasHistory ? history : DEFAULT_EXAMPLE_TITLES;
+  exampleChips.innerHTML = `
+    <span class="example-chips-label">${label}</span>
+    ${titles.map(t => `<button class="example-chip" data-title="${t.replace(/"/g, '&quot;')}">${t}</button>`).join('')}
+  `;
+}
 
 const STAGES = [
   { key: 'entity_resolution', label: 'Resolving title' },
@@ -2256,6 +2295,7 @@ async function runBrief(forceRefresh = false) {
   const title = titleInput.value.trim();
   if (!title) { status.textContent = 'Enter a title first.'; status.classList.add('visible'); return; }
 
+  addToSearchHistory(title);
   applyMoviePhoto(null);
 
   if (activeSource) { activeSource.close(); activeSource = null; }
@@ -2462,6 +2502,8 @@ status.addEventListener('click', (e) => {
   titleInput.value = chip.dataset.title;
   runBrief();
 });
+
+renderExampleChips();
 
 // Deep-linking: a competing-title link opens /?title=X in a new tab, this
 // picks that up on load and runs the search immediately, so the new tab
