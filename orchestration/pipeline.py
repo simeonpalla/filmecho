@@ -58,6 +58,7 @@ from agents.sentiment_synthesis import build_sentiment_prompt, sentiment_synthes
 from agents.web_sentiment_agent import web_sentiment_agent
 from agents.youtube_data_agent import collect_youtube_data
 from agents.youtube_discovery_agent import discover_trailer_videos
+from orchestration.evidence_guard import count_available_sources, enforce_evidence_threshold
 from orchestration.memo_cache import memo_cache
 from orchestration.refusal_guard import drop_if_refusal
 
@@ -372,6 +373,13 @@ async def stream_pipeline(
     result["entity_confidence"] = entity.confidence
     result["disambiguation_note"] = entity.disambiguation_note
     result["release_status"] = entity.release_status
+
+    # Deterministic guardrail, not a prompt suggestion — see
+    # evidence_guard.py's docstring for why this has to be code, not an
+    # instruction. Overrides verdict/confidence/headline in place when
+    # too few upstream sources actually returned data.
+    available_count = count_available_sources(sentiment_synthesis, competitive, news, cast, marketing)
+    result = enforce_evidence_threshold(result, available_count)
 
     payload = {
         "entity": entity.as_dict(),

@@ -344,8 +344,18 @@ class GreenlightMemo(BaseModel):
     editorialize beyond what the evidence supports."""
 
     headline: str
-    verdict: Literal["greenlight", "greenlight_with_changes", "hold", "pass"] = Field(
-        description="For upcoming titles: a genuine greenlight-style call. For released/retrospective titles, this reflects how the release performed in hindsight (greenlight=clearly worked, greenlight_with_changes=worked with real caveats, hold=mixed/underwhelming, pass=clearly underperformed) — reframe the label's meaning by release_status, same pattern as competitive_risk."
+    verdict: Literal["greenlight", "greenlight_with_changes", "hold", "pass", "insufficient_data"] = Field(
+        description=(
+            "For upcoming titles: a genuine greenlight-style call. For released/retrospective titles, this reflects "
+            "how the release performed in hindsight (greenlight=clearly worked, greenlight_with_changes=worked with "
+            "real caveats, hold=mixed/underwhelming, pass=clearly underperformed) — reframe the label's meaning by "
+            "release_status, same pattern as competitive_risk. "
+            "insufficient_data is a DIFFERENT KIND of value, not a point on that same scale: it means don't produce "
+            "a recommendation at all this run — see the enforced threshold in the instruction below. This exists "
+            "specifically because a low confidence NUMBER next to a normal verdict badge still reads as a real "
+            "recommendation to someone skimming the memo — a bold 'GREENLIGHT' stamp at 35% confidence is a worse "
+            "failure than an honest 'not enough evidence yet' state, even though both are technically low-confidence."
+        )
     )
     confidence: int = Field(
         ge=0, le=100,

@@ -177,7 +177,18 @@ main_synthesis_agent = Agent(
         "name how many of the five sources you had and whether they "
         "agreed. This is displayed directly next to the confidence score "
         "in the product, so a vague sentence here defeats the point of "
-        "having the field at all."
+        "having the field at all.\n\n"
+        "If fewer than 3 of the 5 upstream sections actually have data, "
+        "set verdict to 'insufficient_data' instead of a normal "
+        "greenlight/hold/pass call — a low confidence NUMBER next to a "
+        "normal-looking verdict badge still reads as a real "
+        "recommendation to someone skimming the memo. Note: this is "
+        "checked and enforced in code after you respond, so it will be "
+        "corrected either way — but get it right here so the rest of the "
+        "memo (headline, why, recommended_action) is written consistently "
+        "with there not being enough evidence for a real call, rather "
+        "than writing a confident memo that then gets its verdict badge "
+        "swapped out from under it."
     ),
     output_schema=GreenlightMemo,
     generate_content_config=genai_types.GenerateContentConfig(temperature=GROUNDING_TEMPERATURE),

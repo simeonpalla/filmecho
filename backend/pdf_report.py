@@ -27,12 +27,14 @@ VERDICT_COLORS = {
     "greenlight_with_changes": colors.HexColor("#a85d0a"),
     "hold": colors.HexColor("#a63333"),
     "pass": colors.HexColor("#a63333"),
+    "insufficient_data": colors.HexColor("#888888"),
 }
 VERDICT_LABELS = {
     "greenlight": "GREENLIGHT",
     "greenlight_with_changes": "GREENLIGHT WITH CHANGES",
     "hold": "HOLD",
     "pass": "PASS",
+    "insufficient_data": "NOT ENOUGH DATA",
 }
 ROLE_LABELS = {
     "director": "The Director",
