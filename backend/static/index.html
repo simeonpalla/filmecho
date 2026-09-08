@@ -223,7 +223,7 @@
   .progress {
     display: none;
     margin: 28px auto 0;
-    max-width: 1180px;
+    max-width: 100%;
     text-align: left;
   }
   .progress.visible { display: block; }
@@ -240,8 +240,8 @@
     border-radius: 20px;
     overflow: hidden;
     padding: 4px 14px 14px;
-    background: linear-gradient(165deg, #2a1f52 0%, #1c1338 55%, #150e2b 100%);
-    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.07), 0 16px 36px rgba(124,58,237,0.22);
+    background: linear-gradient(135deg, #a855f7 0%, #ec4899 45%, #fb923c 100%);
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.16), 0 16px 36px rgba(168,85,247,0.28);
   }
   .stage-floor {
     position: absolute; left: 0; right: 0; bottom: 0; height: 54px; z-index: 0;
@@ -595,6 +595,33 @@
   .opp-risk-tile.opportunity .opp-risk-label { color: var(--positive); }
   .opp-risk-tile.risk .opp-risk-label { color: var(--negative); }
 
+  /* Sections that are fully rendered but held back from view until the
+     War Room chat has played — swapping this class off restarts each
+     section's own .rise entrance animation (removing display:none and
+     re-adding it retriggers CSS animations), so they visibly arrive
+     rather than just popping into existence. */
+  .pending-reveal { display: none !important; }
+
+  /* The one manual gate in an otherwise auto-streaming page: rather
+     than dumping the whole memo the instant results land, the reader
+     gets a beat to see the verdict, then chooses when the room "starts
+     talking" — like walking into a meeting already in progress vs.
+     being handed the minutes. */
+  .start-discussion-row { display: none; text-align: center; margin: 26px auto 0; }
+  .start-discussion-row.visible { display: block; }
+  .start-discussion-btn {
+    font-family: var(--font-display); font-weight: 700; font-size: 1rem;
+    color: #fff; border: none; border-radius: 999px; padding: 14px 32px;
+    background: linear-gradient(120deg, var(--brand-b), var(--brand-a) 55%, var(--gold));
+    cursor: pointer; box-shadow: 0 10px 26px rgba(124,58,237,0.32);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  .start-discussion-btn:hover { transform: translateY(-2px); box-shadow: 0 14px 32px rgba(124,58,237,0.4); }
+  @media (prefers-reduced-motion: no-preference) {
+    .start-discussion-btn { animation: startBtnPulse 2s ease-in-out infinite; }
+  }
+  @keyframes startBtnPulse { 0%, 100% { box-shadow: 0 10px 26px rgba(124,58,237,0.32); } 50% { box-shadow: 0 10px 30px rgba(255,95,174,0.42); } }
+
   /* --- War Room: a live group-chat thread, not a static grid. Each
      bubble is the REAL war_room voice text from main_synthesis (already
      grounded in that persona's own upstream data, in the model's fixed
@@ -603,7 +630,8 @@
      A lightweight keyword-tone read on each real sentence (see
      guessTone() in JS) decides bubble color and whether consecutive
      voices visually "disagree," and the room reveals message-by-message
-     with a typing indicator for a live conversational feel. The Analyst
+     with a typing indicator for a live conversational feel, starting
+     only once the section actually scrolls into view. The Analyst
      always speaks last and is rendered as a distinct, pinned verdict
      card since that's its real synthesizing role. --- */
   .war-room { display: none; max-width: 1180px; margin: 24px auto 0; }
@@ -840,8 +868,9 @@
        spacing. This fixes it the same way regardless of print settings. */
     @page { margin: 16mm 18mm; }
 
-    .film-strip, .search-row, .example-chips, #progress, .status, .export-row { display: none !important; }
-    .subtabs, .evidence-section, .subpanel { display: block !important; }
+    .film-strip, .search-row, .example-chips, #progress, .status, .export-row, .start-discussion-row { display: none !important; }
+    .subtabs, .evidence-section, .subpanel, .pending-reveal { display: block !important; }
+    .war-room { display: block !important; }
     .page { max-width: 100%; padding: 0; }
 
     /* Only atomic, single-idea pieces get break-inside:avoid. Applying
@@ -1007,12 +1036,16 @@
 
     <div id="greenlight-card" class="greenlight-card"></div>
 
-    <div id="timeline-card" class="timeline-card"></div>
+    <div id="start-discussion-row" class="start-discussion-row">
+      <button id="start-discussion-btn" class="start-discussion-btn">▶ Step into the War Room</button>
+    </div>
 
     <div id="war-room" class="war-room">
       <div class="war-room-title">🎬 The War Room — Live Discussion</div>
       <div id="war-room-chat" class="war-room-chat"></div>
     </div>
+
+    <div id="timeline-card" class="timeline-card"></div>
 
     <div id="memo-synth-card"></div>
 
@@ -1053,6 +1086,8 @@ const memoBodyCard = document.getElementById('memo-body-card');
 const memoSynthCard = document.getElementById('memo-synth-card');
 const warRoom = document.getElementById('war-room');
 const warRoomChat = document.getElementById('war-room-chat');
+const startDiscussionRow = document.getElementById('start-discussion-row');
+const startDiscussionBtn = document.getElementById('start-discussion-btn');
 const releaseWindowCard = document.getElementById('release-window-card');
 const evidenceSection = document.getElementById('evidence-section');
 const evidenceCollectionsBtn = document.getElementById('evidence-collections-btn');
@@ -1066,6 +1101,8 @@ const cacheNote = document.getElementById('cache-note');
 let activeSource = null;
 let lastPayloadData = null;
 let lastSearchedTitle = '';
+let pendingWarRoomReveal = null;
+let warRoomObserver = null;
 
 const STAGES = [
   { key: 'entity_resolution', label: 'Resolving title' },
@@ -1651,7 +1688,7 @@ function guessTone(text) {
 // indicator briefly stands in for each persona before their real text
 // types itself out, so the room reads as a conversation happening in
 // front of you, not a pre-rendered dump of cards at once.
-function revealChatItems(reveal) {
+function revealChatItems(reveal, onComplete) {
   warRoom.classList.add('visible');
   const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   if (reduceMotion) {
@@ -1659,6 +1696,7 @@ function revealChatItems(reveal) {
       r.el.classList.add('show');
       if (r.textEl) r.textEl.textContent = r.text;
     });
+    if (onComplete) setTimeout(onComplete, 0);
     return;
   }
   let delay = 200;
@@ -1676,6 +1714,7 @@ function revealChatItems(reveal) {
       delay += 400;
     }
   });
+  if (onComplete) setTimeout(onComplete, delay + 400);
 }
 
 // Preferred path: main_synthesis_agent now writes war_room_transcript —
@@ -1728,7 +1767,7 @@ function renderWarRoomTranscript(turns) {
     reveal.push({ el: finalRow, typing: true, text: analystTurn.message, textEl: finalRow.querySelector('.chat-text') });
   }
 
-  revealChatItems(reveal);
+  return reveal;
 }
 
 // Fallback path: older cached memos (released titles are cached
@@ -1784,20 +1823,76 @@ function renderWarRoomFromVoices(voices) {
     reveal.push({ el: finalRow, typing: true, text: analystVoice.insight, textEl: finalRow.querySelector('.chat-text') });
   }
 
-  revealChatItems(reveal);
+  return reveal;
 }
 
+// Builds the War Room chat DOM (bubbles hidden, not yet revealed) and
+// stores the reveal sequence in pendingWarRoomReveal for
+// beginWarRoomDiscussion() to play once the reader clicks in / scrolls
+// to the section — see the start-discussion-row button wiring below.
 function renderWarRoomChat(voices, transcript) {
+  let reveal = null;
   if (Array.isArray(transcript) && transcript.length) {
-    renderWarRoomTranscript(transcript);
-    return;
-  }
-  if (!voices || !voices.length) {
+    reveal = renderWarRoomTranscript(transcript);
+  } else if (voices && voices.length) {
+    reveal = renderWarRoomFromVoices(voices);
+  } else {
     warRoom.classList.remove('visible');
-    return;
   }
-  renderWarRoomFromVoices(voices);
+  pendingWarRoomReveal = reveal;
 }
+
+// Kicks off the actual chat playback: makes the (still-empty-looking)
+// War Room container visible so it has real layout to scroll to, scrolls
+// it into view, then waits for it to actually be on-screen (via
+// IntersectionObserver, with a timeout fallback) before starting the
+// typing/reveal sequence — so "the room starts talking" genuinely lines
+// up with the reader actually looking at it, not with the click itself.
+function beginWarRoomDiscussion() {
+  if (!pendingWarRoomReveal || !pendingWarRoomReveal.length) return;
+  startDiscussionRow.classList.remove('visible');
+  warRoom.classList.add('visible');
+  warRoom.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  const startReveal = () => {
+    if (!pendingWarRoomReveal) return;
+    const reveal = pendingWarRoomReveal;
+    pendingWarRoomReveal = null;
+    revealChatItems(reveal, revealRestOfReport);
+  };
+
+  if (warRoomObserver) { warRoomObserver.disconnect(); warRoomObserver = null; }
+  if ('IntersectionObserver' in window) {
+    warRoomObserver = new IntersectionObserver((entries) => {
+      const entry = entries[0];
+      if (entry && entry.isIntersecting) {
+        warRoomObserver.disconnect();
+        warRoomObserver = null;
+        startReveal();
+      }
+    }, { threshold: 0.2 });
+    warRoomObserver.observe(warRoom);
+    // Safety net — don't leave the room silently empty if the
+    // intersection callback is slow to fire or never crosses threshold
+    // (e.g. a very short page where it's already fully in view).
+    setTimeout(() => { if (pendingWarRoomReveal) startReveal(); }, 1200);
+  } else {
+    setTimeout(startReveal, 500);
+  }
+}
+
+// Reveals everything held back behind the War Room discussion — each
+// section was already fully rendered, just hidden via .pending-reveal,
+// so removing that class both shows it and (since display:none -> block
+// retriggers CSS animations) plays its entrance animation.
+function revealRestOfReport() {
+  ['timeline-card', 'memo-synth-card', 'release-window-card', 'memo-body-card', 'export-row'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.remove('pending-reveal');
+  });
+}
+
+startDiscussionBtn.addEventListener('click', beginWarRoomDiscussion);
 
 function renderTimeline(timeline) {
   const el = document.getElementById('timeline-card');
@@ -2108,6 +2203,13 @@ async function runBrief(forceRefresh = false) {
   releaseWindowCard.classList.remove('visible');
   evidenceSection.classList.remove('visible');
   evidenceCollectionsBtn.style.display = 'none';
+  startDiscussionRow.classList.remove('visible');
+  ['timeline-card', 'memo-synth-card', 'release-window-card', 'memo-body-card', 'export-row'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.remove('pending-reveal');
+  });
+  if (warRoomObserver) { warRoomObserver.disconnect(); warRoomObserver = null; }
+  pendingWarRoomReveal = null;
   if (detailToggleBtn) detailToggleBtn.textContent = 'Detailed report ↓';
   status.classList.remove('visible');
   resetProgress();
@@ -2189,6 +2291,25 @@ async function runBrief(forceRefresh = false) {
       // the memo card is meant to be the complete glanceable artifact;
       // #detail-toggle-btn (wired below) reveals this on demand.
       exportRow.style.display = 'flex';
+
+      // Everything past the verdict-first summary is fully rendered by
+      // now but held back behind .pending-reveal — the reader sees the
+      // headline verdict immediately, then chooses when to step into
+      // the War Room discussion; the rest of the report (timeline,
+      // synth callout, release window, written case, export) reveals
+      // itself once that discussion actually finishes playing. If there
+      // was no real discussion to show (e.g. insufficient_data), skip
+      // the gate entirely rather than hiding real content behind a
+      // button with nothing to click through to.
+      ['timeline-card', 'memo-synth-card', 'release-window-card', 'memo-body-card', 'export-row'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.classList.add('pending-reveal');
+      });
+      if (pendingWarRoomReveal && pendingWarRoomReveal.length) {
+        startDiscussionRow.classList.add('visible');
+      } else {
+        revealRestOfReport();
+      }
 
       renderCacheNote(entity, data);
     }
