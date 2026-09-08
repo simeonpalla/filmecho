@@ -26,9 +26,12 @@ _client = Parallel(api_key=os.environ["PARALLEL_API_KEY"])
 
 
 async def get_competitive_landscape(
-    title: str, release_year: str, director: str, session_id: str, release_status: str, region_hint: str = ""
+    title: str, release_year: str, director: str, session_id: str, release_status: str,
+    region_hint: str = "", source_type: str = "", based_on: str = "",
 ) -> dict:
-    """Search the web for what a title competes/competed against for attention.
+    """Search the web for what a title competes/competed against for attention,
+    and — for a sequel/reboot/spinoff/remake — how its own franchise history
+    performed.
 
     Args:
         title: Canonical film title.
@@ -44,6 +47,15 @@ async def get_competitive_landscape(
             competitive read toward a specific market rather than
             defaulting to US/UK box office framing. Empty string if
             unavailable.
+        source_type: From entity resolution — "sequel"/"reboot"/"spinoff"/
+            "remake" trigger a second, franchise-history-focused search;
+            anything else ("original", "unclear", etc.) skips it, since
+            there's no prior installment to look up. Empty string treated
+            the same as "unclear".
+        based_on: The specific prior work named by entity resolution, if
+            any (e.g. "Sequel to Dune: Part Two"). Used to target the
+            franchise-history search when present; falls back to a
+            generic "{title} previous film" query when not.
 
     Returns:
         dict with key "results": a list of {url, title, excerpts}.
@@ -83,6 +95,14 @@ async def get_competitive_landscape(
             f"major movie releases after {title} release date",
         ]
 
+    # Franchise history is a genuinely different question from same-window
+    # competition — "what did the earlier film(s) in THIS series do" rather
+    # than "what else is out right now" — so it gets its own query rather
+    # than being folded into the queries above, which wouldn't surface it.
+    if source_type in ("sequel", "reboot", "spinoff", "remake"):
+        franchise_query = based_on if based_on else f"{title} previous film"
+        search_queries.append(f"{franchise_query} box office reception")
+
     search = await asyncio.to_thread(
         _client.search,
         objective=objective,
@@ -107,9 +127,10 @@ competitive_agent = Agent(
     instruction=(
         "You have a tool, get_competitive_landscape, that searches the web "
         "for competitive positioning. You will be given title, release_year, "
-        "director, session_id, release_status, and region_hint as key=value "
-        "pairs; parse them and call the tool exactly once (region_hint may "
-        "be an empty string, pass it through as given). Then act as a "
+        "director, session_id, release_status, region_hint, source_type, and "
+        "based_on as key=value pairs; parse them and call the tool exactly "
+        "once (region_hint/source_type/based_on may be empty strings, pass "
+        "them through as given). Then act as a "
         "box-office and competitive-strategy analyst. Populate: "
         "competing_titles (up to 5 entries, each with the competitor's name, "
         "strength_vs_searched — its SPECIFIC edge over the searched title, "
@@ -129,6 +150,17 @@ competitive_agent = Agent(
         "truly have nothing to go on, not just because the question is "
         "hard. A vague 'unclear' when data exists is a worse answer than a "
         "confident read with less-than-perfect data.\n\n"
+        "franchise_history: ONLY when source_type is 'sequel', 'reboot', "
+        "'spinoff', or 'remake' — populate up to 5 entries naming the "
+        "prior installment(s) in the SAME series (not unrelated "
+        "competitors, those go in competing_titles) with whatever real "
+        "box_office figure and reception_note the excerpts give you. This "
+        "is a DIFFERENT question from competing_titles: 'how did the "
+        "earlier film(s) in this series do' rather than 'what else is out "
+        "right now'. Leave this empty for an original work, or if "
+        "source_type qualifies but the excerpts don't actually name a "
+        "specific prior film with real figures — never invent a "
+        "predecessor's numbers by assuming a typical franchise pattern.\n\n"
         "box_office: ONLY for release_status='released', populate budget, "
         "worldwide_gross, domestic_gross, and opening_weekend with whatever "
         "specific figures the excerpts actually give you (leave any of "

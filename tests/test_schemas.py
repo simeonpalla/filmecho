@@ -178,6 +178,17 @@ class TestGreenlightMemo:
                 war_room=_six_voices(),
             )
 
+    def test_verdict_accepts_insufficient_data(self):
+        """insufficient_data is a real, distinct verdict value — see
+        orchestration/evidence_guard.py for the deterministic check that
+        enforces it regardless of what the model itself decides."""
+        memo = GreenlightMemo(
+            headline="h", verdict="insufficient_data", confidence=15, why=["x"],
+            biggest_opportunity="o", biggest_risk="r", recommended_action="a",
+            war_room=_six_voices(),
+        )
+        assert memo.verdict == "insufficient_data"
+
     def test_war_room_voice_role_enum(self):
         with pytest.raises(ValidationError):
             WarRoomVoice(role="intern", insight="x")
@@ -203,6 +214,39 @@ class TestWebSentimentAndCompetitive:
     def test_web_sentiment_requires_overall_sentiment(self):
         with pytest.raises(ValidationError):
             WebSentimentResult()  # overall_sentiment has no default
+
+    def test_franchise_history_defaults_empty(self):
+        """Regression guard: an original work (or a sequel where nothing
+        concrete was found) must be constructible with zero franchise
+        history entries — this is bonus context, never a required guess."""
+        c = CompetitiveResult(risk="unclear", attention_assessment="No data.")
+        assert c.franchise_history == []
+
+    def test_franchise_history_accepts_real_entries(self):
+        from agents.schemas import FranchiseEntry
+        c = CompetitiveResult(
+            risk="low", attention_assessment="Strong franchise pull.",
+            franchise_history=[
+                FranchiseEntry(title="Dune: Part One", year=2021, box_office="$434 million worldwide", reception_note="Critically acclaimed"),
+                FranchiseEntry(title="Dune: Part Two", year=2024, box_office="$714 million worldwide", reception_note="Even stronger reception"),
+            ],
+        )
+        assert len(c.franchise_history) == 2
+        assert c.franchise_history[0].title == "Dune: Part One"
+
+    def test_franchise_history_entry_box_office_optional(self):
+        """A named prior film with no figure found is still valid — the
+        agent must not invent a number to fill the field."""
+        from agents.schemas import FranchiseEntry
+        entry = FranchiseEntry(title="Some Earlier Film")
+        assert entry.box_office is None
+        assert entry.year is None
+
+    def test_franchise_history_caps_at_five(self):
+        from agents.schemas import FranchiseEntry
+        six = [FranchiseEntry(title=f"Film {i}") for i in range(6)]
+        with pytest.raises(ValidationError):
+            CompetitiveResult(risk="unclear", attention_assessment="x", franchise_history=six)
 
     def test_competitive_result_risk_enum(self):
         with pytest.raises(ValidationError):

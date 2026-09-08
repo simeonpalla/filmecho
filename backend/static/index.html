@@ -130,6 +130,19 @@
   .logo-echo-wrapper { position: relative; display: inline-block; }
   .logo-echo-main { color: var(--gold-on-ink); position: relative; z-index: 2; font-style: italic; }
   .echo-trail { position: absolute; top: 0; left: 3px; color: var(--gold-on-ink); opacity: 0.35; z-index: 1; font-style: italic; }
+  /* A brief, periodic "signal glitch" on the echo trail — evokes a
+     transmission/surveillance-feed feel fitting the product name,
+     rather than a constantly-looping effect that would wear thin. */
+  @media (prefers-reduced-motion: no-preference) {
+    .echo-trail { animation: echoGlitch 7s ease-in-out infinite; }
+  }
+  @keyframes echoGlitch {
+    0%, 91%, 100% { opacity: 0.35; transform: translateX(0); }
+    92% { opacity: 0.65; transform: translateX(2px); }
+    93% { opacity: 0.1; transform: translateX(-2px); }
+    94% { opacity: 0.55; transform: translateX(1px); }
+    95% { opacity: 0.35; transform: translateX(0); }
+  }
 
   .tagline { color: var(--on-ink-muted); font-size: 0.95rem; margin: 0; }
 
@@ -518,6 +531,43 @@
   .confidence-bar-fill.tone-insufficient { background: var(--text-muted); }
 
   .greenlight-card h2 { font-family: var(--font-display); font-weight: 600; font-size: 1.55rem; margin: 14px 0 22px; line-height: 1.35; }
+
+  /* Compact header: poster thumbnail + verdict/confidence + opp/risk,
+     all in one glanceable row instead of stacked full-width text —
+     matches the "movie image / confidence / opportunity / risk" block
+     from the layout sketch. */
+  .memo-header-row { display: grid; grid-template-columns: 84px 1fr; gap: 16px; margin-bottom: 18px; }
+  @media (max-width: 480px) { .memo-header-row { grid-template-columns: 64px 1fr; } }
+  .memo-poster { width: 100%; aspect-ratio: 2/3; border-radius: 6px; object-fit: cover; background: var(--marquee-bg); border: 1px solid var(--border); }
+  .memo-poster-fallback { width: 100%; aspect-ratio: 2/3; border-radius: 6px; background: var(--marquee-bg); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; color: var(--gold-on-ink); font-family: var(--font-mono); font-size: 0.6rem; text-align: center; padding: 4px; }
+  .memo-header-right { display: flex; flex-direction: column; justify-content: center; gap: 8px; }
+
+  /* "Synthesizer" callout: one crisp line instead of a full headline +
+     paragraph — the confidence rationale already says why, this says
+     what, compactly. */
+  .synth-callout {
+    background: var(--marquee-bg); color: var(--on-ink); border-radius: 6px;
+    padding: 14px 18px; margin-bottom: 20px; font-family: var(--font-display);
+    font-style: italic; font-size: 1.05rem; line-height: 1.4;
+  }
+  .synth-callout .synth-tag { font-family: var(--font-mono); font-style: normal; font-size: 0.6rem; text-transform: uppercase; color: var(--gold-on-ink); display: block; margin-bottom: 6px; letter-spacing: 0.04em; }
+  .synth-callout .typewriter-cursor { display: inline-block; width: 2px; height: 1em; background: var(--gold-on-ink); vertical-align: text-bottom; margin-left: 2px; }
+  @media (prefers-reduced-motion: no-preference) {
+    .synth-callout .typewriter-cursor { animation: cursorBlink 0.9s step-end infinite; }
+  }
+  @keyframes cursorBlink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+
+  /* Detailed report toggle: evidence tabs are hidden by default per the
+     sketch (Export / Detailed report as the two closing actions) rather
+     than always visible — the memo above is meant to be the complete
+     glanceable artifact. */
+  .detail-toggle-row { text-align: center; margin: 22px 0 4px; }
+  #detail-toggle-btn {
+    background: none; border: 1px solid var(--brand-c); color: var(--brand-c);
+    font-family: var(--font-body); font-weight: 600; font-size: 0.88rem; padding: 10px 22px;
+    border-radius: 8px; cursor: pointer; transition: all 0.15s ease;
+  }
+  #detail-toggle-btn:hover { background: var(--brand-c); color: var(--on-ink); }
 
   .opp-risk-row { display: grid; grid-template-columns: 1fr; gap: 14px; margin-bottom: 22px; }
   @media (min-width: 640px) { .opp-risk-row { grid-template-columns: 1fr 1fr; } }
@@ -973,7 +1023,8 @@
     <div id="release-window-card" class="release-window-card"></div>
 
     <div class="export-row" id="export-row">
-      <button id="pdf-btn">Download PDF report</button>
+      <button id="pdf-btn">Export</button>
+      <button id="detail-toggle-btn">Detailed report ↓</button>
     </div>
 
     <div id="evidence-section" class="evidence-section">
@@ -1016,6 +1067,7 @@ const evidenceCollections = document.getElementById('evidence-collections');
 const exampleChips = document.getElementById('example-chips');
 const exportRow = document.getElementById('export-row');
 const pdfBtn = document.getElementById('pdf-btn');
+const detailToggleBtn = document.getElementById('detail-toggle-btn');
 const cacheNote = document.getElementById('cache-note');
 
 let activeSource = null;
@@ -1336,7 +1388,29 @@ const ROLE_META = {
   analyst: { icon: '\u{1F4CA}', label: 'The Analyst' },
 };
 
-function renderGreenlightMemo(memo, releaseStatus) {
+function typewriterInto(el, text, speedMs) {
+  // Respects prefers-reduced-motion — for that audience, just show the
+  // full text immediately rather than animating it in.
+  const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (reduceMotion || !text) { el.textContent = text || ''; return; }
+  el.textContent = '';
+  const cursor = document.createElement('span');
+  cursor.className = 'typewriter-cursor';
+  let i = 0;
+  const tick = () => {
+    el.textContent = text.slice(0, i);
+    el.appendChild(cursor);
+    i++;
+    if (i <= text.length) {
+      setTimeout(tick, speedMs || 14);
+    } else {
+      cursor.remove();
+    }
+  };
+  tick();
+}
+
+function renderGreenlightMemo(memo, releaseStatus, entity, youtubeData) {
   if (!memo) {
     greenlightCard.innerHTML = '<p class="empty-state">No memo was returned for this run.</p>';
     greenlightCard.classList.add('visible');
@@ -1363,25 +1437,45 @@ function renderGreenlightMemo(memo, releaseStatus) {
   confidenceBasisParts.push(`Based on ${sourcesUsed.length}/5 sources: ${sourcesLabel}.`);
   const confidenceBasis = confidenceBasisParts.join(' ');
 
+  // Poster thumbnail — reuses the same YouTube thumbnail already fetched
+  // for the hero banner, no new image source.
+  const posterUrl = youtubeData ? Object.values(youtubeData).map(v => v.thumbnail_url).find(u => u) : null;
+  const posterHtml = posterUrl
+    ? `<img class="memo-poster" src="${posterUrl}" alt="${(entity && entity.title) || ''}">`
+    : `<div class="memo-poster-fallback">${(entity && entity.title) || 'FILM'}</div>`;
+
   greenlightCard.innerHTML = `
-    <div class="verdict-row">
-      <span class="verdict-badge tone-${tone}"><span class="verdict-dot"></span>${VERDICT_LABELS[memo.verdict] || 'VERDICT UNCLEAR'}</span>
-      <span class="confidence-wrap">
-        Confidence: ${memo.confidence}%
-        <span class="confidence-bar"><span class="confidence-bar-fill tone-${tone}" style="width:${memo.confidence}%"></span></span>
-      </span>
+    <div class="memo-header-row">
+      ${posterHtml}
+      <div class="memo-header-right">
+        <div class="verdict-row">
+          <span class="verdict-badge tone-${tone}"><span class="verdict-dot"></span>${VERDICT_LABELS[memo.verdict] || 'VERDICT UNCLEAR'}</span>
+          <span class="confidence-wrap">
+            Confidence: ${memo.confidence}%
+            <span class="confidence-bar"><span class="confidence-bar-fill tone-${tone}" style="width:${memo.confidence}%"></span></span>
+          </span>
+        </div>
+        <div class="opp-risk-row" style="margin-bottom:0;">
+          <div class="opp-risk-tile opportunity"><div class="opp-risk-label">Biggest opportunity</div><div class="field-value">${memo.biggest_opportunity || ''}</div></div>
+          <div class="opp-risk-tile risk"><div class="opp-risk-label">Biggest risk</div><div class="field-value">${memo.biggest_risk || ''}</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="synth-callout">
+      <span class="synth-tag">Synthesizing agent</span>
+      <span id="synth-callout-text"></span>
     </div>
     <div class="confidence-basis">${confidenceBasis}</div>
-    <h2>${memo.headline || ''}</h2>
+
     <div class="field"><div class="field-label">Why</div><ul class="plain">${why}</ul></div>
-    <div class="opp-risk-row">
-      <div class="opp-risk-tile opportunity"><div class="opp-risk-label">Biggest opportunity</div><div class="field-value">${memo.biggest_opportunity || ''}</div></div>
-      <div class="opp-risk-tile risk"><div class="opp-risk-label">Biggest risk</div><div class="field-value">${memo.biggest_risk || ''}</div></div>
-    </div>
     <div class="field"><div class="field-label">Recommended action</div><div class="field-value">${memo.recommended_action || ''}</div></div>
     ${changesBlock}
     ${newsBlock}
   `;
+
+  const synthTextEl = document.getElementById('synth-callout-text');
+  if (synthTextEl) typewriterInto(synthTextEl, memo.headline || '', 12);
 }
 
 function renderWarRoom(voices) {
@@ -1590,8 +1684,24 @@ function renderCollections(competitive, youtubeData) {
       </div>
     </div>` : '';
 
+  const franchiseHistory = (competitive && competitive.franchise_history || []);
+  const franchiseBlock = franchiseHistory.length ? `
+    <div class="field">
+      <div class="field-label">Franchise history</div>
+      <div class="tile-row">
+        ${franchiseHistory.map(f => `
+          <div class="tile tone-neutral">
+            <div class="tile-label">${f.title}${f.year ? ` (${f.year})` : ''}</div>
+            <div class="tile-value" style="font-size:1rem">${f.box_office || '—'}</div>
+            ${f.reception_note ? `<div class="tile-sub">${f.reception_note}</div>` : ''}
+          </div>
+        `).join('')}
+      </div>
+    </div>` : '';
+
   evidenceCollections.innerHTML = `
     <h2>Collections &amp; comparative performance</h2>
+    ${franchiseBlock}
     ${verdictBlock}
     <div class="field"><div class="field-label">Box office</div>${boTiles}</div>
     ${ytBlock}
@@ -1709,6 +1819,7 @@ async function runBrief(forceRefresh = false) {
   releaseWindowCard.classList.remove('visible');
   evidenceSection.classList.remove('visible');
   evidenceCollectionsBtn.style.display = 'none';
+  if (detailToggleBtn) detailToggleBtn.textContent = 'Detailed report ↓';
   status.classList.remove('visible');
   resetProgress();
   progress.classList.add('visible');
@@ -1761,7 +1872,7 @@ async function runBrief(forceRefresh = false) {
       renderHero(entity, data.youtube);
       renderConfidenceNote(entity, result);
 
-      renderGreenlightMemo(result, entity.release_status);
+      renderGreenlightMemo(result, entity.release_status, entity, data.youtube);
       renderWarRoom(result.war_room);
       renderTimeline(data.sentiment_synthesis && data.sentiment_synthesis.timeline);
       renderReleaseWindow(data.competitive);
@@ -1771,8 +1882,9 @@ async function runBrief(forceRefresh = false) {
       renderNews(data.news);
 
       const isReleased = entity.release_status === 'released';
-      evidenceCollectionsBtn.style.display = isReleased ? '' : 'none';
-      if (isReleased) {
+      const hasFranchiseHistory = !!(data.competitive && data.competitive.franchise_history && data.competitive.franchise_history.length);
+      evidenceCollectionsBtn.style.display = (isReleased || hasFranchiseHistory) ? '' : 'none';
+      if (isReleased || hasFranchiseHistory) {
         renderCollections(data.competitive, data.youtube);
       } else {
         // If a previous (released) run left Collections as the active
@@ -1785,7 +1897,9 @@ async function runBrief(forceRefresh = false) {
         }
       }
 
-      evidenceSection.classList.add('visible');
+      // Evidence tabs are populated above but stay hidden by default —
+      // the memo card is meant to be the complete glanceable artifact;
+      // #detail-toggle-btn (wired below) reveals this on demand.
       exportRow.style.display = 'flex';
 
       renderCacheNote(entity, data);
@@ -1811,6 +1925,12 @@ exampleChips.addEventListener('click', (e) => {
   if (!chip) return;
   titleInput.value = chip.dataset.title;
   runBrief();
+});
+
+detailToggleBtn.addEventListener('click', () => {
+  const nowVisible = evidenceSection.classList.toggle('visible');
+  detailToggleBtn.textContent = nowVisible ? 'Detailed report ↑' : 'Detailed report ↓';
+  if (nowVisible) evidenceSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
 });
 
 pdfBtn.addEventListener('click', async () => {

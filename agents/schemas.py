@@ -179,6 +179,18 @@ class ReleaseWindowAdvice(BaseModel):
     )
 
 
+class FranchiseEntry(BaseModel):
+    """One prior installment in the same franchise/series — historical
+    grounding for a sequel/reboot/spinoff/remake, distinct from
+    competing_titles (which is about OTHER films competing for the same
+    release window, not this title's own history)."""
+
+    title: str = Field(description="The prior film's title.")
+    year: Optional[int] = Field(default=None, description="Release year, if the excerpts state one.")
+    box_office: Optional[str] = Field(default=None, description="Worldwide or domestic gross exactly as reported in the excerpts. Null if no figure was found — never estimate one.")
+    reception_note: str = Field(default="", description="One short phrase on how it was critically/commercially received, grounded in the excerpts. Empty string if not found.")
+
+
 class CompetitiveResult(BaseModel):
     competing_titles: list[CompetitorInfo] = Field(default_factory=list, max_length=5)
     attention_assessment: str = Field(description="1-2 sentences: is attention split, concentrated, or unaffected.")
@@ -202,6 +214,21 @@ class CompetitiveResult(BaseModel):
     release_window: ReleaseWindowAdvice = Field(
         default_factory=lambda: ReleaseWindowAdvice(congestion="unclear", reasoning="", suggested_direction="unclear"),
         description="ONLY meaningful for upcoming titles — for released titles the window is already fixed, leave at defaults.",
+    )
+    franchise_history: list[FranchiseEntry] = Field(
+        default_factory=list, max_length=5,
+        description=(
+            "ONLY populate when the title is a sequel/reboot/spinoff/remake (you "
+            "are told this via source_type/based_on) — prior installments in the "
+            "SAME series and how they performed, e.g. for a sequel this is the "
+            "earlier film(s)' box office and reception, not unrelated competing "
+            "titles (those belong in competing_titles instead). Leave empty for "
+            "an original work with no franchise history, or if source_type is "
+            "sequel/reboot/spinoff/remake but the excerpts don't actually name a "
+            "specific prior film with real figures. Every figure must come from "
+            "the excerpts verbatim, never estimated, averaged, or extrapolated "
+            "from 'similar franchises usually do X.'"
+        ),
     )
 
 

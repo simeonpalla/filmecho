@@ -303,6 +303,21 @@ def build_pdf(data: dict) -> bytes:
                         line += f" (their gross: {_esc(c['gross_estimate'])})"
                     story.append(Paragraph(line, s["bullet"]))
 
+    # --- Franchise history — shown regardless of release_status, since
+    # this is about how PRIOR installments did, not this title's own
+    # outcome (relevant for an upcoming sequel too, not just a released one) ---
+    franchise_history = competitive.get("franchise_history") or []
+    if franchise_history:
+        story.append(Paragraph("FRANCHISE HISTORY", s["h2"]))
+        for f in franchise_history:
+            year_bit = f" ({f['year']})" if f.get("year") else ""
+            title_line = f"<b>{_esc(f.get('title',''))}{year_bit}</b>"
+            if f.get("box_office"):
+                title_line += f" — {_esc(f['box_office'])}"
+            story.append(Paragraph(title_line, s["bullet"]))
+            if f.get("reception_note"):
+                story.append(Paragraph(_esc(f["reception_note"]), s["body"]))
+
     doc.build(story)
     buf.seek(0)
     return buf.read()

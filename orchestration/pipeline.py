@@ -149,6 +149,17 @@ def _entity_prompt(entity: EntityContext, region_hint: str = "") -> str:
     )
 
 
+def _competitive_entity_prompt(entity: EntityContext, region_hint: str = "") -> str:
+    """Same as _entity_prompt, plus source_type/based_on — competitive_agent
+    is the only branch that needs these, to look up franchise-history box
+    office for a sequel/reboot/spinoff/remake (see competitive_agent.py)."""
+    d = entity.as_dict()
+    return (
+        _entity_prompt(entity, region_hint)
+        + f" source_type={d['source_type']!r} based_on={d['based_on'] or ''!r}"
+    )
+
+
 async def _run_web_sentiment_branch(entity: EntityContext, user_id: str, region_hint: str) -> tuple[Optional[WebSentimentResult], list[str]]:
     return await _run_adk_agent(
         web_sentiment_agent, _entity_prompt(entity, region_hint), user_id,
@@ -158,7 +169,7 @@ async def _run_web_sentiment_branch(entity: EntityContext, user_id: str, region_
 
 async def _run_competitive_branch(entity: EntityContext, user_id: str, region_hint: str) -> tuple[Optional[CompetitiveResult], list[str]]:
     return await _run_adk_agent(
-        competitive_agent, _entity_prompt(entity, region_hint), user_id,
+        competitive_agent, _competitive_entity_prompt(entity, region_hint), user_id,
         session_id=f"comp_{uuid.uuid4().hex[:8]}", output_model=CompetitiveResult,
     )
 
