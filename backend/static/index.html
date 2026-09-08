@@ -61,6 +61,17 @@
        glass the moment it's available (no color guessing beforehand). */
     --glass-tint: rgba(20, 16, 36, 0.4);
     --glass-border: rgba(255, 255, 255, 0.22);
+    /* A fixed, always-present "aurora" of soft color blobs — used as the
+       marquee's and the loading screen's own background so they look
+       vivid and catchy on their own, regardless of which movie was
+       searched (or before one has been) — rather than depending on
+       whatever happens to be blurred through from the page behind them. */
+    --aurora-blobs:
+      linear-gradient(var(--glass-tint), var(--glass-tint)),
+      radial-gradient(ellipse 60% 75% at 10% 12%, rgba(255,95,174,0.65), transparent 62%),
+      radial-gradient(ellipse 60% 75% at 90% 8%, rgba(124,58,237,0.6), transparent 62%),
+      radial-gradient(ellipse 70% 85% at 50% 108%, rgba(6,182,212,0.55), transparent 62%),
+      radial-gradient(ellipse 45% 55% at 68% 55%, rgba(245,158,11,0.42), transparent 58%);
 
     /* A small set of colors reserved for the few spots that are always
        a dark "chip" or overlay regardless of the overall light theme —
@@ -144,7 +155,8 @@
      (see applyMoviePhoto() in JS), so the color is the real movie's,
      not guessed. Before that's known, it's just neutral dark glass. */
   .marquee-band {
-    background: var(--glass-tint);
+    background: var(--aurora-blobs);
+    background-color: #221a3a;
     backdrop-filter: blur(26px) saturate(220%);
     -webkit-backdrop-filter: blur(26px) saturate(220%);
     border: 1px solid var(--glass-border);
@@ -286,7 +298,7 @@
   .progress.visible { display: block; }
 
   .battle-header { text-align: center; margin-bottom: 14px; }
-  .battle-kicker { font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.08em; color: var(--gold-on-ink); text-transform: uppercase; }
+  .battle-kicker { font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.08em; color: var(--gold); text-transform: uppercase; }
   .battle-title { font-family: var(--font-display); font-weight: 800; font-style: italic; font-size: 1.3rem; color: var(--text); margin: 2px 0 6px; }
   .battle-subtitle { font-family: var(--font-body); font-size: 0.9rem; color: var(--text); }
   .battle-subtitle b { color: var(--brand-b); font-weight: 600; }
@@ -297,7 +309,8 @@
     border-radius: 20px;
     overflow: hidden;
     padding: 4px 14px 14px;
-    background: var(--glass-tint);
+    background: var(--aurora-blobs);
+    background-color: #221a3a;
     backdrop-filter: blur(26px) saturate(220%);
     -webkit-backdrop-filter: blur(26px) saturate(220%);
     border: 1px solid var(--glass-border);
@@ -682,9 +695,20 @@
      card since that's its real synthesizing role. --- */
   .war-room { display: none; max-width: 1180px; margin: 24px auto 0; }
   .war-room.visible { display: block; }
+  /* A pill with its own solid-ish backing, not bare text sitting
+     directly on the page — once a movie backdrop photo is behind it
+     (see #pageBackdrop), bare dark text over an unpredictable image can
+     lose contrast entirely, so this needs a background of its own
+     regardless of what's behind the page. */
   .war-room-title {
-    font-family: var(--font-display); font-weight: 700; font-size: 1rem;
-    color: var(--text); text-align: center; margin-bottom: 18px;
+    display: flex; width: fit-content; align-items: center; gap: 8px;
+    font-family: var(--font-display); font-weight: 700; font-size: 0.95rem;
+    color: #fff; margin: 0 auto 20px; padding: 9px 22px;
+    background: var(--glass-tint);
+    backdrop-filter: blur(20px) saturate(200%);
+    -webkit-backdrop-filter: blur(20px) saturate(200%);
+    border: 1px solid var(--glass-border);
+    border-radius: 999px; box-shadow: 0 6px 18px rgba(0,0,0,0.18);
   }
   .war-room-chat { display: flex; flex-direction: column; gap: 20px; max-width: 720px; margin: 0 auto; }
 
@@ -2325,6 +2349,12 @@ async function runBrief(forceRefresh = false) {
       const isReleased = entity.release_status === 'released';
       const hasFranchiseHistory = !!(data.competitive && data.competitive.franchise_history && data.competitive.franchise_history.length);
       evidenceCollectionsBtn.style.display = (isReleased || hasFranchiseHistory) ? '' : 'none';
+      // Name the tab for what it actually contains this run — an
+      // upcoming sequel with no box office of its own yet shouldn't be
+      // labeled "Collections" (which reads as this title's own numbers).
+      evidenceCollectionsBtn.textContent = isReleased
+        ? (hasFranchiseHistory ? 'Collections & Franchise' : 'Collections')
+        : 'Franchise History';
       if (isReleased || hasFranchiseHistory) {
         renderCollections(data.competitive, data.youtube);
       } else {

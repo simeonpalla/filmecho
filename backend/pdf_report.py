@@ -23,12 +23,21 @@ from reportlab.platypus import (
 )
 
 VERDICT_COLORS = {
-    "greenlight": colors.HexColor("#1f7a4d"),
-    "greenlight_with_changes": colors.HexColor("#a85d0a"),
-    "hold": colors.HexColor("#a63333"),
-    "pass": colors.HexColor("#a63333"),
-    "insufficient_data": colors.HexColor("#888888"),
+    "greenlight": colors.HexColor("#16a34a"),
+    "greenlight_with_changes": colors.HexColor("#f59e0b"),
+    "hold": colors.HexColor("#ef4444"),
+    "pass": colors.HexColor("#ef4444"),
+    "insufficient_data": colors.HexColor("#8b81a8"),
 }
+# The app's own brand accents (see index.html's :root --brand-a/-b/-c),
+# reused here so the PDF reads as the same product instead of a plain
+# ReportLab default document.
+BRAND_VIOLET = colors.HexColor("#7c3aed")
+BRAND_PINK = colors.HexColor("#ff5fae")
+BRAND_CYAN = colors.HexColor("#06b6d4")
+BRAND_GOLD = colors.HexColor("#f59e0b")
+INK = colors.HexColor("#221a3a")
+TEXT_MUTED = colors.HexColor("#6f6488")
 VERDICT_LABELS = {
     "greenlight": "GREENLIGHT",
     "greenlight_with_changes": "GREENLIGHT WITH CHANGES",
@@ -59,15 +68,17 @@ SOURCE_LABELS = {
 def _styles() -> dict:
     base = getSampleStyleSheet()
     return {
-        "title": ParagraphStyle("title", parent=base["Title"], fontSize=22, spaceAfter=2, textColor=colors.HexColor("#1a1a1a")),
-        "subtitle": ParagraphStyle("subtitle", parent=base["Normal"], fontSize=10, textColor=colors.HexColor("#666666"), spaceAfter=4),
-        "h2": ParagraphStyle("h2", parent=base["Heading2"], fontSize=14, spaceBefore=16, spaceAfter=8, textColor=colors.HexColor("#1a1a1a")),
-        "h3": ParagraphStyle("h3", parent=base["Heading3"], fontSize=11, spaceBefore=10, spaceAfter=4, textColor=colors.HexColor("#333333")),
-        "body": ParagraphStyle("body", parent=base["Normal"], fontSize=10, leading=14),
-        "bullet": ParagraphStyle("bullet", parent=base["Normal"], fontSize=10, leading=14, leftIndent=14),
-        "label": ParagraphStyle("label", parent=base["Normal"], fontSize=8, textColor=colors.HexColor("#888888"), spaceAfter=2, spaceBefore=6),
-        "quote": ParagraphStyle("quote", parent=base["Normal"], fontSize=10, leading=14, leftIndent=10, textColor=colors.HexColor("#333333"), fontName="Helvetica-Oblique"),
-        "footer": ParagraphStyle("footer", parent=base["Normal"], fontSize=8, textColor=colors.HexColor("#999999")),
+        "brandmark": ParagraphStyle("brandmark", parent=base["Normal"], fontSize=20, fontName="Helvetica-Bold", textColor=colors.white, spaceAfter=2),
+        "brandtag": ParagraphStyle("brandtag", parent=base["Normal"], fontSize=8.5, textColor=colors.HexColor("#e4defc")),
+        "title": ParagraphStyle("title", parent=base["Title"], fontSize=20, spaceAfter=2, textColor=INK, fontName="Helvetica-Bold"),
+        "subtitle": ParagraphStyle("subtitle", parent=base["Normal"], fontSize=10, textColor=TEXT_MUTED, spaceAfter=4),
+        "h2": ParagraphStyle("h2", parent=base["Heading2"], fontSize=14, spaceBefore=16, spaceAfter=8, textColor=BRAND_VIOLET, fontName="Helvetica-Bold"),
+        "h3": ParagraphStyle("h3", parent=base["Heading3"], fontSize=11, spaceBefore=10, spaceAfter=4, textColor=INK),
+        "body": ParagraphStyle("body", parent=base["Normal"], fontSize=10, leading=14, textColor=INK),
+        "bullet": ParagraphStyle("bullet", parent=base["Normal"], fontSize=10, leading=14, leftIndent=14, textColor=INK),
+        "label": ParagraphStyle("label", parent=base["Normal"], fontSize=8, textColor=BRAND_PINK, spaceAfter=2, spaceBefore=6, fontName="Helvetica-Bold"),
+        "quote": ParagraphStyle("quote", parent=base["Normal"], fontSize=10, leading=14, leftIndent=10, textColor=INK, fontName="Helvetica-Oblique"),
+        "footer": ParagraphStyle("footer", parent=base["Normal"], fontSize=8, textColor=TEXT_MUTED),
         "vlabel": ParagraphStyle("vlabel", parent=base["Normal"], textColor=colors.white, fontSize=13, fontName="Helvetica-Bold"),
         "vconf": ParagraphStyle("vconf", parent=base["Normal"], textColor=colors.white, fontSize=10, alignment=TA_LEFT),
     }
@@ -120,9 +131,26 @@ def build_pdf(data: dict) -> bytes:
     title = entity.get("title", "Untitled")
     release_status = entity.get("release_status", "unclear")
 
-    # --- Header ---
-    story.append(Paragraph("FILMECHO", s["title"]))
-    meta_bits = [_esc(title)]
+    # --- Header: a violet brand band echoing the app's own marquee,
+    # instead of plain black title text on white — this is the one place
+    # a reader forms their first impression of whether this looks like
+    # the same product they just used. ---
+    brand_band = Table(
+        [[Paragraph("FILM<font color='#ffe08a'>ECHO</font>", s["brandmark"])],
+         [Paragraph("The AI studio intelligence room", s["brandtag"])]],
+        colWidths=[None],
+    )
+    brand_band.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, -1), BRAND_VIOLET),
+        ("LEFTPADDING", (0, 0), (-1, -1), 14), ("RIGHTPADDING", (0, 0), (-1, -1), 14),
+        ("TOPPADDING", (0, 0), (0, 0), 10), ("BOTTOMPADDING", (0, 0), (0, 0), 2),
+        ("TOPPADDING", (0, 1), (0, 1), 0), ("BOTTOMPADDING", (0, 1), (0, 1), 10),
+    ]))
+    story.append(brand_band)
+    story.append(Spacer(1, 12))
+
+    story.append(Paragraph(_esc(title), s["title"]))
+    meta_bits = []
     if entity.get("director"):
         meta_bits.append(f"Dir. {_esc(entity['director'])}")
     date_bit = entity.get("release_date") or entity.get("release_year")
@@ -131,7 +159,7 @@ def build_pdf(data: dict) -> bytes:
     meta_bits.append(_esc(release_status))
     story.append(Paragraph(" &nbsp;|&nbsp; ".join(meta_bits), s["subtitle"]))
     story.append(Paragraph(f"Generated {datetime.now().strftime('%B %d, %Y')}", s["footer"]))
-    story.append(HRFlowable(width="100%", thickness=0.75, color=colors.HexColor("#dddddd"), spaceBefore=6, spaceAfter=14))
+    story.append(HRFlowable(width="100%", thickness=1, color=BRAND_PINK, spaceBefore=6, spaceAfter=14))
 
     # --- Verdict ---
     verdict = result.get("verdict") or "unclear"
@@ -172,10 +200,12 @@ def build_pdf(data: dict) -> bytes:
         colWidths=[None, None],
     )
     opp_risk.setStyle(TableStyle([
-        ("BOX", (0, 0), (0, 0), 0.75, colors.HexColor("#1f7a4d")),
-        ("BOX", (1, 0), (1, 0), 0.75, colors.HexColor("#a63333")),
-        ("LEFTPADDING", (0, 0), (-1, -1), 10), ("RIGHTPADDING", (0, 0), (-1, -1), 10),
-        ("TOPPADDING", (0, 0), (-1, -1), 8), ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
+        ("BACKGROUND", (0, 0), (0, 0), colors.HexColor("#dcfce7")),
+        ("BACKGROUND", (1, 0), (1, 0), colors.HexColor("#fee2e2")),
+        ("LINEBEFORE", (0, 0), (0, 0), 2.5, colors.HexColor("#16a34a")),
+        ("LINEBEFORE", (1, 0), (1, 0), 2.5, colors.HexColor("#ef4444")),
+        ("LEFTPADDING", (0, 0), (-1, -1), 12), ("RIGHTPADDING", (0, 0), (-1, -1), 12),
+        ("TOPPADDING", (0, 0), (-1, -1), 10), ("BOTTOMPADDING", (0, 0), (-1, -1), 10),
     ]))
     story.append(Spacer(1, 6))
     story.append(opp_risk)
@@ -199,9 +229,11 @@ def build_pdf(data: dict) -> bytes:
     war_room = result.get("war_room") or []
     if war_room:
         story.append(Paragraph("THE WAR ROOM", s["h2"]))
-        for voice in war_room:
+        role_colors = [BRAND_VIOLET, BRAND_GOLD, colors.HexColor("#a855f7"), colors.HexColor("#0ea5e9"), colors.HexColor("#fb923c"), BRAND_CYAN]
+        for i, voice in enumerate(war_room):
             role_label = ROLE_LABELS.get(voice.get("role"), voice.get("role", ""))
-            story.append(Paragraph(f"<b>{_esc(role_label)}</b>", s["h3"]))
+            role_style = ParagraphStyle(f"role{i}", parent=s["h3"], textColor=role_colors[i % len(role_colors)])
+            story.append(Paragraph(f"<b>{_esc(role_label)}</b>", role_style))
             story.append(Paragraph(f"\u201c{_esc(voice.get('insight', ''))}\u201d", s["quote"]))
 
     # --- Reputation timeline (previously missing from this export
