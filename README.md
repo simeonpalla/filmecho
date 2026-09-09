@@ -5,6 +5,7 @@ An AI "studio intelligence room" for a film title, upcoming or already released.
 The pipeline is **release-status-aware**: it detects (grounded against today's actual date, not a guess) whether a title has already come out, and asks a fundamentally different question depending on the answer — "how's the trailer landing" for an upcoming title vs. "how did critical opinion hold up over time, and what can we learn from the campaign" for one that's already released.
 
 **[Try the FilmECHO →](https://filmecho-795628182324.asia-southeast1.run.app/)**
+**[Demo Video →](https://vimeo.com/manage/videos/1225373014)**
 
 ## What you get
 
