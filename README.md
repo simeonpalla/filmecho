@@ -4,6 +4,8 @@ An AI "studio intelligence room" for a film title, upcoming or already released.
 
 The pipeline is **release-status-aware**: it detects (grounded against today's actual date, not a guess) whether a title has already come out, and asks a fundamentally different question depending on the answer — "how's the trailer landing" for an upcoming title vs. "how did critical opinion hold up over time, and what can we learn from the campaign" for one that's already released.
 
+**[Try the live demo →](https://filmecho-795628182324.asia-southeast1.run.app/)**
+
 ## What you get
 
 - **Greenlight Memo** — verdict (`greenlight` / `greenlight_with_changes` / `hold` / `pass` / `insufficient_data`), a confidence score with a one-sentence rationale naming which sources it's actually based on, biggest opportunity, biggest risk, and a recommended action.
@@ -221,5 +223,3 @@ gcloud run deploy filmecho \
 The secret resource names (`parallel-api-key`, `youtube-api-key`) are lowercase-hyphenated and don't need to match the uppercase env var names the code actually reads (`PARALLEL_API_KEY`, `YOUTUBE_API_KEY`) — `--set-secrets` is what connects the two.
 
 **Recommend adding `--min-instances 1` for a live demo specifically** — `MemoCache` and ADK's `InMemorySessionService` both live in process memory, so a Cloud Run cold start silently empties the cache and any in-flight session state.
-
-**Test the actual deployed `*.run.app` URL after deploying**, not just a local/Cloud Shell preview — in particular, confirm the SSE progress stream (`/api/brief/stream`) delivers events incrementally on the deployed URL and not all at once at the end; some managed platforms buffer streaming responses differently than local dev servers do. Also hard-refresh (or use a private/incognito window) when checking a redeploy — browsers can and do cache the static frontend bundle between deploys.
