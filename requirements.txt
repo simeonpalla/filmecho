@@ -3,7 +3,6 @@ google-adk
 google-genai
 parallel-web>=1.0.1
 google-api-python-client
-requests
 python-dotenv
 fastapi
 uvicorn[standard]

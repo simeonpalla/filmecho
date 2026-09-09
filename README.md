@@ -82,8 +82,7 @@ filmecho/
 │   ├── sentiment_synthesis.py     # combines web + YouTube sentiment + news dates → timeline
 │   ├── main_synthesis.py          # combines everything into the Greenlight Memo + War Room discussion
 │   ├── youtube_discovery_agent.py # YouTube search.list → candidate trailer video IDs (plain API, no LLM)
-│   ├── youtube_data_agent.py      # YouTube videos.list + commentThreads.list (plain API, no LLM)
-│   └── poster_agent.py            # TMDB poster lookup — NOT wired into the pipeline (see below)
+│   └── youtube_data_agent.py      # YouTube videos.list + commentThreads.list (plain API, no LLM)
 │
 ├── orchestration/
 │   ├── pipeline.py                # stream_pipeline() (SSE source of truth) + run_pipeline()
@@ -99,10 +98,6 @@ filmecho/
 │
 └── tests/                         # pytest — schemas, guardrails, cache, entity resolution degrade paths
 ```
-
-**`agents/poster_agent.py` is inactive infrastructure**, not dead weight left by accident: it was built, then the frontend was deliberately reverted to using YouTube trailer thumbnails instead of TMDB posters, so `pipeline.py` no longer calls it. It's left in the repo (with its own passing test) in case posters get re-enabled later; `TMDB_API_KEY` is optional and only matters if you wire it back in yourself.
-
-**Not built**: a Reddit sentiment agent (lowest priority in the original plan — the agents above already cover trailer/critic sentiment, YouTube comments, competitive positioning, production news, cast reception, and marketing).
 
 ## Setup
 
@@ -128,7 +123,6 @@ Then fill in `.env` — see the table below and the comments in `.env.example` i
 | `FILMECHO_GEMINI_MODEL` | No (default `gemini-2.5-flash`) | Every agent | **Verify against your own project before trusting it** — model availability differs between AI Studio/Vertex and between projects/regions |
 | `FILMECHO_TEMPERATURE` | No (default `0.1`) | Every agent's `generate_content_config` | Lower = more consistent/grounded |
 | `FILMECHO_UPCOMING_CACHE_TTL_SECONDS` | No (default `1200`) | `memo_cache.py` | Only affects upcoming/unclear titles — released titles cache indefinitely regardless |
-| `TMDB_API_KEY` | No, unused by default | `poster_agent.py` | Only matters if you re-wire `fetch_poster()` back into `pipeline.py` yourself |
 
 For deployment, the two secrets (`PARALLEL_API_KEY`, `YOUTUBE_API_KEY`) become Cloud Run `--set-secrets` via Secret Manager, and the rest become `--set-env-vars` — see [Deploy to Cloud Run](#deploy-to-cloud-run).
 
@@ -154,7 +148,7 @@ python -m orchestration.pipeline
 python -m pytest tests/ -v
 ```
 
-Exercises the Pydantic schemas directly (rejecting invalid enum values, structural constraints), the three guardrail modules (`refusal_guard`, `evidence_guard`, `memo_cache`) in isolation, `poster_agent`, and `entity_context.resolve_entity`'s degrade paths via injected mock clients (`parallel_client`/`genai_client` params exist specifically for this). No API keys or network access required for the test suite itself — but it does require `google-adk` and the rest of `requirements.txt` actually installed, since several agent modules import `google.adk.agents.Agent` at module load time.
+Exercises the Pydantic schemas directly (rejecting invalid enum values, structural constraints), the three guardrail modules (`refusal_guard`, `evidence_guard`, `memo_cache`) in isolation, and `entity_context.resolve_entity`'s degrade paths via injected mock clients (`parallel_client`/`genai_client` params exist specifically for this). No API keys or network access required for the test suite itself — but it does require `google-adk` and the rest of `requirements.txt` actually installed, since several agent modules import `google.adk.agents.Agent` at module load time.
 
 This does **not** test the live agent pipeline end to end — that needs real API keys and is what `python -m orchestration.pipeline` (or a real browser session against the running server) is for.
 
@@ -188,25 +182,3 @@ Requires, before this will work:
 **Recommend `--min-instances 1` for a live demo specifically** — `MemoCache` and ADK's `InMemorySessionService` both live in process memory, so a Cloud Run cold start silently empties the cache and any in-flight session state.
 
 **Test the actual deployed `*.run.app` URL after deploying**, not just a local/Cloud Shell preview — in particular, confirm the SSE progress stream (`/api/brief/stream`) delivers events incrementally on the deployed URL and not all at once at the end; some managed platforms buffer streaming responses differently than local dev servers do. Also hard-refresh (or use a private/incognito window) when checking a redeploy — browsers can and do cache the static frontend bundle between deploys.
-
-## What's actually enforced vs. what to double-check yourself
-
-**Enforced by the code, not just hoped for:**
-- Every agent's output shape (Pydantic `output_schema`, framework-level validation)
-- Entity resolution confidence + disambiguation for ambiguous titles
-- `lessons_learned`/`what_we_would_change` only populate for the correct release status, never guessed for the wrong one
-- The evidence threshold on the final verdict badge (`evidence_guard.py`) — a model-produced verdict on thin evidence gets overridden in code, not just discouraged in the prompt
-- Graceful degradation: any single agent failing (or refusing) returns `None` for that field rather than crashing the whole run or silently leaking refusal text
-
-**Not independently verified — check before relying on them:**
-- ADK's `output_schema` + `tools` combination on the same agent (used by every fetch agent) is documented as supported but wasn't tested against every model/region combination
-- SSE streaming behavior specifically on Cloud Run's infrastructure (works locally; verify post-deploy)
-- Whether the per-title API cost (6-7 Parallel searches, ~13-14 Gemini calls) stays comfortably within your Google Cloud credit for repeated demo runs
-
-## Findings / learnings
-
-- Google's Gemini Developer API (AI Studio) and Vertex AI are billed through **entirely separate systems** — a Google Cloud promotional credit does not apply to AI Studio's prepay balance unless you first fund that balance yourself, unlike Vertex AI billing, which draws on ordinary Cloud Billing credits directly. This is easy to miss and will silently 429 you.
-- `asyncio.as_completed` (vs. `asyncio.gather`) turned out to matter for more than just "how the code looks" — it's what lets the frontend show honest, real-time progress instead of a fixed timer that just guesses how long five parallel agents will take.
-- Structured output (`output_schema`) should have been the default from the start rather than added after a schema-drift bug surfaced in testing — free-text-then-regex-parse is exactly the kind of thing that looks fine until an LLM decides to nest a field somewhere slightly different.
-- A prompt instruction is a request, not a guarantee: the model was explicitly told never to show a confident-looking verdict on thin evidence, and still did it in testing. `evidence_guard.py` exists because "don't do X" in a prompt is not the same as X being actually impossible.
-- Five independently-researched Parallel Search branches genuinely can (and do) disagree with each other about the same real-world fact — e.g. cast reception reporting an actor as returning while production/cast news reports the opposite. That's not a bug to average away; `main_synthesis.py`'s cross-check instruction and the War Room's `disagreement`-flagged turns are built to surface it honestly instead of silently picking whichever framing sounded more confident.
