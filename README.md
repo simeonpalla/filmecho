@@ -1,10 +1,10 @@
-# Filmecho
+# FilmECHO
 
 An AI "studio intelligence room" for a film title, upcoming or already released. Enter a title and get a verdict-first **Greenlight Memo**: a recommendation, a confidence score with the reasoning behind it, the biggest opportunity and biggest risk, and a live-rendered "War Room" of six studio personas actually discussing the evidence — not six independent one-liners, a real multi-turn discussion the synthesis model authors from the same data every persona is grounded in. Built for the Google Cloud Agentic Cinema Hackathon, Parallel track.
 
 The pipeline is **release-status-aware**: it detects (grounded against today's actual date, not a guess) whether a title has already come out, and asks a fundamentally different question depending on the answer — "how's the trailer landing" for an upcoming title vs. "how did critical opinion hold up over time, and what can we learn from the campaign" for one that's already released.
 
-**[Try the live demo →](https://filmecho-795628182324.asia-southeast1.run.app/)**
+**[Try the FilmECHO →](https://filmecho-795628182324.asia-southeast1.run.app/)**
 
 ## What you get
 
