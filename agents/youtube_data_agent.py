@@ -26,8 +26,8 @@ def get_video_stats(video_ids: list[str]) -> dict[str, dict]:
 
     Returns:
         Dict keyed by video_id, each value {title, view_count, like_count,
-        comment_count}. Missing/deleted videos are simply absent from the
-        result rather than raising.
+        comment_count, published_at}. Missing/deleted videos are simply
+        absent from the result rather than raising.
     """
     if not video_ids:
         return {}
@@ -52,6 +52,7 @@ def get_video_stats(video_ids: list[str]) -> dict[str, dict]:
             "like_count": int(statistics.get("likeCount", 0)),
             "comment_count": int(statistics.get("commentCount", 0)),
             "thumbnail_url": thumb.get("url", ""),
+            "published_at": snippet.get("publishedAt", ""),
         }
     return stats
 

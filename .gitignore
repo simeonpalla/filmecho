@@ -1,5 +1,14 @@
 .env
+.env.local
 venv/
+.venv/
 __pycache__/
 *.pyc
+*.pyo
+.pytest_cache/
+.mypy_cache/
+*.egg-info/
+.DS_Store
+.vscode/
+.idea/
 test/

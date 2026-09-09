@@ -19,9 +19,10 @@ import os
 
 from google.adk.agents import Agent
 from google.adk.tools import FunctionTool
+from google.genai import types as genai_types
 from parallel import Parallel
 
-from agents.entity_context import GEMINI_MODEL
+from agents.entity_context import GEMINI_MODEL, GROUNDING_TEMPERATURE
 from agents.schemas import WebSentimentResult
 
 _client = Parallel(api_key=os.environ["PARALLEL_API_KEY"])
@@ -119,4 +120,5 @@ web_sentiment_agent = Agent(
     ),
     tools=[web_sentiment_tool],
     output_schema=WebSentimentResult,
+    generate_content_config=genai_types.GenerateContentConfig(temperature=GROUNDING_TEMPERATURE),
 )

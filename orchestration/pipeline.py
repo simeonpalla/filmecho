@@ -14,8 +14,9 @@ Sequencing:
               (+ Reddit, once built) into one structured sentiment read.
     Stage 4 — Main Synthesis Agent combines Sentiment Synthesis +
               Competitive + News + Cast + Marketing into the final
-              FinalBrief, populating lessons_learned/worth_watching only
-              for released titles.
+              GreenlightMemo (verdict-first, single studio view — no
+              separate fan-facing brief; see agents/main_synthesis.py's
+              docstring for why that split was removed).
 
 stream_pipeline() is the source of truth: an async generator that yields
 a progress event as each stage genuinely completes (Stage 2's branches
@@ -27,6 +28,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import os
 import uuid
 from typing import AsyncIterator, Optional, Type, TypeVar
 
@@ -49,18 +51,29 @@ from agents.main_synthesis import build_main_synthesis_prompt, main_synthesis_ag
 from agents.marketing_agent import marketing_agent
 from agents.news_cast_agent import news_cast_agent
 from agents.schemas import (
-    CastResult, CompetitiveResult, FinalBrief, MarketingResult,
+    CastResult, CompetitiveResult, GreenlightMemo, MarketingResult,
     NewsResult, SentimentSynthesisResult, WebSentimentResult,
 )
 from agents.sentiment_synthesis import build_sentiment_prompt, sentiment_synthesis_agent
 from agents.web_sentiment_agent import web_sentiment_agent
 from agents.youtube_data_agent import collect_youtube_data
 from agents.youtube_discovery_agent import discover_trailer_videos
+from orchestration.evidence_guard import count_available_sources, enforce_evidence_threshold
+from orchestration.memo_cache import memo_cache
+from orchestration.refusal_guard import drop_if_refusal
 
 APP_NAME = "filmecho"
 _session_service = InMemorySessionService()
 
 _ModelT = TypeVar("_ModelT", bound=BaseModel)
+
+# How long an upcoming/unclear title's memo is served from cache before a
+# fresh pipeline run happens again. Short enough that it can't plausibly
+# hide real day-to-day movement in pre-release buzz, long enough to
+# absorb the live-search-noise flakiness described in memo_cache.py's
+# docstring (a title's confidence swinging 78->90 a minute apart wasn't
+# the world changing, it was Parallel returning different excerpts).
+UPCOMING_CACHE_TTL_SECONDS = int(os.environ.get("FILMECHO_UPCOMING_CACHE_TTL_SECONDS", str(20 * 60)))
 
 _FETCH_STAGE_LABELS = {
     "web_sentiment": "Web sentiment analysis complete",
@@ -74,14 +87,23 @@ _FETCH_STAGE_LABELS = {
 
 async def _run_adk_agent(
     agent, prompt: str, user_id: str, session_id: str, output_model: Type[_ModelT]
-) -> Optional[_ModelT]:
-    """Run a single turn against an ADK agent and parse its structured output.
+) -> tuple[Optional[_ModelT], list[str]]:
+    """Run a single turn against an ADK agent, parse its structured output,
+    and capture a human-readable log of the actual tool calls it made.
 
     Every agent this pipeline calls declares output_schema, so ADK
     guarantees the final response text is valid JSON matching that model.
-    Returns None on any failure, so a broken agent call degrades one field
-    of the final brief instead of crashing the whole pipeline run.
+    Returns (None, log) on any failure, so a broken agent call degrades one
+    field of the final brief instead of crashing the whole pipeline run —
+    the log is still returned even on failure, so the activity feed shows
+    what was attempted before the failure.
+
+    The activity log is built from ADK's own Event.get_function_calls() /
+    get_function_responses() (confirmed against ADK's source, not guessed),
+    not from anything this codebase invents — it's a direct, honest trace
+    of what actually happened, not a simulated "looks busy" animation.
     """
+    log: list[str] = []
     try:
         await _session_service.create_session(
             app_name=APP_NAME, user_id=user_id, session_id=session_id
@@ -93,19 +115,28 @@ async def _run_adk_agent(
         async for event in runner.run_async(
             user_id=user_id, session_id=session_id, new_message=content
         ):
+            for call in event.get_function_calls():
+                args_summary = ", ".join(f"{k}={v!r}" for k, v in list(call.args.items())[:2])
+                log.append(f"calling {call.name}({args_summary}, ...)")
+            for resp in event.get_function_responses():
+                log.append(f"{resp.name} returned")
             if event.is_final_response() and event.content and event.content.parts:
                 final_text = event.content.parts[0].text
 
         if not final_text:
             print(f"[pipeline] Agent '{agent.name}' returned no content.")
-            return None
-        return output_model.model_validate_json(final_text)
+            log.append("no content returned")
+            return None, log
+        log.append("structured output parsed")
+        return output_model.model_validate_json(final_text), log
     except ValidationError as exc:
         print(f"[pipeline] Agent '{agent.name}' output failed schema validation: {exc}")
-        return None
+        log.append("output failed schema validation")
+        return None, log
     except Exception as exc:  # noqa: BLE001
         print(f"[pipeline] Agent '{agent.name}' failed: {exc}")
-        return None
+        log.append(f"failed: {exc}")
+        return None, log
 
 
 def _entity_prompt(entity: EntityContext, region_hint: str = "") -> str:
@@ -118,68 +149,99 @@ def _entity_prompt(entity: EntityContext, region_hint: str = "") -> str:
     )
 
 
-async def _run_web_sentiment_branch(entity: EntityContext, user_id: str, region_hint: str) -> Optional[WebSentimentResult]:
+def _competitive_entity_prompt(entity: EntityContext, region_hint: str = "") -> str:
+    """Same as _entity_prompt, plus source_type/based_on — competitive_agent
+    is the only branch that needs these, to look up franchise-history box
+    office for a sequel/reboot/spinoff/remake (see competitive_agent.py)."""
+    d = entity.as_dict()
+    return (
+        _entity_prompt(entity, region_hint)
+        + f" source_type={d['source_type']!r} based_on={d['based_on'] or ''!r}"
+    )
+
+
+async def _run_web_sentiment_branch(entity: EntityContext, user_id: str, region_hint: str) -> tuple[Optional[WebSentimentResult], list[str]]:
     return await _run_adk_agent(
         web_sentiment_agent, _entity_prompt(entity, region_hint), user_id,
         session_id=f"ws_{uuid.uuid4().hex[:8]}", output_model=WebSentimentResult,
     )
 
 
-async def _run_competitive_branch(entity: EntityContext, user_id: str, region_hint: str) -> Optional[CompetitiveResult]:
+async def _run_competitive_branch(entity: EntityContext, user_id: str, region_hint: str) -> tuple[Optional[CompetitiveResult], list[str]]:
     return await _run_adk_agent(
-        competitive_agent, _entity_prompt(entity, region_hint), user_id,
+        competitive_agent, _competitive_entity_prompt(entity, region_hint), user_id,
         session_id=f"comp_{uuid.uuid4().hex[:8]}", output_model=CompetitiveResult,
     )
 
 
-async def _run_news_branch(entity: EntityContext, user_id: str, region_hint: str) -> Optional[NewsResult]:
+async def _run_news_branch(entity: EntityContext, user_id: str, region_hint: str) -> tuple[Optional[NewsResult], list[str]]:
     return await _run_adk_agent(
         news_cast_agent, _entity_prompt(entity, region_hint), user_id,
         session_id=f"news_{uuid.uuid4().hex[:8]}", output_model=NewsResult,
     )
 
 
-async def _run_cast_branch(entity: EntityContext, user_id: str, region_hint: str) -> Optional[CastResult]:
+async def _run_cast_branch(entity: EntityContext, user_id: str, region_hint: str) -> tuple[Optional[CastResult], list[str]]:
     return await _run_adk_agent(
         cast_agent, _entity_prompt(entity, region_hint), user_id,
         session_id=f"cast_{uuid.uuid4().hex[:8]}", output_model=CastResult,
     )
 
 
-async def _run_marketing_branch(entity: EntityContext, user_id: str, region_hint: str) -> Optional[MarketingResult]:
+async def _run_marketing_branch(entity: EntityContext, user_id: str, region_hint: str) -> tuple[Optional[MarketingResult], list[str]]:
     return await _run_adk_agent(
         marketing_agent, _entity_prompt(entity, region_hint), user_id,
         session_id=f"mktg_{uuid.uuid4().hex[:8]}", output_model=MarketingResult,
     )
 
 
-async def _run_youtube_branch(entity: EntityContext) -> dict:
+async def _run_youtube_branch(entity: EntityContext) -> tuple[dict, list[str]]:
+    """Same (data, log) shape as the five ADK-agent branches, for a
+    uniform activity feed even though this branch is plain function calls,
+    not an LLM agent — the log here is just as honest, it's the real
+    YouTube API calls made, not simulated activity."""
+    log: list[str] = []
     d = entity.as_dict()
+    log.append(f"calling youtube.search.list(q={d['title']!r})")
     videos = await asyncio.to_thread(
         discover_trailer_videos, d["title"], str(d["release_year"] or "")
     )
     video_ids = [v["video_id"] for v in videos]
     if not video_ids:
         print("[pipeline] YouTube discovery found no videos; degrading gracefully.")
-        return {}
+        log.append("no trailer videos found")
+        return {}, log
+    log.append(f"found {len(video_ids)} candidate videos")
+    log.append("calling youtube.videos.list + commentThreads.list")
     try:
-        return await asyncio.to_thread(collect_youtube_data, video_ids)
+        data = await asyncio.to_thread(collect_youtube_data, video_ids)
+        log.append("YouTube data collected")
+        return data, log
     except Exception as exc:  # noqa: BLE001
         print(f"[pipeline] YouTube data branch failed: {exc}")
-        return {}
+        log.append(f"failed: {exc}")
+        return {}, log
 
 
 async def _named(name: str, coro) -> tuple[str, object]:
-    """Tag a branch coroutine's result with its name for as_completed()."""
+    """Tag a branch coroutine's result with its name for as_completed().
+
+    Every branch coroutine now returns (parsed_result_or_None, activity_log)
+    — even on an unexpected raise here, this returns that same shape
+    (None, [log line]) rather than a bare None, so every downstream
+    unpacking site can rely on the tuple shape unconditionally.
+    """
     try:
         result = await coro
     except Exception as exc:  # noqa: BLE001
         print(f"[pipeline] branch '{name}' raised unexpectedly: {exc}")
-        result = None
+        result = (None, [f"failed: {exc}"])
     return name, result
 
 
-async def stream_pipeline(title: str, user_id: str = "filmecho_user", region_hint: str = "") -> AsyncIterator[dict]:
+async def stream_pipeline(
+    title: str, user_id: str = "filmecho_user", region_hint: str = "", force_refresh: bool = False,
+) -> AsyncIterator[dict]:
     """Run the full pipeline, yielding progress events as each stage completes.
 
     Args:
@@ -191,16 +253,28 @@ async def stream_pipeline(title: str, user_id: str = "filmecho_user", region_hin
             that market rather than defaulting to US/UK. Empty string if
             unavailable — every agent instruction treats that as "no
             regional bias," not an error.
+        force_refresh: If True, skip any cache hit (permanent for a
+            released title, short-TTL for upcoming/unclear) and recompute
+            now, overwriting the cache with the fresh result. This is the
+            deliberate escape hatch for whenever a memo SHOULD change:
+            genuinely new data, a re-release, or just wanting a guaranteed-
+            current read right now rather than whatever's cached.
 
     Yields:
         dicts with an "event" key:
         - {"event": "stage", "stage": <name>, "message": <str>} — a stage
           genuinely finished. Order for the six Stage 2 branches reflects
           real completion order, not a fixed guess.
+        - {"event": "activity", "stage": <name>, "log": [<str>, ...]} —
+          the real tool calls that stage made (built from ADK's own
+          Event.get_function_calls()/get_function_responses(), not
+          simulated), emitted right after that stage's "stage" event.
         - {"event": "error", "message": <str>} — unrecoverable failure;
           no further events follow.
         - {"event": "result", "data": <dict>} — always the last event on
-          success, same shape run_pipeline() returns.
+          success, same shape run_pipeline() returns. For a cache hit,
+          `data["served_from_cache"]` is True and `data["cached_at"]`
+          gives when the underlying agents actually ran.
     """
     yield {"event": "stage", "stage": "entity_resolution",
            "message": "Resolving title and checking release status..."}
@@ -219,6 +293,43 @@ async def stream_pipeline(title: str, user_id: str = "filmecho_user", region_hin
         yield {"event": "stage", "stage": "entity_resolution",
                "message": f"Resolved: {entity.canonical_title or entity.title}{status_note}"}
 
+    # A released title's facts don't change between queries, so it's
+    # cached indefinitely (ttl_seconds=None). An upcoming/unclear title
+    # DOES need to reflect real movement over days — but it does NOT
+    # meaningfully change minute-to-minute, and testing showed it was
+    # producing visibly different confidence scores and even
+    # contradictory cast facts within a single minute. That's not real
+    # freshness, it's live-search noise (Parallel returning a different
+    # excerpt set on back-to-back calls) — so upcoming/unclear titles get
+    # a short TTL instead of "never cache," trading away zero genuine
+    # freshness while eliminating that flakiness.
+    canonical_title = entity.canonical_title or entity.title
+    is_released = entity.release_status == "released"
+    ttl_seconds = None if is_released else UPCOMING_CACHE_TTL_SECONDS
+
+    if not force_refresh:
+        cached = memo_cache.get(canonical_title, entity.release_year, ttl_seconds=ttl_seconds)
+        if cached is not None:
+            if is_released:
+                message = (
+                    f"Using the frozen memo for this released title (originally computed {cached['cached_at']}). "
+                    "Released titles aren't re-researched on every query — use \"Refresh this memo\" if "
+                    "something genuinely new happened (re-release, anniversary spike, new data)."
+                )
+            else:
+                message = (
+                    f"Using the recently computed memo for this title (computed {cached['cached_at']}, "
+                    f"cached for up to {UPCOMING_CACHE_TTL_SECONDS // 60} minutes to avoid answers changing "
+                    "between back-to-back queries). Use \"Refresh this memo\" for a guaranteed-current read."
+                )
+            yield {"event": "stage", "stage": "cache_hit", "message": message}
+            yield {"event": "result", "data": cached}
+            return
+    else:
+        memo_cache.invalidate(canonical_title, entity.release_year)
+        yield {"event": "stage", "stage": "cache_refresh",
+               "message": "Forcing a fresh recompute for this title, overwriting any cached memo."}
+
     yield {"event": "stage", "stage": "fetch",
            "message": "Running web sentiment, competitive, news, cast, marketing, and YouTube agents..."}
 
@@ -232,39 +343,54 @@ async def stream_pipeline(title: str, user_id: str = "filmecho_user", region_hin
     ]
     branch_results: dict[str, object] = {}
     for coro in asyncio.as_completed(branches):
-        name, result = await coro
-        branch_results[name] = result
+        name, (parsed, log) = await coro
+        branch_results[name] = parsed
         yield {"event": "stage", "stage": name, "message": _FETCH_STAGE_LABELS[name]}
+        yield {"event": "activity", "stage": name, "log": log}
 
-    web_sentiment: Optional[WebSentimentResult] = branch_results.get("web_sentiment")
+    web_sentiment: Optional[WebSentimentResult] = drop_if_refusal("web_sentiment", branch_results.get("web_sentiment"))
     youtube_data: dict = branch_results.get("youtube") or {}
-    competitive: Optional[CompetitiveResult] = branch_results.get("competitive")
-    news: Optional[NewsResult] = branch_results.get("news")
-    cast: Optional[CastResult] = branch_results.get("cast")
-    marketing: Optional[MarketingResult] = branch_results.get("marketing")
+    competitive: Optional[CompetitiveResult] = drop_if_refusal("competitive", branch_results.get("competitive"))
+    news: Optional[NewsResult] = drop_if_refusal("news", branch_results.get("news"))
+    cast: Optional[CastResult] = drop_if_refusal("cast", branch_results.get("cast"))
+    marketing: Optional[MarketingResult] = drop_if_refusal("marketing", branch_results.get("marketing"))
 
     yield {"event": "stage", "stage": "sentiment_synthesis",
            "message": "Synthesizing sentiment across sources..."}
-    sentiment_prompt = build_sentiment_prompt(web_sentiment, youtube_data)
-    sentiment_synthesis = await _run_adk_agent(
+    sentiment_prompt = build_sentiment_prompt(web_sentiment, youtube_data, entity.release_date, news=news)
+    sentiment_synthesis, sentiment_log = await _run_adk_agent(
         sentiment_synthesis_agent, sentiment_prompt, user_id,
         session_id=f"sent_{uuid.uuid4().hex[:8]}", output_model=SentimentSynthesisResult,
     )
+    sentiment_synthesis = drop_if_refusal("sentiment_synthesis", sentiment_synthesis)
     yield {"event": "stage", "stage": "sentiment_synthesis", "message": "Sentiment synthesis complete"}
+    yield {"event": "activity", "stage": "sentiment_synthesis", "log": sentiment_log}
 
-    yield {"event": "stage", "stage": "main_synthesis", "message": "Writing the studio and fan briefs..."}
+    yield {"event": "stage", "stage": "main_synthesis", "message": "Convening the war room and writing the memo..."}
     main_prompt = build_main_synthesis_prompt(entity, sentiment_synthesis, competitive, news, cast, marketing, region_hint)
-    final_brief = await _run_adk_agent(
+    memo, main_log = await _run_adk_agent(
         main_synthesis_agent, main_prompt, user_id,
-        session_id=f"main_{uuid.uuid4().hex[:8]}", output_model=FinalBrief,
+        session_id=f"main_{uuid.uuid4().hex[:8]}", output_model=GreenlightMemo,
     )
+    # The final memo is user-facing text, so this check matters most
+    # here — a refusal that slipped past every upstream guard would be
+    # directly visible in the Greenlight Memo itself.
+    memo = drop_if_refusal("main_synthesis", memo)
+    yield {"event": "activity", "stage": "main_synthesis", "log": main_log}
 
-    result: dict = final_brief.model_dump() if final_brief else {
-        "studio_brief": None, "fan_pulse": None, "sources_used": [],
+    result: dict = memo.model_dump() if memo else {
+        "verdict": None, "confidence": 0, "why": [], "war_room": [], "war_room_transcript": [], "sources_used": [],
     }
     result["entity_confidence"] = entity.confidence
     result["disambiguation_note"] = entity.disambiguation_note
     result["release_status"] = entity.release_status
+
+    # Deterministic guardrail, not a prompt suggestion — see
+    # evidence_guard.py's docstring for why this has to be code, not an
+    # instruction. Overrides verdict/confidence/headline in place when
+    # too few upstream sources actually returned data.
+    available_count = count_available_sources(sentiment_synthesis, competitive, news, cast, marketing)
+    result = enforce_evidence_threshold(result, available_count)
 
     payload = {
         "entity": entity.as_dict(),
@@ -277,10 +403,21 @@ async def stream_pipeline(title: str, user_id: str = "filmecho_user", region_hin
         "sentiment_synthesis": sentiment_synthesis.model_dump() if sentiment_synthesis else None,
         "result": result,
     }
+
+    # Cache every fresh result — released titles are served back
+    # indefinitely (see the ttl_seconds=None read above), upcoming/
+    # unclear titles are served back for UPCOMING_CACHE_TTL_SECONDS to
+    # absorb live-search noise, then this same write path naturally
+    # produces a fresh entry on the next post-expiry request. See
+    # memo_cache.py's docstring and the force_refresh escape hatch.
+    memo_cache.set(canonical_title, entity.release_year, payload)
+
     yield {"event": "result", "data": payload}
 
 
-async def run_pipeline(title: str, user_id: str = "filmecho_user", region_hint: str = "") -> dict:
+async def run_pipeline(
+    title: str, user_id: str = "filmecho_user", region_hint: str = "", force_refresh: bool = False,
+) -> dict:
     """Non-streaming wrapper around stream_pipeline, for the CLI and tests.
 
     Returns:
@@ -291,7 +428,7 @@ async def run_pipeline(title: str, user_id: str = "filmecho_user", region_hint: 
             without ever producing a result.
     """
     final_payload = None
-    async for event in stream_pipeline(title, user_id, region_hint):
+    async for event in stream_pipeline(title, user_id, region_hint, force_refresh=force_refresh):
         if event["event"] == "result":
             final_payload = event["data"]
         elif event["event"] == "error":

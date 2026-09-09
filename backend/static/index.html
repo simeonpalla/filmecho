@@ -6,39 +6,87 @@
 <title>Filmecho</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #0a0912;
-    --bg-wash: radial-gradient(ellipse 1000px 600px at 15% -10%, rgba(167,139,250,0.14), transparent 60%),
-                radial-gradient(ellipse 900px 600px at 90% 0%, rgba(226,99,122,0.12), transparent 55%),
-                radial-gradient(ellipse 800px 500px at 50% 100%, rgba(95,168,224,0.08), transparent 60%);
-    --surface: #161320;
-    --surface-raised: #1e1a2c;
-    --border: #2f2a42;
-    --text: #f0eef7;
-    --text-muted: #9791ab;
+    /* GenZ "studio group chat" palette — bright, colorful, light —
+       a mesh-gradient paper base with saturated candy accents instead
+       of the old oxblood/paper editorial look. */
+    --bg: #fdf6ff;
+    /* Bold, saturated color fields (not pale pastel hints) — glass only
+       reads as "glass" when there's real color behind it to blur; a
+       too-subtle wash just makes every frosted panel look flat gray,
+       which is what was happening before this got punched up. */
+    --bg-wash:
+      radial-gradient(ellipse 1000px 700px at 6% -8%, rgba(255,95,174,0.38), transparent 62%),
+      radial-gradient(ellipse 1000px 700px at 98% 2%, rgba(124,58,237,0.34), transparent 58%),
+      radial-gradient(ellipse 900px 650px at 50% 40%, rgba(245,158,11,0.22), transparent 55%),
+      radial-gradient(ellipse 1100px 750px at 50% 105%, rgba(6,182,212,0.30), transparent 58%);
+    /* Apple-style frosted glass: translucent surfaces + backdrop-filter
+       (see .glass-card below) instead of flat opaque cards, so the
+       colorful background actually shows through blurred, the way
+       Control Center / widgets do. */
+    --surface: rgba(255, 255, 255, 0.6);
+    --surface-raised: rgba(255, 255, 255, 0.74);
+    --border: rgba(255, 255, 255, 0.55);
+    --text: #221a3a;
+    --text-muted: #6f6488;
 
-    --brand-a: #ff8a65;
-    --brand-b: #e2637a;
-    --brand-c: #a78bfa;
+    --brand-a: #ff5fae;
+    --brand-b: #7c3aed;
+    --brand-c: #06b6d4;
 
-    --gold: #e0ab55;
+    --gold: #f59e0b;
 
-    --positive: #4cd68a;
-    --positive-dim: #17402c;
-    --negative: #ff5c6c;
-    --negative-dim: #4a1e26;
-    --neutral: #f5b64a;
-    --neutral-dim: #4a3a1a;
-    --unclear: #7a7690;
-    --unclear-dim: #2f2a42;
+    --positive: #16a34a;
+    --positive-dim: #dcfce7;
+    --negative: #ef4444;
+    --negative-dim: #fee2e2;
+    --neutral: #f59e0b;
+    --neutral-dim: #fef3c7;
+    --unclear: #8b81a8;
+    --unclear-dim: #f1edfb;
 
-    --marketing-accent: #a78bfa;
-    --cast-accent: #5fa8e0;
-    --news-accent: #e2637a;
+    --marketing-accent: #a855f7;
+    --marketing-tint: #f5ecff;
+    --cast-accent: #0ea5e9;
+    --cast-tint: #e6f6ff;
+    --news-accent: #fb923c;
+    --news-tint: #fff1e4;
 
-    --font-display: "Fraunces", Georgia, serif;
+    /* Apple-style frosted glass, not a color gradient: a flat
+       translucent dark tint + backdrop-filter blur. Genuinely tied to
+       the movie once we know it — see .marquee-photo/.battlefield-photo
+       in JS, which lay the real YouTube trailer thumbnail in behind the
+       glass the moment it's available (no color guessing beforehand). */
+    --glass-tint: rgba(20, 16, 36, 0.4);
+    --glass-border: rgba(255, 255, 255, 0.22);
+    /* A fixed, always-present "aurora" of soft color blobs — used as the
+       marquee's and the loading screen's own background so they look
+       vivid and catchy on their own, regardless of which movie was
+       searched (or before one has been) — rather than depending on
+       whatever happens to be blurred through from the page behind them. */
+    --aurora-blobs:
+      linear-gradient(var(--glass-tint), var(--glass-tint)),
+      radial-gradient(ellipse 60% 75% at 10% 12%, rgba(255,95,174,0.65), transparent 62%),
+      radial-gradient(ellipse 60% 75% at 90% 8%, rgba(124,58,237,0.6), transparent 62%),
+      radial-gradient(ellipse 70% 85% at 50% 108%, rgba(6,182,212,0.55), transparent 62%),
+      radial-gradient(ellipse 45% 55% at 68% 55%, rgba(245,158,11,0.42), transparent 58%);
+
+    /* A small set of colors reserved for the few spots that are always
+       a dark "chip" or overlay regardless of the overall light theme —
+       the marquee band and the live activity log — so those keep
+       working as dark/vivid surfaces with light text. */
+    --ink: #221a3a;
+    --on-ink: #ffffff;
+    --on-ink-muted: #e4defc;
+    --gold-on-ink: #ffe08a;
+    --brand-c-on-ink: #a6f0ff;
+    --positive-on-ink: #86efac;
+    --negative-on-ink: #ff9d9d;
+    --neutral-on-ink: #ffd479;
+
+    --font-display: "Space Grotesk", "Inter", system-ui, sans-serif;
     --font-body: "Inter", system-ui, sans-serif;
     --font-mono: "IBM Plex Mono", monospace;
   }
@@ -56,39 +104,120 @@
     min-height: 100vh;
   }
 
+  /* The page-wide "themed by the movie" backdrop: the real YouTube
+     trailer thumbnail, heavily blurred and dimmed, fixed behind
+     everything (see applyMoviePhoto() in JS). Hidden until a real
+     thumbnail is known, so the default pastel wash above shows through
+     until then — this is what every glass card on the page actually
+     blurs, which is what makes them read as "clear glass" instead of
+     flat translucent panels floating on nothing. */
+  .page-backdrop {
+    position: fixed; inset: 0; z-index: -1;
+    background-size: cover; background-position: center;
+    filter: blur(70px) brightness(0.85) saturate(1.35);
+    transform: scale(1.2);
+    opacity: 0; transition: opacity 1.1s ease;
+  }
+  .page-backdrop.visible { opacity: 1; }
+
+  /* --- Apple-style frosted glass: shared by every card/surface on the
+     page (see --surface/--surface-raised above, now translucent) so
+     they all actually blur the page-backdrop/mesh-wash behind them
+     rather than sitting as flat opaque panels. --- */
+  #title-input, .example-chip, .candidate-chip, .cache-note, .tech-log-body,
+  .greenlight-card, .chat-bubble, .chat-typing, .timeline-stop,
+  .release-window-card, .evidence-section, .tile, .mini-card, .subtabs,
+  .hero-banner, .marquee-fallback {
+    backdrop-filter: blur(24px) saturate(220%);
+    -webkit-backdrop-filter: blur(24px) saturate(220%);
+  }
+
+  /* A literal filmstrip edge — an ink band with the page color punched
+     through as sprocket holes — rather than a generic decorative line. */
   .film-strip {
-    height: 10px;
-    background-image: radial-gradient(circle, var(--border) 2px, transparent 2.5px);
-    background-size: 22px 10px;
+    height: 14px;
+    background-color: var(--ink);
+    background-image: radial-gradient(circle, var(--bg) 3px, transparent 3.2px);
+    background-size: 24px 14px;
     background-repeat: repeat-x;
     background-position: center;
-    opacity: 0.7;
   }
 
   .page { max-width: 1320px; margin: 0 auto; padding: 44px 28px 110px; }
   .hero { max-width: 660px; margin: 0 auto; text-align: center; }
 
-  /* --- Filmecho echo-trail logo --- */
-  .filmecho-logo {
-    font-family: system-ui, -apple-system, sans-serif;
-    font-size: clamp(2rem, 8vw, 3.5rem);
-    font-weight: 900;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    letter-spacing: -0.02em;
-    user-select: none;
-    margin: 22px 0 6px;
+  /* The one loud moment on the page: a theater-marquee sign, sprocket
+     holes punched along its top and bottom edge like the filmstrip bar,
+     holding the wordmark. Apple-style frosted glass — a flat translucent
+     tint blurred over whatever's behind it, not a color gradient — and,
+     once the real movie is known, a genuinely themed one: .marquee-photo
+     lays the actual YouTube trailer thumbnail in as a blurred backdrop
+     (see applyMoviePhoto() in JS), so the color is the real movie's,
+     not guessed. Before that's known, it's just neutral dark glass. */
+  .marquee-band {
+    background: var(--aurora-blobs);
+    background-color: #221a3a;
+    backdrop-filter: blur(26px) saturate(220%);
+    -webkit-backdrop-filter: blur(26px) saturate(220%);
+    border: 1px solid var(--glass-border);
+    border-radius: 22px;
+    padding: 30px 24px 22px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 16px 40px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.10);
   }
-  .logo-film { color: #ffffff; margin-right: 0.1em; z-index: 5; }
-  .logo-echo-wrapper { position: relative; display: inline-block; }
-  .logo-echo-main { color: #FA7C83; position: relative; z-index: 4; }
-  .echo-trail { position: absolute; top: 0; color: #FA7C83; }
-  .trail-1 { left: 0.2em; opacity: 0.4; z-index: 3; }
-  .trail-2 { left: 0.4em; opacity: 0.15; z-index: 2; }
-  .trail-3 { left: 0.6em; opacity: 0.05; z-index: 1; }
+  .marquee-photo {
+    position: absolute; inset: -20px; z-index: 0;
+    background-size: cover; background-position: center;
+    filter: blur(30px) brightness(0.6) saturate(1.25);
+    transform: scale(1.15);
+    opacity: 0; transition: opacity 0.8s ease;
+  }
+  .marquee-photo.visible { opacity: 1; }
+  .filmecho-logo, .tagline { position: relative; z-index: 1; }
+  .marquee-band::before, .marquee-band::after {
+    content: ""; position: absolute; left: 0; right: 0; height: 10px; z-index: 1;
+    background-image: radial-gradient(circle, var(--bg) 2.4px, transparent 2.6px);
+    background-size: 20px 10px; background-position: center; background-repeat: repeat-x;
+  }
+  .marquee-band::before { top: 0; }
+  .marquee-band::after { bottom: 0; }
 
-  .tagline { color: var(--text-muted); font-size: 0.95rem; margin: 0; }
+  /* --- Filmecho wordmark: a letterpress double-strike on "ECHO", as if
+     the plate slipped slightly on the reprint — one offset ghost, not
+     a four-layer glow. Reads as an intentional print artifact, and
+     (as a bonus) it's a single duplicate instead of four, so it holds
+     up cleanly when printed or copy-pasted. --- */
+  .filmecho-logo {
+    font-family: var(--font-display);
+    font-size: clamp(2.1rem, 8vw, 3.6rem);
+    font-weight: 800;
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    letter-spacing: -0.01em;
+    user-select: none;
+    margin: 10px 0 6px;
+  }
+  .logo-film { color: var(--on-ink); margin-right: 0.16em; }
+  .logo-echo-wrapper { position: relative; display: inline-block; }
+  .logo-echo-main { color: var(--gold-on-ink); position: relative; z-index: 2; font-style: italic; }
+  .echo-trail { position: absolute; top: 0; left: 3px; color: var(--gold-on-ink); opacity: 0.35; z-index: 1; font-style: italic; }
+  /* A brief, periodic "signal glitch" on the echo trail — evokes a
+     transmission/surveillance-feed feel fitting the product name,
+     rather than a constantly-looping effect that would wear thin. */
+  @media (prefers-reduced-motion: no-preference) {
+    .echo-trail { animation: echoGlitch 7s ease-in-out infinite; }
+  }
+  @keyframes echoGlitch {
+    0%, 91%, 100% { opacity: 0.35; transform: translateX(0); }
+    92% { opacity: 0.65; transform: translateX(2px); }
+    93% { opacity: 0.1; transform: translateX(-2px); }
+    94% { opacity: 0.55; transform: translateX(1px); }
+    95% { opacity: 0.35; transform: translateX(0); }
+  }
+
+  .tagline { color: var(--on-ink-muted); font-size: 0.95rem; margin: 0; }
 
   .search-row { display: flex; gap: 10px; margin: 30px 0 0; }
 
@@ -101,11 +230,11 @@
     margin-right: 2px;
   }
   .example-chip {
-    background: var(--surface); border: 1px solid var(--border); color: var(--text-muted);
+    background: var(--neutral-dim); border: 1px solid var(--border); color: var(--text);
     font-family: var(--font-body); font-size: 0.78rem; padding: 5px 12px;
     border-radius: 20px; cursor: pointer; transition: all 0.15s ease;
   }
-  .example-chip:hover { border-color: var(--brand-c); color: var(--text); }
+  .example-chip:hover { background: var(--brand-b); border-color: var(--brand-b); color: var(--on-ink); }
 
   #title-input {
     flex: 1;
@@ -114,47 +243,170 @@
     color: var(--text);
     font-family: var(--font-body);
     font-size: 1rem;
-    padding: 14px 16px;
-    border-radius: 8px;
+    padding: 14px 18px;
+    border-radius: 14px;
     outline: none;
     transition: border-color 0.15s ease, box-shadow 0.15s ease;
   }
 
-  #title-input:focus { border-color: var(--brand-c); box-shadow: 0 0 0 3px rgba(167,139,250,0.18); }
+  #title-input:focus { border-color: var(--brand-b); box-shadow: 0 0 0 3px rgba(124,58,237,0.16); }
   #title-input::placeholder { color: var(--text-muted); }
 
   #search-btn {
     background: linear-gradient(90deg, var(--brand-a), var(--brand-b));
-    color: #1a0f10;
+    color: var(--on-ink);
     border: none;
-    font-family: var(--font-body);
+    font-family: var(--font-display);
     font-weight: 700;
     font-size: 0.95rem;
     padding: 0 28px;
-    border-radius: 8px;
+    border-radius: 14px;
     cursor: pointer;
-    transition: opacity 0.15s ease, transform 0.15s ease;
+    box-shadow: 0 6px 16px rgba(255,95,174,0.28);
+    transition: opacity 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
   }
 
-  #search-btn:hover:not(:disabled) { opacity: 0.9; transform: translateY(-1px); }
+  #search-btn:hover:not(:disabled) { opacity: 0.95; transform: translateY(-1px); box-shadow: 0 8px 20px rgba(255,95,174,0.36); }
   #search-btn:disabled { opacity: 0.5; cursor: default; }
   #search-btn:focus-visible, #title-input:focus-visible { outline: 2px solid var(--brand-c); outline-offset: 2px; }
 
-  /* --- Progress checklist --- */
+  /* --- Progress / War Room live discussion ---
+     #progress and its .visible toggle are UNCHANGED (see runBrief() /
+     the SSE handler) — only what renders inside it changed. The old
+     checklist markup (#progress-list, #activity-feed, #progress-timer)
+     still exists and is still driven by the exact same resetProgress()/
+     markStage()/appendActivity() functions; it's tucked into a collapsed
+     "Technical log" <details> so the live chat is the primary experience
+     while the real event log stays available, not deleted.
+
+     The battle-mech scene from an earlier pass is gone — it read as six
+     idols standing idle and firing independently, not as a discussion.
+     Instead, appendActivity() (below) now streams every REAL activity
+     line (actual tool calls/results, already sent over SSE) into a live
+     group-chat transcript, tagged with the persona whose real stage
+     produced it — so the room visibly fills up with overlapping
+     back-and-forth as the six branches genuinely run concurrently,
+     rather than six characters flashing once each. See renderRoster()
+     and appendActivity() in JS for the exact real-state→visual mapping;
+     no dialogue content is invented, only real log lines are shown. */
   .progress {
     display: none;
     margin: 28px auto 0;
-    max-width: 480px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 18px 20px;
+    max-width: 100%;
     text-align: left;
   }
   .progress.visible { display: block; }
 
+  .battle-header { text-align: center; margin-bottom: 14px; }
+  .battle-kicker { font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.08em; color: var(--gold); text-transform: uppercase; }
+  .battle-title { font-family: var(--font-display); font-weight: 800; font-style: italic; font-size: 1.3rem; color: var(--text); margin: 2px 0 6px; }
+  .battle-subtitle { font-family: var(--font-body); font-size: 0.9rem; color: var(--text); }
+  .battle-subtitle b { color: var(--brand-b); font-weight: 600; }
+  .battle-tagline { font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-muted); margin-top: 4px; }
+
+  .battlefield {
+    position: relative;
+    border-radius: 20px;
+    overflow: hidden;
+    padding: 4px 14px 14px;
+    background: var(--aurora-blobs);
+    background-color: #221a3a;
+    backdrop-filter: blur(26px) saturate(220%);
+    -webkit-backdrop-filter: blur(26px) saturate(220%);
+    border: 1px solid var(--glass-border);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.10), 0 16px 36px rgba(0,0,0,0.22);
+  }
+  .stage-floor {
+    position: absolute; left: 0; right: 0; bottom: 0; height: 54px; z-index: 0;
+    background: linear-gradient(0deg, rgba(255,255,255,0.07), transparent);
+  }
+
+  /* --- Cast row: standee characters that actually stand on the stage
+     and gesture while their real stage is active, with a speech bubble
+     over each — direct real activity lines (see appendActivity() /
+     conversationalLine() in JS), not fabricated dialogue, just phrased
+     in-voice instead of shown as a raw tool-call string. Because the
+     six branches genuinely run concurrently on the backend, characters
+     end up "talking" over each other for real. Now that #progress
+     spans the full page width (not capped inside .hero), there's real
+     room on either side for this row to breathe. --- */
+  .cast-row { position: relative; z-index: 1; display: flex; justify-content: space-around; align-items: flex-end; gap: 24px; flex-wrap: wrap; padding: 64px 20px 4px; }
+  .character { position: relative; flex: 1 1 0; min-width: 84px; max-width: 140px; display: flex; flex-direction: column; align-items: center; opacity: 0.5; transition: opacity 0.3s ease; }
+  .character.active, .character.done { opacity: 1; }
+  .character[data-role="director"] { --role-color: var(--brand-b); }
+  .character[data-role="market"] { --role-color: var(--gold); }
+  .character[data-role="marketing"] { --role-color: var(--marketing-accent); }
+  .character[data-role="cast"] { --role-color: var(--cast-accent); }
+  .character[data-role="distribution"] { --role-color: var(--news-accent); }
+  .character[data-role="analyst"] { --role-color: var(--brand-c); }
+
+  .char-figure { position: relative; width: 68px; height: 86px; }
+  @media (prefers-reduced-motion: no-preference) {
+    .character.active .char-figure, .character.done .char-figure { animation: charBob 2.4s ease-in-out infinite; }
+  }
+  @keyframes charBob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+  .char-head {
+    position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+    width: 38px; height: 38px; border-radius: 50%; font-size: 1.2rem;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(255,255,255,0.1); border: 2px solid rgba(255,255,255,0.2);
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  }
+  .character.active .char-head { border-color: var(--role-color); box-shadow: 0 0 0 5px color-mix(in srgb, var(--role-color) 30%, transparent); }
+  .character.done .char-head { border-color: var(--positive-on-ink); }
+  .char-body {
+    position: absolute; bottom: 6px; left: 50%; transform: translateX(-50%);
+    width: 42px; height: 40px; border-radius: 16px 16px 9px 9px; background: var(--role-color);
+    opacity: 0.85;
+  }
+  .char-arm { position: absolute; top: 42px; width: 8px; height: 26px; border-radius: 5px; background: var(--role-color); transform-origin: top center; opacity: 0.85; }
+  .char-arm.left { left: 2px; transform: rotate(14deg); }
+  .char-arm.right { right: 2px; transform: rotate(-14deg); }
+  @media (prefers-reduced-motion: no-preference) {
+    .character.talking .char-arm.left { animation: argueArmLeft 0.5s ease-in-out infinite; }
+    .character.talking .char-arm.right { animation: argueArmRight 0.5s ease-in-out infinite; }
+  }
+  @keyframes argueArmLeft { 0%, 100% { transform: rotate(10deg); } 50% { transform: rotate(-32deg); } }
+  @keyframes argueArmRight { 0%, 100% { transform: rotate(-10deg); } 50% { transform: rotate(32deg); } }
+
+  .char-bubble {
+    position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%) translateY(8px) scale(0.92);
+    width: max-content; max-width: 190px; margin-bottom: 10px;
+    background: #fff; color: var(--ink); border-radius: 4px 14px 14px 14px;
+    padding: 9px 13px; font-family: var(--font-body); font-size: 0.75rem; line-height: 1.42;
+    text-align: left; opacity: 0; pointer-events: none; z-index: 3;
+    box-shadow: 0 10px 24px rgba(0,0,0,0.35);
+    transition: opacity 0.25s ease, transform 0.25s ease;
+  }
+  .char-bubble::after {
+    content: ""; position: absolute; top: 100%; left: 50%; transform: translateX(-50%);
+    border: 6px solid transparent; border-top-color: #fff;
+  }
+  .char-bubble.showing { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
+
+  .char-name { font-family: var(--font-mono); font-size: 0.66rem; letter-spacing: 0.02em; text-transform: uppercase; color: var(--on-ink-muted); margin-top: 8px; transition: color 0.3s ease; }
+  .character.active .char-name, .character.done .char-name { color: #fff; }
+  .char-status { font-family: var(--font-body); font-size: 0.63rem; color: var(--on-ink-muted); text-align: center; line-height: 1.25; min-height: 2.2em; margin-top: 2px; }
+
+  .battle-footer { display: flex; justify-content: space-between; align-items: center; padding: 10px 2px 0; position: relative; z-index: 1; }
+  .battle-progress-label { font-family: var(--font-mono); font-size: 0.7rem; color: var(--on-ink-muted); }
+
+  @media (max-width: 640px) {
+    .cast-row { gap: 14px 10px; padding: 58px 4px 4px; }
+    .character { min-width: 28%; max-width: 30%; }
+    .char-status { display: none; }
+  }
+
+  .tech-log-toggle { margin-top: 14px; }
+  .tech-log-toggle summary {
+    cursor: pointer; font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.03em;
+    text-transform: uppercase; color: var(--text-muted); padding: 6px 2px; user-select: none;
+  }
+  .tech-log-toggle[open] summary { margin-bottom: 8px; }
+  .tech-log-body { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px 18px; }
+
   .progress-title {
-    font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.1em;
+    font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.03em;
     text-transform: uppercase; color: var(--text-muted); margin-bottom: 12px;
     display: flex; justify-content: space-between; align-items: center;
   }
@@ -172,6 +424,25 @@
   }
 
   .progress-item { display: flex; align-items: center; gap: 10px; padding: 5px 0; font-size: 0.88rem; color: var(--text-muted); }
+
+  .activity-feed-title {
+    font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.03em;
+    text-transform: uppercase; color: var(--text-muted); margin: 18px 0 8px;
+    padding-top: 14px; border-top: 1px solid var(--border);
+  }
+  .activity-feed {
+    max-height: 160px; overflow-y: auto; font-family: var(--font-mono);
+    font-size: 0.76rem; line-height: 1.7; color: var(--on-ink-muted);
+    background: var(--ink); border-radius: 6px; padding: 10px 12px;
+  }
+  .activity-line { white-space: pre-wrap; word-break: break-word; }
+  .activity-line .agent-tag { color: var(--brand-c-on-ink); }
+  .activity-line .tool-call { color: var(--gold-on-ink); }
+  .activity-line .tool-return { color: var(--positive-on-ink); }
+  @media (prefers-reduced-motion: no-preference) {
+    .activity-line.new { animation: activityIn 0.25s ease; }
+  }
+  @keyframes activityIn { from { opacity: 0; transform: translateX(-4px); } to { opacity: 1; transform: translateX(0); } }
   .progress-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; background: var(--unclear-dim); border: 1px solid var(--border); }
   .progress-item.active { color: var(--text); }
   .progress-item.active .progress-dot { background: var(--gold); border-color: var(--gold); }
@@ -190,8 +461,25 @@
   }
   .candidate-chip:hover { background: var(--negative-dim); }
 
+  /* --- Frozen-memo note (released titles are served from cache) --- */
+  .cache-note {
+    display: none; max-width: 900px; margin: 20px auto 0;
+    background: var(--unclear-dim); border: 1px solid var(--border); border-radius: 14px;
+    padding: 10px 16px; font-size: 0.85rem; color: var(--text);
+    align-items: center; gap: 12px; flex-wrap: wrap; justify-content: space-between;
+  }
+  .cache-note.visible { display: flex; }
+  .cache-note-text { flex: 1; min-width: 200px; }
+  #refresh-btn {
+    background: none; border: 1px solid var(--brand-c); color: var(--brand-c);
+    font-family: var(--font-body); font-size: 0.82rem; padding: 6px 14px;
+    border-radius: 6px; cursor: pointer; transition: all 0.15s ease; white-space: nowrap;
+  }
+  #refresh-btn:hover:not(:disabled) { background: var(--brand-c); color: var(--on-ink); }
+  #refresh-btn:disabled { opacity: 0.5; cursor: default; }
+
   @media (prefers-reduced-motion: no-preference) {
-    .hero-banner, .panel { animation: rise 0.35s ease; }
+    .hero-banner, .panel, .greenlight-card, .war-room, .release-window-card { animation: rise 0.35s ease; }
   }
   @keyframes rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
@@ -204,6 +492,7 @@
     overflow: hidden;
     border: 1px solid var(--border);
     background: var(--surface);
+    box-shadow: 0 10px 28px rgba(33,29,23,0.14);
   }
   .hero-banner.visible { display: block; }
 
@@ -217,29 +506,34 @@
 
   .hero-banner-overlay {
     position: absolute; inset: 0;
-    background: linear-gradient(0deg, rgba(10,9,18,0.94) 0%, rgba(10,9,18,0.5) 45%, rgba(10,9,18,0.05) 75%);
+    background: linear-gradient(0deg, rgba(33,29,23,0.94) 0%, rgba(33,29,23,0.55) 45%, rgba(33,29,23,0.06) 75%);
     display: flex; flex-direction: column; justify-content: flex-end;
     padding: 24px 28px;
   }
 
+  /* Reads as a marquee caption card over the poster art, so it stays a
+     dark "chip" — with its own on-ink accent set — regardless of the
+     surrounding (now light) theme. */
   .hero-banner-title {
-    font-family: var(--font-mono); font-size: 0.78rem; letter-spacing: 0.14em;
-    text-transform: uppercase; color: var(--gold); margin-bottom: 10px;
+    font-family: var(--font-mono); font-size: 0.78rem; letter-spacing: 0.06em;
+    text-transform: uppercase; color: var(--gold-on-ink); margin-bottom: 10px;
   }
 
   .hero-banner-meta { display: flex; flex-wrap: wrap; gap: 8px; }
 
   .meta-pill {
-    font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.04em;
-    padding: 5px 12px; border-radius: 20px; border: 1px solid var(--border);
-    color: var(--text-muted); background: rgba(10,9,18,0.5);
+    font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.02em;
+    padding: 5px 12px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.3);
+    color: var(--on-ink-muted); background: rgba(34,26,58,0.45);
   }
-  .meta-pill.info { border-color: var(--cast-accent); color: var(--cast-accent); }
-  .meta-pill.confidence-high { border-color: var(--positive); color: var(--positive); }
-  .meta-pill.confidence-medium { border-color: var(--neutral); color: var(--neutral); }
-  .meta-pill.confidence-low { border-color: var(--negative); color: var(--negative); }
+  .meta-pill.info { border-color: var(--brand-c-on-ink); color: var(--brand-c-on-ink); }
+  .meta-pill.confidence-high { border-color: var(--positive-on-ink); color: var(--positive-on-ink); }
+  .meta-pill.confidence-medium { border-color: var(--neutral-on-ink); color: var(--neutral-on-ink); }
+  .meta-pill.confidence-low { border-color: var(--negative-on-ink); color: var(--negative-on-ink); }
 
-  /* Fallback text-only banner when no poster image is available */
+  /* Fallback text-only banner when no poster image is available — this
+     one sits on the light page, not a dark overlay, so its title and
+     pills switch back to the standard (dark-on-light) tokens. */
   .marquee-fallback {
     display: none;
     margin-top: 34px;
@@ -251,38 +545,314 @@
   }
   .marquee-fallback.visible { display: block; }
   .marquee-fallback .hero-banner-title { color: var(--gold); }
+  .marquee-fallback .meta-pill {
+    color: var(--text-muted); background: var(--unclear-dim); border-color: var(--border);
+  }
+  .marquee-fallback .meta-pill.info { border-color: var(--cast-accent); color: var(--cast-accent); }
+  .marquee-fallback .meta-pill.confidence-high { border-color: var(--positive); color: var(--positive); }
+  .marquee-fallback .meta-pill.confidence-medium { border-color: var(--neutral); color: var(--neutral); }
+  .marquee-fallback .meta-pill.confidence-low { border-color: var(--negative); color: var(--negative); }
   .marquee-fallback .hero-banner-meta { justify-content: center; }
 
-  /* --- Main tabs --- */
-  .tabs { display: none; gap: 8px; margin-top: 28px; max-width: 640px; margin-left: auto; margin-right: auto; }
-  .tabs.visible { display: flex; }
-
-  .tab-btn {
-    flex: 1; background: var(--surface); border: 1px solid var(--border); color: var(--text-muted);
-    font-family: var(--font-body); font-weight: 700; font-size: 0.95rem; padding: 14px;
-    border-radius: 10px 10px 0 0; border-bottom: 3px solid var(--border); cursor: pointer;
-    transition: all 0.15s ease;
+  /* --- Greenlight Memo: the verdict-first centerpiece --- */
+  .greenlight-card {
+    display: none;
+    max-width: 900px; margin: 34px auto 0;
+    background: var(--surface-raised); border: 1px solid var(--border);
+    border-radius: 20px; padding: 34px 32px;
+    box-shadow: 0 12px 32px rgba(124,58,237,0.10);
   }
-  .tab-btn[data-tone="positive"] { border-bottom-color: var(--positive); }
-  .tab-btn[data-tone="negative"] { border-bottom-color: var(--negative); }
-  .tab-btn[data-tone="neutral"] { border-bottom-color: var(--neutral); }
-  .tab-btn[data-tone="unclear"] { border-bottom-color: var(--unclear); }
-  .tab-btn[data-active="true"] { color: var(--text); background: var(--surface-raised); }
+  .greenlight-card.visible { display: block; }
+  .greenlight-card.tone-positive { border-left: 5px solid var(--positive); }
+  .greenlight-card.tone-negative { border-left: 5px solid var(--negative); }
+  .greenlight-card.tone-neutral { border-left: 5px solid var(--neutral); }
+  .greenlight-card.tone-insufficient { border-left: 5px dashed var(--border); }
 
-  .panel { display: none; max-width: 1180px; margin: 0 auto; background: var(--surface-raised); border: 1px solid var(--border); border-radius: 0 0 14px 14px; padding: 0; }
-  .panel.visible { display: block; }
+  .verdict-row { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; margin-bottom: 6px; }
 
-  /* --- Sub-tabs inside each panel --- */
-  .subtabs { display: flex; gap: 4px; padding: 14px 24px 0; border-bottom: 1px solid var(--border); }
+  /* A bold gradient pill — a punchy "stamp of approval" for the GenZ
+     redesign, rather than the old ink-stamp mark or a flat status pill. */
+  .verdict-badge {
+    font-family: var(--font-display); font-weight: 700; font-size: 0.85rem;
+    letter-spacing: 0.02em; text-transform: uppercase; padding: 8px 18px;
+    border: none; border-radius: 999px; color: #fff;
+    display: inline-flex; align-items: center; gap: 8px;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.15);
+  }
+  .verdict-dot { width: 9px; height: 9px; border-radius: 50%; background: rgba(255,255,255,0.85); }
+  .verdict-badge.tone-positive { background: linear-gradient(120deg, #16a34a, #22d3a5); }
+  .verdict-badge.tone-negative { background: linear-gradient(120deg, #ef4444, #f97362); }
+  .verdict-badge.tone-neutral { background: linear-gradient(120deg, #f59e0b, #fbbf24); }
+  /* Deliberately not a bright gradient — dashed, muted, no fill — since
+     this state means "we didn't analyze enough to say anything," not a
+     graded recommendation. */
+  .verdict-badge.tone-insufficient { border: 2px dashed var(--text-muted); color: var(--text-muted); background: none; box-shadow: none; }
+  .verdict-badge.tone-insufficient .verdict-dot { background: var(--text-muted); }
+
+  .confidence-wrap { display: flex; align-items: center; gap: 8px; font-family: var(--font-mono); font-size: 0.82rem; color: var(--text-muted); }
+  .confidence-basis { font-size: 0.82rem; color: var(--text-muted); margin: 4px 0 14px; }
+  .confidence-bar { width: 90px; height: 6px; border-radius: 3px; background: var(--unclear-dim); overflow: hidden; }
+  .confidence-bar-fill { height: 100%; border-radius: 3px; }
+  .confidence-bar-fill.tone-positive { background: var(--positive); }
+  .confidence-bar-fill.tone-negative { background: var(--negative); }
+  .confidence-bar-fill.tone-neutral { background: var(--neutral); }
+  .confidence-bar-fill.tone-insufficient { background: var(--text-muted); }
+
+  .greenlight-card h2 { font-family: var(--font-display); font-weight: 600; font-size: 1.55rem; margin: 14px 0 22px; line-height: 1.35; }
+
+  /* Compact header: poster thumbnail + verdict/confidence + opp/risk,
+     all in one glanceable row instead of stacked full-width text —
+     matches the "movie image / confidence / opportunity / risk" block
+     from the layout sketch. */
+  .memo-header-row { display: grid; grid-template-columns: 220px 1fr; gap: 18px; margin-bottom: 18px; }
+  @media (max-width: 600px) { .memo-header-row { grid-template-columns: 1fr; } }
+  /* Real YouTube trailer thumbnail (16:9, its true shape) — no poster
+     API in this pipeline. Sized large enough to actually convey
+     something about the film at a glance, not a token icon. Falls back
+     to a plain title card, never a distorted crop, when unavailable. */
+  .memo-poster { width: 100%; aspect-ratio: 16/9; border-radius: 14px; object-fit: cover; background: var(--glass-tint); border: 1px solid var(--border); }
+  .memo-poster-fallback { width: 100%; aspect-ratio: 16/9; border-radius: 14px; background: var(--glass-tint); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; color: var(--gold-on-ink); font-family: var(--font-mono); font-size: 0.72rem; text-align: center; padding: 8px; }
+  .memo-meta-pills { display: flex; flex-wrap: wrap; gap: 6px; margin: 2px 0; }
+  .memo-header-right { display: flex; flex-direction: column; justify-content: center; gap: 8px; }
+
+  /* "Synthesizer" callout: one crisp line instead of a full headline +
+     paragraph — the confidence rationale already says why, this says
+     what, compactly. */
+  #memo-synth-card { display: none; max-width: 900px; margin: 20px auto 0; }
+  #memo-synth-card.visible { display: block; }
+  .synth-callout {
+    background: var(--glass-tint); color: var(--on-ink); border-radius: 16px;
+    padding: 14px 18px; font-family: var(--font-display);
+    font-style: italic; font-size: 1.05rem; line-height: 1.4;
+    box-shadow: 0 8px 22px rgba(124,58,237,0.22);
+  }
+  .synth-callout .synth-tag { font-family: var(--font-mono); font-style: normal; font-size: 0.6rem; text-transform: uppercase; color: var(--gold-on-ink); display: block; margin-bottom: 6px; letter-spacing: 0.04em; }
+  .synth-callout .typewriter-cursor { display: inline-block; width: 2px; height: 1em; background: var(--gold-on-ink); vertical-align: text-bottom; margin-left: 2px; }
+  @media (prefers-reduced-motion: no-preference) {
+    .synth-callout .typewriter-cursor { animation: cursorBlink 0.9s step-end infinite; }
+  }
+  @keyframes cursorBlink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+
+  /* Detailed report toggle: evidence tabs are hidden by default per the
+     sketch (Export / Detailed report as the two closing actions) rather
+     than always visible — the memo above is meant to be the complete
+     glanceable artifact. */
+  .detail-toggle-row { text-align: center; margin: 22px 0 4px; }
+  #detail-toggle-btn {
+    background: none; border: 1px solid var(--brand-c); color: var(--brand-c);
+    font-family: var(--font-body); font-weight: 600; font-size: 0.88rem; padding: 10px 22px;
+    border-radius: 8px; cursor: pointer; transition: all 0.15s ease;
+  }
+  #detail-toggle-btn:hover { background: var(--brand-c); color: var(--on-ink); }
+
+  .opp-risk-row { display: grid; grid-template-columns: 1fr; gap: 14px; margin-bottom: 22px; }
+  @media (min-width: 640px) { .opp-risk-row { grid-template-columns: 1fr 1fr; } }
+  .opp-risk-tile { border-radius: 10px; padding: 16px 18px; border: 1px solid var(--border); }
+  .opp-risk-tile.opportunity { border-color: var(--positive); background: linear-gradient(135deg, var(--positive-dim), var(--surface-raised) 70%); }
+  .opp-risk-tile.risk { border-color: var(--negative); background: linear-gradient(135deg, var(--negative-dim), var(--surface-raised) 70%); }
+  .opp-risk-label { font-family: var(--font-mono); font-size: 0.66rem; letter-spacing: 0.03em; text-transform: uppercase; margin-bottom: 6px; }
+  .opp-risk-tile.opportunity .opp-risk-label { color: var(--positive); }
+  .opp-risk-tile.risk .opp-risk-label { color: var(--negative); }
+
+  /* Sections that are fully rendered but held back from view until the
+     War Room chat has played — swapping this class off restarts each
+     section's own .rise entrance animation (removing display:none and
+     re-adding it retriggers CSS animations), so they visibly arrive
+     rather than just popping into existence. */
+  .pending-reveal { display: none !important; }
+
+  /* The one manual gate in an otherwise auto-streaming page: rather
+     than dumping the whole memo the instant results land, the reader
+     gets a beat to see the verdict, then chooses when the room "starts
+     talking" — like walking into a meeting already in progress vs.
+     being handed the minutes. */
+  .start-discussion-row { display: none; text-align: center; margin: 26px auto 0; }
+  .start-discussion-row.visible { display: block; }
+  .start-discussion-btn {
+    font-family: var(--font-display); font-weight: 700; font-size: 1rem;
+    color: #fff; border: none; border-radius: 999px; padding: 14px 32px;
+    background: linear-gradient(120deg, var(--brand-b), var(--brand-a) 55%, var(--gold));
+    cursor: pointer; box-shadow: 0 10px 26px rgba(124,58,237,0.32);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  .start-discussion-btn:hover { transform: translateY(-2px); box-shadow: 0 14px 32px rgba(124,58,237,0.4); }
+  @media (prefers-reduced-motion: no-preference) {
+    .start-discussion-btn { animation: startBtnPulse 2s ease-in-out infinite; }
+  }
+  @keyframes startBtnPulse { 0%, 100% { box-shadow: 0 10px 26px rgba(124,58,237,0.32); } 50% { box-shadow: 0 10px 30px rgba(255,95,174,0.42); } }
+
+  /* --- War Room: a live group-chat thread, not a static grid. Each
+     bubble is the REAL war_room voice text from main_synthesis (already
+     grounded in that persona's own upstream data, in the model's fixed
+     order director→producer→marketing_chief→casting_executive→
+     distribution_executive→analyst) — nothing here is invented dialogue.
+     A lightweight keyword-tone read on each real sentence (see
+     guessTone() in JS) decides bubble color and whether consecutive
+     voices visually "disagree," and the room reveals message-by-message
+     with a typing indicator for a live conversational feel, starting
+     only once the section actually scrolls into view. The Analyst
+     always speaks last and is rendered as a distinct, pinned verdict
+     card since that's its real synthesizing role. --- */
+  .war-room { display: none; max-width: 1180px; margin: 24px auto 0; }
+  .war-room.visible { display: block; }
+  /* A pill with its own solid-ish backing, not bare text sitting
+     directly on the page — once a movie backdrop photo is behind it
+     (see #pageBackdrop), bare dark text over an unpredictable image can
+     lose contrast entirely, so this needs a background of its own
+     regardless of what's behind the page. */
+  .war-room-title {
+    display: flex; width: fit-content; align-items: center; gap: 8px;
+    font-family: var(--font-display); font-weight: 700; font-size: 0.95rem;
+    color: #fff; margin: 0 auto 20px; padding: 9px 22px;
+    background: var(--glass-tint);
+    backdrop-filter: blur(20px) saturate(200%);
+    -webkit-backdrop-filter: blur(20px) saturate(200%);
+    border: 1px solid var(--glass-border);
+    border-radius: 999px; box-shadow: 0 6px 18px rgba(0,0,0,0.18);
+  }
+  .war-room-chat { display: flex; flex-direction: column; gap: 20px; max-width: 720px; margin: 0 auto; }
+
+  .chat-typing { align-self: flex-start; display: flex; align-items: center; gap: 5px; padding: 10px 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 4px 16px 16px 16px; }
+  .chat-typing span { width: 6px; height: 6px; border-radius: 50%; background: var(--text-muted); opacity: 0.5; animation: typingDot 1.1s ease-in-out infinite; }
+  .chat-typing span:nth-child(2) { animation-delay: 0.15s; }
+  .chat-typing span:nth-child(3) { animation-delay: 0.3s; }
+  @keyframes typingDot { 0%, 60%, 100% { transform: translateY(0); opacity: 0.4; } 30% { transform: translateY(-3px); opacity: 1; } }
+
+  .chat-disagree-flag {
+    align-self: center; display: inline-flex; align-items: center; gap: 6px;
+    font-family: var(--font-mono); font-weight: 700; font-size: 0.72rem;
+    letter-spacing: 0.03em; text-transform: uppercase; color: #fff;
+    background: linear-gradient(120deg, var(--negative), #f97362); border-radius: 999px;
+    padding: 6px 18px; box-shadow: 0 6px 16px rgba(239,68,68,0.32);
+    opacity: 0; transform: translateY(6px) scale(0.85); transition: opacity 0.3s ease, transform 0.3s ease;
+  }
+  .chat-disagree-flag.show { opacity: 1; transform: translateY(0) scale(1); }
+  @media (prefers-reduced-motion: no-preference) {
+    .chat-disagree-flag.show { animation: flagPop 0.5s cubic-bezier(.34,1.56,.64,1); }
+  }
+  @keyframes flagPop { 0% { transform: translateY(6px) scale(0.85); } 60% { transform: translateY(-2px) scale(1.08); } 100% { transform: translateY(0) scale(1); } }
+
+  /* Alternating horizontal offset per turn — a straight vertical column
+     of bubbles reads as a list; a slight left/right stagger reads as
+     people actually seated around a table taking turns. */
+  .chat-row {
+    display: flex; align-items: flex-start; gap: 12px;
+    opacity: 0; transform: translateY(10px); transition: opacity 0.35s ease, transform 0.35s ease;
+  }
+  .chat-row.show { opacity: 1; transform: translateY(0); }
+  .chat-row.offset-a { margin-right: 10%; }
+  .chat-row.offset-b { margin-left: 10%; }
+  .chat-avatar {
+    flex-shrink: 0; width: 46px; height: 46px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center; font-size: 1.35rem;
+    background: var(--surface); border: 2px solid var(--border); box-shadow: 0 3px 8px rgba(124,58,237,0.12);
+  }
+  .chat-row.role-director .chat-avatar { border-color: var(--brand-b); }
+  .chat-row.role-producer .chat-avatar { border-color: var(--gold); }
+  .chat-row.role-marketing_chief .chat-avatar { border-color: var(--marketing-accent); }
+  .chat-row.role-casting_executive .chat-avatar { border-color: var(--cast-accent); }
+  .chat-row.role-distribution_executive .chat-avatar { border-color: var(--news-accent); }
+
+  .chat-bubble {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 4px 18px 18px 18px;
+    padding: 12px 18px; box-shadow: 0 3px 10px rgba(124,58,237,0.06); max-width: 82%;
+  }
+  .chat-name { font-family: var(--font-display); font-weight: 700; font-size: 0.87rem; margin-bottom: 3px; }
+  .chat-reply-to {
+    font-family: var(--font-mono); font-size: 0.66rem; color: var(--text-muted);
+    text-transform: uppercase; letter-spacing: 0.02em; margin-bottom: 4px; display: flex; align-items: center; gap: 4px;
+  }
+  .chat-text { font-size: 0.97rem; line-height: 1.55; color: var(--text); }
+  .chat-row.tone-positive .chat-bubble { border-left: 3px solid var(--positive); background: linear-gradient(135deg, var(--positive-dim), var(--surface) 65%); }
+  .chat-row.tone-positive .chat-name { color: var(--positive); }
+  .chat-row.tone-negative .chat-bubble { border-left: 4px solid var(--negative); background: linear-gradient(135deg, var(--negative-dim), var(--surface) 65%); box-shadow: 0 6px 16px rgba(239,68,68,0.14); }
+  .chat-row.tone-negative .chat-name { color: var(--negative); }
+
+  /* The Analyst's message is the room's synthesis, not another opinion —
+     styled as a pinned, gradient verdict card instead of a chat bubble. */
+  .chat-final {
+    margin-top: 4px; padding: 20px 22px; border-radius: 18px;
+    background: linear-gradient(135deg, var(--brand-b), var(--brand-a) 65%, var(--gold));
+    color: #fff; box-shadow: 0 14px 30px rgba(124,58,237,0.30);
+    opacity: 0; transform: translateY(10px) scale(0.98);
+    transition: opacity 0.4s ease, transform 0.4s ease;
+  }
+  .chat-final.show { opacity: 1; transform: translateY(0) scale(1); }
+  .chat-final-tag {
+    display: flex; align-items: center; gap: 8px; font-family: var(--font-mono);
+    font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.9; margin-bottom: 10px;
+  }
+  .chat-final .chat-text { font-family: var(--font-display); font-weight: 600; font-size: 1.1rem; line-height: 1.5; color: #fff; }
+
+  @media (max-width: 620px) {
+    .chat-row.offset-a, .chat-row.offset-b { margin-left: 0; margin-right: 0; }
+    .chat-bubble { max-width: 100%; }
+  }
+
+  /* --- Reputation timeline: zigzag, branching off a center spine —
+     replicates the sketch directly (events alternate left/right,
+     oldest at top, newest at bottom) instead of a horizontal row. --- */
+  .timeline-card { display: none; max-width: 700px; margin: 22px auto 0; }
+  .timeline-card.visible { display: block; }
+  .timeline-title {
+    font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.03em;
+    text-transform: uppercase; color: var(--text-muted); text-align: center; margin-bottom: 20px;
+  }
+  .timeline-track { position: relative; padding: 4px 0; }
+  .timeline-spine { position: absolute; left: 50%; top: 0; bottom: 0; width: 2px; background: var(--border); transform: translateX(-50%); }
+  .timeline-row { display: grid; grid-template-columns: 1fr 22px 1fr; align-items: center; min-height: 64px; }
+  .timeline-dot { grid-column: 2; width: 12px; height: 12px; border-radius: 50%; justify-self: center; z-index: 1; border: 2px solid var(--surface-raised); }
+  .timeline-dot.tone-positive { background: var(--positive); }
+  .timeline-dot.tone-negative { background: var(--negative); }
+  .timeline-dot.tone-neutral { background: var(--neutral); }
+  .timeline-dot.tone-unclear { background: var(--unclear); }
+  .timeline-stop { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; max-width: 280px; }
+  .timeline-row.side-left .timeline-stop { grid-column: 1; justify-self: end; margin-right: 10px; }
+  .timeline-row.side-right .timeline-stop { grid-column: 3; justify-self: start; margin-left: 10px; }
+  .timeline-phase-label {
+    font-family: var(--font-mono); font-size: 0.64rem; letter-spacing: 0.02em;
+    text-transform: uppercase; color: var(--text-muted); margin-bottom: 3px;
+  }
+  .timeline-note { font-size: 0.86rem; color: var(--text); line-height: 1.35; }
+  .timeline-newest-label {
+    text-align: center; font-family: var(--font-mono); font-size: 0.68rem;
+    color: var(--gold); margin-top: 6px;
+  }
+  @media (max-width: 560px) {
+    /* Not enough width for two side columns — collapse to a single
+       column, spine on the left, matching the sketch's spirit
+       (branching timeline) without the events overlapping the card edge. */
+    .timeline-row { grid-template-columns: 20px 1fr; }
+    .timeline-spine { left: 10px; transform: none; }
+    .timeline-dot { grid-column: 1; }
+    .timeline-row.side-left .timeline-stop, .timeline-row.side-right .timeline-stop {
+      grid-column: 2; justify-self: start; margin-left: 10px; margin-right: 0; max-width: none;
+    }
+  }
+
+  /* --- Release window advisory --- */
+  .release-window-card {
+    display: none; max-width: 900px; margin: 20px auto 0;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    padding: 18px 22px;
+  }
+  .release-window-card.visible { display: block; }
+  .rw-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+  .rw-title { font-weight: 700; font-size: 0.92rem; }
+  .rw-caveat { font-family: var(--font-mono); font-size: 0.68rem; color: var(--text-muted); margin-top: 10px; font-style: italic; }
+
+  /* --- Evidence sub-tabs (single bar, no more Studio/Fan split) --- */
+  .evidence-section { display: none; max-width: 1180px; margin: 34px auto 0; background: var(--surface-raised); border: 1px solid var(--border); border-radius: 14px; }
+  .evidence-section.visible { display: block; }
+
+  .subtabs { display: flex; gap: 4px; padding: 14px 24px 0; border-bottom: 1px solid var(--border); overflow-x: auto; }
   .subtab-btn {
     background: none; border: none; color: var(--text-muted); font-family: var(--font-body);
     font-weight: 600; font-size: 0.85rem; padding: 10px 16px; cursor: pointer;
     border-bottom: 2px solid transparent; transition: color 0.15s ease, border-color 0.15s ease;
+    white-space: nowrap;
   }
   .subtab-btn[data-active="true"] { color: var(--text); }
-  .subtabs.tone-marketing .subtab-btn[data-active="true"] { border-color: var(--marketing-accent); }
-  .subtabs.tone-cast .subtab-btn[data-active="true"] { border-color: var(--cast-accent); }
-  .subtabs.tone-news .subtab-btn[data-active="true"] { border-color: var(--news-accent); }
   .subtabs.tone-overview .subtab-btn[data-active="true"] { border-color: var(--gold); }
 
   .subpanel { display: none; padding: 26px 28px 30px; }
@@ -303,7 +873,7 @@
   .tile.tone-neutral { border-color: var(--neutral); background: linear-gradient(135deg, var(--neutral-dim), var(--surface) 70%); }
   .tile.tone-unclear { border-color: var(--unclear); background: var(--surface); }
 
-  .tile-label { font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px; }
+  .tile-label { font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.03em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px; }
   .tile-value { font-family: var(--font-display); font-weight: 600; font-size: 1.15rem; text-transform: capitalize; }
   .tile.tone-positive .tile-value { color: var(--positive); }
   .tile.tone-negative .tile-value { color: var(--negative); }
@@ -312,7 +882,7 @@
 
   .field { margin-bottom: 18px; }
   .field:last-child { margin-bottom: 0; }
-  .field-label { font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px; }
+  .field-label { font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.03em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px; }
   .field-value { font-size: 0.96rem; }
   .field-value a { color: inherit; }
 
@@ -331,130 +901,246 @@
   .card-list { display: grid; grid-template-columns: 1fr; gap: 12px; }
   @media (min-width: 720px) { .card-list { grid-template-columns: 1fr 1fr; } }
 
-  .mini-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; }
-
-  .hype-quote {
-    font-family: var(--font-display); font-style: italic; font-size: 1.15rem;
-    line-height: 1.5; color: var(--text); border-left: 3px solid var(--news-accent);
-    padding: 6px 0 6px 18px; margin: 4px 0 22px;
-  }
+  .mini-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 14px 16px; box-shadow: 0 2px 8px rgba(124,58,237,0.06); transition: transform 0.15s ease, box-shadow 0.15s ease; }
+  .mini-card:hover { transform: translateY(-2px); box-shadow: 0 6px 14px rgba(33,29,23,0.08); }
   .mini-card-title { font-weight: 600; font-size: 0.92rem; margin-bottom: 4px; }
-  .mini-card.cast-accent { border-left: 3px solid var(--cast-accent); }
-  .mini-card.news-accent { border-left: 3px solid var(--news-accent); }
-  .mini-card.marketing-accent { border-left: 3px solid var(--marketing-accent); }
+  .mini-card.cast-accent { border-left: 3px solid var(--cast-accent); background: var(--cast-tint); }
+  .mini-card.news-accent { border-left: 3px solid var(--news-accent); background: var(--news-tint); }
+  .mini-card.marketing-accent { border-left: 3px solid var(--marketing-accent); background: var(--marketing-tint); }
+
+  .export-row { text-align: center; margin-top: 24px; display: none; gap: 10px; justify-content: center; flex-wrap: wrap; }
+  #pdf-btn {
+    background: none; border: 1px solid var(--brand-c); color: var(--brand-c);
+    font-family: var(--font-body); font-size: 0.85rem; padding: 9px 20px;
+    border-radius: 8px; cursor: pointer; transition: all 0.15s ease;
+  }
+  #pdf-btn:hover { background: var(--brand-c); color: var(--on-ink); }
+  #pdf-btn:disabled { opacity: 0.5; cursor: default; }
 
   @media (max-width: 560px) {
     .search-row { flex-direction: column; }
     #search-btn { padding: 14px; }
     .page { padding: 30px 16px 90px; }
-    .tab-btn { font-size: 0.82rem; padding: 12px 6px; }
-    .subtabs { overflow-x: auto; }
+    .subtab-btn { font-size: 0.8rem; padding: 10px 10px; }
   }
 
-  .export-row { text-align: center; margin-top: 14px; }
-  #export-btn {
-    background: none; border: 1px solid var(--border); color: var(--text-muted);
-    font-family: var(--font-body); font-size: 0.85rem; padding: 9px 20px;
-    border-radius: 8px; cursor: pointer; transition: all 0.15s ease;
-  }
-  #export-btn:hover { border-color: var(--gold); color: var(--gold); }
-
-  /* Printed/saved-as-PDF output: force every tab and sub-tab visible
-     regardless of which one is currently active on screen, so the export
-     is a complete record of the brief, not just whatever the viewer
-     happened to be looking at. Hide interactive-only chrome. */
+  /* Printed/saved-as-PDF output */
   @media print {
-    .film-strip, .search-row, .example-chips, #progress, .status,
-    .tabs, .subtabs, #export-btn { display: none !important; }
-    .panel, .subpanel { display: block !important; }
+    /* Without this, Chrome/Firefox/Safari silently drop every
+       background-color, background-image and box-shadow on print —
+       which is why verdict badges, opp-risk tiles, voice cards and
+       meta pills were printing flat/blank instead of matching the
+       on-screen design. This forces them to render as authored. */
+    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
+
+    /* A real, consistent page margin — relying on the browser/OS print
+       dialog's own default margin is what was producing inconsistent
+       spacing. This fixes it the same way regardless of print settings. */
+    @page { margin: 16mm 18mm; }
+
+    .film-strip, .search-row, .example-chips, #progress, .status, .export-row, .start-discussion-row { display: none !important; }
+    .subtabs, .evidence-section, .subpanel, .pending-reveal { display: block !important; }
+    .war-room { display: block !important; }
     .page { max-width: 100%; padding: 0; }
-    .brief-eyebrow, .panel { break-inside: avoid; }
-    body { background: #fff; color: #111; }
+
+    /* Only atomic, single-idea pieces get break-inside:avoid. Applying
+       it to large multi-part containers (the whole evidence section,
+       the whole war room, the whole memo card) asks the browser to
+       keep something taller than a page together, which it can't do —
+       instead it tends to shove the whole block onto a fresh page,
+       leaving a large gap and effectively re-sorting the section order
+       on the printed page. That's what was showing up as sections
+       being split apart oddly. */
+    .chat-row, .chat-final, .mini-card { break-inside: avoid; }
+
+    /* The rotated "stamp" look is a screen-only flourish; keeping a
+       rotated element in the print layout can shift how its text gets
+       read back out of the page (e.g. by copy/search), so it's
+       disabled here rather than just cosmetically ignored. */
+    .verdict-badge { transform: none !important; }
+
+    /* The on-screen theme is already ink-on-paper, so unlike before,
+       nothing here needs to be recolored for print — just force the
+       page itself to pure white to save ink, which the color-adjust
+       rule above won't override since it's an explicit background. */
+    body { background: #fff; }
     .hero-banner-overlay { position: static; background: none; padding: 12px 0; }
     .hero-banner img { display: none; }
+
+    /* The letterpress ghost-strike on "ECHO" is a screen-only flourish;
+       printed, its absolute-positioned duplicate can still show up in
+       the text layer on copy/search. Keep just the main word for print. */
+    .echo-trail { display: none !important; }
+
+    /* Shadows don't serve a printed page and can render as odd smudges
+       depending on the print engine. */
+    * { box-shadow: none !important; }
   }
 </style>
 </head>
 <body>
+  <div class="page-backdrop" id="pageBackdrop"></div>
   <div class="film-strip"></div>
   <div class="page">
     <div class="hero">
-      <div class="filmecho-logo">
-        <span class="logo-film">FILM</span>
-        <div class="logo-echo-wrapper">
-          <span class="echo-trail trail-3">ECHO</span>
-          <span class="echo-trail trail-2">ECHO</span>
-          <span class="echo-trail trail-1">ECHO</span>
-          <span class="logo-echo-main">ECHO</span>
+      <div class="marquee-band">
+        <div class="marquee-photo" id="marqueePhoto"></div>
+        <div class="filmecho-logo">
+          <span class="logo-film">FILM</span>
+          <div class="logo-echo-wrapper">
+            <span class="echo-trail">ECHO</span>
+            <span class="logo-echo-main">ECHO</span>
+          </div>
         </div>
+        <p class="tagline">The AI studio intelligence room — search, listen, understand, decide.</p>
       </div>
-      <p class="tagline">Trailer sentiment, competitive read, cast reception, and marketing analysis, in one brief.</p>
 
       <div class="search-row">
         <input id="title-input" type="text" placeholder="Enter a film or show title..." autocomplete="off">
         <button id="search-btn">Run brief</button>
       </div>
 
-      <div id="example-chips" class="example-chips">
-        <span class="example-chips-label">Try:</span>
-        <button class="example-chip" data-title="Dune Part Three">Dune Part Three</button>
-        <button class="example-chip" data-title="Avengers Doomsday">Avengers Doomsday</button>
-        <button class="example-chip" data-title="Haiwaan">Haiwaan</button>
-        <button class="example-chip" data-title="Doomsday 2008">Doomsday (2008)</button>
+      <div id="example-chips" class="example-chips"></div>
+    </div>
+
+    <!-- Outside .hero (which caps at 660px for the search UI) so the
+         loading screen can actually use the page's full width instead
+         of being squeezed into the same narrow column as the search
+         box. -->
+    <div id="progress" class="progress">
+        <div class="battle-header">
+          <div class="battle-kicker">Filmecho</div>
+          <div class="battle-title">The War Room</div>
+          <div class="battle-subtitle">Analyzing: <b id="studio-film-title">—</b></div>
+          <div class="battle-tagline" id="studio-tagline">The room is investigating...</div>
+        </div>
+
+        <div class="battlefield" id="battlefieldScene">
+          <div class="stage-floor"></div>
+          <div class="cast-row" id="castRow">
+            <div class="character" data-role="director">
+              <div class="char-bubble"></div>
+              <div class="char-figure">
+                <div class="char-arm left"></div>
+                <div class="char-arm right"></div>
+                <div class="char-head">🎬</div>
+                <div class="char-body"></div>
+              </div>
+              <div class="char-name">Director</div>
+              <div class="char-status">Standing by...</div>
+            </div>
+            <div class="character" data-role="market">
+              <div class="char-bubble"></div>
+              <div class="char-figure">
+                <div class="char-arm left"></div>
+                <div class="char-arm right"></div>
+                <div class="char-head">🎯</div>
+                <div class="char-body"></div>
+              </div>
+              <div class="char-name">Market Intel</div>
+              <div class="char-status">Standing by...</div>
+            </div>
+            <div class="character" data-role="marketing">
+              <div class="char-bubble"></div>
+              <div class="char-figure">
+                <div class="char-arm left"></div>
+                <div class="char-arm right"></div>
+                <div class="char-head">📣</div>
+                <div class="char-body"></div>
+              </div>
+              <div class="char-name">Marketing</div>
+              <div class="char-status">Standing by...</div>
+            </div>
+            <div class="character" data-role="cast">
+              <div class="char-bubble"></div>
+              <div class="char-figure">
+                <div class="char-arm left"></div>
+                <div class="char-arm right"></div>
+                <div class="char-head">🎭</div>
+                <div class="char-body"></div>
+              </div>
+              <div class="char-name">Cast</div>
+              <div class="char-status">Standing by...</div>
+            </div>
+            <div class="character" data-role="distribution">
+              <div class="char-bubble"></div>
+              <div class="char-figure">
+                <div class="char-arm left"></div>
+                <div class="char-arm right"></div>
+                <div class="char-head">🗓️</div>
+                <div class="char-body"></div>
+              </div>
+              <div class="char-name">Distribution</div>
+              <div class="char-status">Standing by...</div>
+            </div>
+            <div class="character" data-role="analyst">
+              <div class="char-bubble"></div>
+              <div class="char-figure">
+                <div class="char-arm left"></div>
+                <div class="char-arm right"></div>
+                <div class="char-head">📊</div>
+                <div class="char-body"></div>
+              </div>
+              <div class="char-name">Analyst</div>
+              <div class="char-status">Waiting on the room...</div>
+            </div>
+          </div>
+
+          <div class="battle-footer">
+            <div class="battle-progress-label" id="battleProgressLabel">0 / 5 in</div>
+          </div>
+        </div>
+
+        <details class="tech-log-toggle">
+          <summary>Technical log</summary>
+          <div class="tech-log-body">
+            <div class="progress-title">Pipeline progress</div>
+            <div id="progress-timer" class="progress-timer"><span class="progress-timer-dot"></span><span id="progress-timer-text">Running for 0s...</span></div>
+            <div id="progress-list"></div>
+            <div class="activity-feed-title">Live agent activity</div>
+            <div id="activity-feed" class="activity-feed"></div>
+          </div>
+        </details>
       </div>
+    <div id="status" class="status"></div>
 
-      <div id="progress" class="progress">
-        <div class="progress-title">Pipeline progress</div>
-        <div id="progress-timer" class="progress-timer"><span class="progress-timer-dot"></span><span id="progress-timer-text">Running for 0s...</span></div>
-        <div id="progress-list"></div>
+    <div id="cache-note" class="cache-note"></div>
+
+    <div id="greenlight-card" class="greenlight-card"></div>
+
+    <div id="start-discussion-row" class="start-discussion-row">
+      <button id="start-discussion-btn" class="start-discussion-btn">▶ Step into the War Room</button>
+    </div>
+
+    <div id="war-room" class="war-room">
+      <div class="war-room-title">🎬 The War Room — Live Discussion</div>
+      <div id="war-room-chat" class="war-room-chat"></div>
+    </div>
+
+    <div id="timeline-card" class="timeline-card"></div>
+
+    <div id="memo-synth-card"></div>
+
+    <div id="release-window-card" class="release-window-card"></div>
+
+    <div id="memo-body-card" class="greenlight-card"></div>
+
+    <div class="export-row" id="export-row">
+      <button id="pdf-btn">Export</button>
+      <button id="detail-toggle-btn">Detailed report ↓</button>
+    </div>
+
+    <div id="evidence-section" class="evidence-section">
+      <div class="subtabs tone-overview">
+        <button class="subtab-btn" data-sub="evidence-marketing" data-active="true">Marketing</button>
+        <button class="subtab-btn" data-sub="evidence-cast" data-active="false">Cast</button>
+        <button class="subtab-btn" data-sub="evidence-news" data-active="false">News</button>
+        <button id="evidence-collections-btn" class="subtab-btn" data-sub="evidence-collections" data-active="false" style="display:none;">Collections</button>
       </div>
-      <div id="status" class="status"></div>
-    </div>
-
-    <div id="hero-banner" class="hero-banner">
-      <img id="hero-banner-img" alt="">
-      <div class="hero-banner-overlay">
-        <div id="hero-banner-title" class="hero-banner-title"></div>
-        <div id="hero-banner-meta" class="hero-banner-meta"></div>
-      </div>
-    </div>
-    <div id="marquee-fallback" class="marquee-fallback">
-      <div id="marquee-fallback-title" class="hero-banner-title"></div>
-      <div id="marquee-fallback-meta" class="hero-banner-meta"></div>
-    </div>
-
-    <div id="tabs" class="tabs">
-      <button class="tab-btn" data-view="studio" data-active="true">Studio brief</button>
-      <button class="tab-btn" data-view="fan" data-active="false">Fan pulse</button>
-      <button id="collections-tab-btn" class="tab-btn" data-view="collections" data-active="false" style="display:none;">Collections</button>
-    </div>
-
-    <div id="export-row" class="export-row" style="display:none;">
-      <button id="export-btn">Export / print brief</button>
-    </div>
-
-    <div id="studio-panel" class="panel">
-      <div class="subtabs tone-overview" data-group="studio">
-        <button class="subtab-btn" data-sub="studio-overview" data-active="true">Overview</button>
-        <button class="subtab-btn" data-sub="studio-marketing" data-active="false">Marketing</button>
-        <button class="subtab-btn" data-sub="studio-cast" data-active="false">Cast</button>
-      </div>
-      <div id="studio-overview" class="subpanel visible"></div>
-      <div id="studio-marketing" class="subpanel"></div>
-      <div id="studio-cast" class="subpanel"></div>
-    </div>
-
-    <div id="fan-panel" class="panel">
-      <div class="subtabs tone-overview" data-group="fan">
-        <button class="subtab-btn" data-sub="fan-overview" data-active="true">Overview</button>
-        <button class="subtab-btn" data-sub="fan-news" data-active="false">News</button>
-      </div>
-      <div id="fan-overview" class="subpanel visible"></div>
-      <div id="fan-news" class="subpanel"></div>
-    </div>
-
-    <div id="collections-panel" class="panel">
-      <div style="padding: 26px 28px 30px;" id="collections-content"></div>
+      <div id="evidence-marketing" class="subpanel visible"></div>
+      <div id="evidence-cast" class="subpanel"></div>
+      <div id="evidence-news" class="subpanel"></div>
+      <div id="evidence-collections" class="subpanel"></div>
     </div>
   </div>
   <div class="film-strip"></div>
@@ -464,27 +1150,76 @@ const titleInput = document.getElementById('title-input');
 const searchBtn = document.getElementById('search-btn');
 const progress = document.getElementById('progress');
 const progressList = document.getElementById('progress-list');
+const activityFeed = document.getElementById('activity-feed');
 const progressTimerText = document.getElementById('progress-timer-text');
 const status = document.getElementById('status');
-const heroBanner = document.getElementById('hero-banner');
-const heroBannerImg = document.getElementById('hero-banner-img');
-const heroBannerTitle = document.getElementById('hero-banner-title');
-const heroBannerMeta = document.getElementById('hero-banner-meta');
-const marqueeFallback = document.getElementById('marquee-fallback');
-const marqueeFallbackTitle = document.getElementById('marquee-fallback-title');
-const marqueeFallbackMeta = document.getElementById('marquee-fallback-meta');
-const tabs = document.getElementById('tabs');
-const studioPanel = document.getElementById('studio-panel');
-const fanPanel = document.getElementById('fan-panel');
-const collectionsPanel = document.getElementById('collections-panel');
-const collectionsTabBtn = document.getElementById('collections-tab-btn');
-const collectionsContent = document.getElementById('collections-content');
+const greenlightCard = document.getElementById('greenlight-card');
+const memoBodyCard = document.getElementById('memo-body-card');
+const memoSynthCard = document.getElementById('memo-synth-card');
+const warRoom = document.getElementById('war-room');
+const warRoomChat = document.getElementById('war-room-chat');
+const startDiscussionRow = document.getElementById('start-discussion-row');
+const startDiscussionBtn = document.getElementById('start-discussion-btn');
+const releaseWindowCard = document.getElementById('release-window-card');
+const evidenceSection = document.getElementById('evidence-section');
+const evidenceCollectionsBtn = document.getElementById('evidence-collections-btn');
+const evidenceCollections = document.getElementById('evidence-collections');
 const exampleChips = document.getElementById('example-chips');
 const exportRow = document.getElementById('export-row');
-const exportBtn = document.getElementById('export-btn');
+const pdfBtn = document.getElementById('pdf-btn');
+const detailToggleBtn = document.getElementById('detail-toggle-btn');
+const cacheNote = document.getElementById('cache-note');
 
 let activeSource = null;
-let currentView = 'studio';
+let lastPayloadData = null;
+let lastSearchedTitle = '';
+let pendingWarRoomReveal = null;
+let warRoomObserver = null;
+
+// The example chips default to a fixed set of titles the first time
+// anyone opens the app (nothing searched yet to show), then switch to
+// that browser's own actual recent searches — genuinely "yours," not
+// a curated example list, per-viewer via localStorage (never sent
+// anywhere, never shared across devices).
+const SEARCH_HISTORY_KEY = 'filmecho_recent_searches';
+const SEARCH_HISTORY_MAX = 5;
+const DEFAULT_EXAMPLE_TITLES = ['Dune Part Three', 'Avengers Doomsday', 'Haiwaan', 'Doomsday (2008)'];
+
+function getSearchHistory() {
+  try {
+    const raw = localStorage.getItem(SEARCH_HISTORY_KEY);
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function addToSearchHistory(title) {
+  const trimmed = title.trim();
+  if (!trimmed) return;
+  try {
+    const existing = getSearchHistory().filter(t => t.toLowerCase() !== trimmed.toLowerCase());
+    existing.unshift(trimmed);
+    localStorage.setItem(SEARCH_HISTORY_KEY, JSON.stringify(existing.slice(0, SEARCH_HISTORY_MAX)));
+  } catch {
+    // Private browsing / storage disabled — the chips just won't
+    // remember between visits, which is a fine, silent degrade.
+  }
+  renderExampleChips();
+}
+
+function renderExampleChips() {
+  if (!exampleChips) return;
+  const history = getSearchHistory();
+  const hasHistory = history.length > 0;
+  const label = hasHistory ? 'Recent:' : 'Try:';
+  const titles = hasHistory ? history : DEFAULT_EXAMPLE_TITLES;
+  exampleChips.innerHTML = `
+    <span class="example-chips-label">${label}</span>
+    ${titles.map(t => `<button class="example-chip" data-title="${t.replace(/"/g, '&quot;')}">${t}</button>`).join('')}
+  `;
+}
 
 const STAGES = [
   { key: 'entity_resolution', label: 'Resolving title' },
@@ -495,7 +1230,7 @@ const STAGES = [
   { key: 'cast', label: 'Cast reception' },
   { key: 'marketing', label: 'Marketing analysis' },
   { key: 'sentiment_synthesis', label: 'Sentiment synthesis' },
-  { key: 'main_synthesis', label: 'Final brief' },
+  { key: 'main_synthesis', label: 'Greenlight memo' },
 ];
 const TWO_PHASE = new Set(['entity_resolution', 'sentiment_synthesis', 'main_synthesis']);
 let stageState = {};
@@ -520,7 +1255,10 @@ function stopTimer() {
 function resetProgress() {
   stageState = {};
   STAGES.forEach(s => { stageState[s.key] = 'pending'; });
+  prevAnalystState = 'pending';
+  resetLiveChat();
   renderProgress();
+  activityFeed.innerHTML = '';
   startTimer();
 }
 
@@ -529,6 +1267,262 @@ function renderProgress() {
     const state = stageState[s.key];
     return `<div class="progress-item ${state}"><span class="progress-dot"></span>${s.label}</div>`;
   }).join('');
+  renderBattlefield();
+}
+
+// Maps each War Room persona to the real stage key(s) that actually
+// drive it, and the copy to show at each of that key's real states
+// (pending/active/done). No new events, no fake progress — this reads
+// the exact same stageState the checklist above reads.
+//
+// Two roles intentionally share one real source: Market Intel and
+// Distribution both come from the competitive_agent branch (the same
+// way main_synthesis.py already derives both the producer and
+// distribution_executive War Room voices from COMPETITIVE LANDSCAPE),
+// so both mechs fire together, honestly, rather than one being
+// invented. Director is driven primarily by sentiment_synthesis (its
+// real source per main_synthesis.py), with web_sentiment/youtube
+// providing an earlier partial cue since sentiment_synthesis depends on
+// them. news_cast_agent has no dedicated hero unit, matching the
+// product's own existing War Room persona set (director/producer/
+// marketing_chief/casting_executive/distribution_executive/analyst)
+// which likewise has no "news" voice — it still shows up in the
+// technical log via appendActivity(), just not as a hero visual.
+const ROLE_CONFIG = {
+  director: {
+    copy: {
+      pending: 'Standing by...',
+      web_sentiment_active: 'Listening to the audience...',
+      web_sentiment_done: 'Listening to the audience...',
+      youtube_done: 'Reading trailer reactions...',
+      sentiment_synthesis_active: 'Weighing it all together...',
+      sentiment_synthesis_done: 'Has the audience read.',
+    },
+    state() {
+      if (stageState.sentiment_synthesis === 'done') return 'done';
+      if (stageState.sentiment_synthesis === 'active' || stageState.web_sentiment !== 'pending') return 'active';
+      return 'pending';
+    },
+    label() {
+      if (stageState.sentiment_synthesis === 'done') return this.copy.sentiment_synthesis_done;
+      if (stageState.sentiment_synthesis === 'active') return this.copy.sentiment_synthesis_active;
+      if (stageState.youtube === 'done') return this.copy.youtube_done;
+      if (stageState.web_sentiment !== 'pending') return this.copy.web_sentiment_active;
+      return this.copy.pending;
+    },
+  },
+  market: {
+    copy: { pending: 'Standing by...', active: 'Scanning the competitive landscape...', done: 'Landscape mapped.' },
+    state() { return stageState.competitive; },
+    label() { return this.copy[stageState.competitive] || this.copy.pending; },
+  },
+  marketing: {
+    copy: { pending: 'Standing by...', active: 'Examining marketing signals...', done: 'Campaign reviewed.' },
+    state() { return stageState.marketing; },
+    label() { return this.copy[stageState.marketing] || this.copy.pending; },
+  },
+  cast: {
+    copy: { pending: 'Standing by...', active: 'Reading the conversation around the cast...', done: 'Reception logged.' },
+    state() { return stageState.cast; },
+    label() { return this.copy[stageState.cast] || this.copy.pending; },
+  },
+  distribution: {
+    copy: { pending: 'Standing by...', active: 'Mapping the release environment...', done: 'Window assessed.' },
+    state() { return stageState.competitive; },
+    label() { return this.copy[stageState.competitive] || this.copy.pending; },
+  },
+  analyst: {
+    copy: { pending: 'Waiting on the room...', active: 'Bringing the room together...', done: 'Brief ready.' },
+    state() { return stageState.main_synthesis; },
+    label() { return this.copy[stageState.main_synthesis] || this.copy.pending; },
+  },
+};
+
+// Edge-detection state: renderBattlefield() runs on every stageState
+// change, but the Analyst should only post its "joined"/"done" system
+// beats ONCE, at the exact moment its real stage transitions — not on
+// every re-render while it stays in that state.
+let prevAnalystState = 'pending';
+
+function renderBattlefield() {
+  const castRow = document.getElementById('castRow');
+  if (!castRow) return;
+
+  let doneCount = 0;
+  ['director', 'market', 'marketing', 'cast', 'distribution'].forEach(role => {
+    const cfg = ROLE_CONFIG[role];
+    const el = castRow.querySelector(`.character[data-role="${role}"]`);
+    if (!el) return;
+    const state = cfg.state();
+    el.classList.remove('active', 'done');
+    if (state === 'active' || state === 'done') el.classList.add(state === 'done' ? 'done' : 'active');
+    const statusEl = el.querySelector('.char-status');
+    if (statusEl) statusEl.textContent = cfg.label();
+
+    if (state === 'done') doneCount++;
+  });
+
+  const progressLabelEl = document.getElementById('battleProgressLabel');
+  if (progressLabelEl) progressLabelEl.textContent = `${doneCount} / 5 in`;
+
+  // The Analyst's standee + a bubble mark the real moment main_synthesis
+  // starts (every fetch branch has already resolved by then in the real
+  // pipeline) and the real moment it's done — each fires exactly once,
+  // on the genuine state transition.
+  const analystEl = castRow.querySelector('.character[data-role="analyst"]');
+  const analystCfg = ROLE_CONFIG.analyst;
+  const analystState = analystCfg.state();
+  if (analystEl) {
+    analystEl.classList.remove('active', 'done');
+    if (analystState === 'active' || analystState === 'done') analystEl.classList.add(analystState === 'done' ? 'done' : 'active');
+    const statusEl = analystEl.querySelector('.char-status');
+    if (statusEl) statusEl.textContent = analystCfg.label();
+  }
+  if (analystState !== prevAnalystState) {
+    if (analystState === 'active' && prevAnalystState === 'pending') {
+      showCharBubble('analyst', 'Alright, let’s bring this together.');
+    }
+    if (analystState === 'done') {
+      showCharBubble('analyst', 'Brief’s ready.');
+    }
+    prevAnalystState = analystState;
+  }
+}
+
+const STAGE_LABEL_LOOKUP = Object.fromEntries(STAGES.map(s => [s.key, s.label]));
+
+function activityLineHtml(line) {
+  let cls = '';
+  if (line.startsWith('calling ')) cls = 'tool-call';
+  else if (line.includes('returned') || line.includes('parsed') || line.includes('complete')) cls = 'tool-return';
+  const safe = line.replace(/</g, '&lt;');
+  return cls ? `<span class="${cls}">${safe}</span>` : safe;
+}
+
+// Same stage-to-persona mapping used for the standee row (see
+// renderBattlefield's ROLE_CONFIG comment) — competitive alternates
+// between Market Intel and Distribution since both are honestly built
+// from that one branch, so both get to visibly "say" something.
+const STAGE_TO_MECH_ROLE = {
+  web_sentiment: 'director', youtube: 'director', sentiment_synthesis: 'director',
+  marketing: 'marketing', cast: 'cast', main_synthesis: 'analyst',
+};
+
+// Each real activity line is either a tool CALL ("calling
+// get_web_sentiment(...)") or a tool RESULT ("parsed ... response" /
+// "... returned" / "...complete") — see agents/*.py's own activity-log
+// calls. Rather than showing that raw string verbatim (which read as
+// "saying parsed" — not a conversation), each persona has a small bank
+// of in-voice phrasings for each of those two real moments. This is
+// honest phrasing of a real, current action — never an invented
+// finding or opinion; no bubble here ever states a result the pipeline
+// hasn't actually produced.
+const SPEAK_BANK = {
+  director: {
+    call: ['Let’s hear what the audience is actually saying...', 'Pulling up the sentiment now...', 'Time to listen to the room.'],
+    result: ['Okay, digesting these reactions.', 'Got some real opinions here.', 'Cross-checking the tone now.'],
+  },
+  market: {
+    call: ['Who else is releasing around this window?', 'Scanning the competitive landscape...', 'Let’s see who we’re up against.'],
+    result: ['Noted — checking the numbers.', 'Filing that away.', 'That shifts the picture a bit.'],
+  },
+  marketing: {
+    call: ['How’s this being marketed out there?', 'Digging into the campaign...', 'Let’s see what’s landing.'],
+    result: ['Some of this is working, some isn’t.', 'Got a read on the messaging.', 'Noting what’s resonating.'],
+  },
+  cast: {
+    call: ['What’s the word on the cast?', 'Checking how people feel about this lineup...', 'Let’s hear about the performances.'],
+    result: ['Strong reactions on a few of these.', 'Cross-checking the reception.', 'Noted who’s landing and who isn’t.'],
+  },
+  distribution: {
+    call: ['Mapping the release landscape...', 'Let’s see how crowded this window is.', 'Checking the calendar.'],
+    result: ['This window’s getting clearer.', 'Filing that under release strategy.', 'Good, that helps the timing call.'],
+  },
+  analyst: {
+    call: ['Reviewing everyone’s notes...', 'Let’s see how this all adds up...', 'Cross-referencing before I write this up...'],
+    result: ['Got it — that backs up what I’m seeing.', 'That lines up.', 'Noted, factoring that in.'],
+  },
+};
+
+// Cheap connectors so back-to-back speakers visibly acknowledge each
+// other instead of talking in isolation — real turn-taking structure
+// (who's replying to whom), even though the substance of each line is
+// still that persona's own real activity.
+const CROSS_TALK = ['Meanwhile —', 'While that’s happening —', 'Same page here —', 'Following up —', 'On my end —', 'Picking up from that —'];
+
+let lastSpeakerRole = null;
+let competitiveBubbleToggle = 0;
+
+function conversationalLine(role, rawLine) {
+  const bank = SPEAK_BANK[role];
+  if (!bank) return cleanBubbleText(rawLine);
+  const isResult = /parsed|returned|complete/i.test(rawLine || '');
+  const pool = isResult ? bank.result : bank.call;
+  let line = pool[Math.floor(Math.random() * pool.length)];
+  if (lastSpeakerRole && lastSpeakerRole !== role && Math.random() < 0.4) {
+    const connector = CROSS_TALK[Math.floor(Math.random() * CROSS_TALK.length)];
+    line = `${connector} ${line.charAt(0).toLowerCase()}${line.slice(1)}`;
+  }
+  lastSpeakerRole = role;
+  return line;
+}
+
+function cleanBubbleText(line) {
+  let t = String(line || '').replace(/^calling\s+/i, '→ ').trim();
+  if (t.length > 90) t = t.slice(0, 88) + '…';
+  return t;
+}
+
+const bubbleTimers = {};
+
+// Shows a speech bubble above the given persona's standee and makes
+// them "argue" (arm-gesture animation) for the moment they're talking.
+function showCharBubble(role, text) {
+  const castRow = document.getElementById('castRow');
+  const char = castRow && castRow.querySelector(`.character[data-role="${role}"]`);
+  const bubble = char && char.querySelector('.char-bubble');
+  if (!bubble || !text) return;
+
+  typewriterInto(bubble, text, 12);
+  bubble.classList.add('showing');
+  char.classList.add('talking');
+
+  clearTimeout(bubbleTimers[role]);
+  bubbleTimers[role] = setTimeout(() => {
+    bubble.classList.remove('showing');
+    char.classList.remove('talking');
+  }, 3400);
+}
+
+function resetLiveChat() {
+  Object.values(bubbleTimers).forEach(t => clearTimeout(t));
+  document.querySelectorAll('.char-bubble').forEach(b => { b.classList.remove('showing'); b.innerHTML = ''; });
+  document.querySelectorAll('.character').forEach(c => c.classList.remove('talking'));
+  competitiveBubbleToggle = 0;
+  lastSpeakerRole = null;
+}
+
+function appendActivity(stage, log) {
+  if (!log || !log.length) return;
+  const label = STAGE_LABEL_LOOKUP[stage] || stage;
+  log.forEach(line => {
+    const el = document.createElement('div');
+    el.className = 'activity-line new';
+    el.innerHTML = `<span class="agent-tag">[${label}]</span> ${activityLineHtml(line)}`;
+    activityFeed.appendChild(el);
+  });
+  activityFeed.scrollTop = activityFeed.scrollHeight;
+
+  // The real activity line (whether it was a tool call or a tool
+  // result) drives a bubble from the matching War Room persona, phrased
+  // in their voice — see SPEAK_BANK / conversationalLine() above. Not a
+  // separate or fabricated message: same real event, different words.
+  let role = STAGE_TO_MECH_ROLE[stage];
+  if (stage === 'competitive') {
+    role = competitiveBubbleToggle % 2 === 0 ? 'market' : 'distribution';
+    competitiveBubbleToggle++;
+  }
+  if (role) showCharBubble(role, conversationalLine(role, log[log.length - 1]));
 }
 
 function markStage(key) {
@@ -553,11 +1547,18 @@ function riskTone(risk) {
   }
 }
 
-function excitementTone(level) {
-  switch ((level || 'unclear').toLowerCase()) {
-    case 'high': return 'positive';
-    case 'mixed': return 'neutral';
-    case 'low': return 'negative';
+function verdictTone(verdict) {
+  switch ((verdict || 'unclear').toLowerCase()) {
+    case 'greenlight':
+    case 'blockbuster':
+    case 'hit': return 'positive';
+    case 'greenlight_with_changes':
+    case 'average': return 'neutral';
+    case 'hold':
+    case 'pass':
+    case 'underperformed':
+    case 'flop': return 'negative';
+    case 'insufficient_data': return 'insufficient';
     default: return 'unclear';
   }
 }
@@ -566,6 +1567,15 @@ function releaseLabel(entity) {
   if (entity.release_status === 'released') return 'Retrospective';
   if (entity.release_status === 'upcoming') return entity.release_year ? `Coming ${entity.release_year}` : 'Upcoming release';
   return 'Screening status unclear';
+}
+
+function sentimentTone(sentiment) {
+  switch ((sentiment || 'unclear').toLowerCase()) {
+    case 'positive': return 'positive';
+    case 'mixed': return 'neutral';
+    case 'negative': return 'negative';
+    default: return 'unclear';
+  }
 }
 
 function buildMetaPills(entity) {
@@ -579,7 +1589,7 @@ function buildMetaPills(entity) {
   return pills.join('');
 }
 
-// --- Sub-tab wiring (generic, used for both Studio and Fan panels) ---
+// --- Sub-tab wiring (generic; works for the single evidence-section bar) ---
 document.querySelectorAll('.subtabs').forEach(group => {
   group.addEventListener('click', (e) => {
     const btn = e.target.closest('.subtab-btn');
@@ -595,37 +1605,434 @@ function internalSearchLink(title) {
   return `<a href="/?title=${encodeURIComponent(title)}" target="_blank" rel="noopener" title="Search &quot;${safe}&quot; on Filmecho">${title}</a>`;
 }
 
-function renderStudioOverview(brief, releaseStatus, competitive) {
-  const el = document.getElementById('studio-overview');
-  if (!brief) { el.innerHTML = '<p class="empty-state">No studio brief was returned for this run.</p>'; return; }
-  const tone = riskTone(brief.competitive_risk);
-  const riskLabel = releaseStatus === 'released' ? 'Competitive outcome' : 'Competitive risk';
-  const riskLegend = riskLegendText(releaseStatus, brief.competitive_risk);
-  const news = (brief.notable_news || []).map(n => `<li>${n.claim}${sourceLink(n.url)}</li>`).join('') || '<li>No recent news surfaced.</li>';
-  const lessons = (brief.lessons_learned && brief.lessons_learned.length)
-    ? `<div class="field"><div class="field-label">Lessons learned</div><ul class="plain">${brief.lessons_learned.map(l => `<li>${l}</li>`).join('')}</ul></div>` : '';
-  const recommendation = brief.recommendation
-    ? `<div class="field"><div class="field-label">Recommendation</div><div class="field-value">${brief.recommendation}</div></div>` : '';
-  const competitors = (competitive && competitive.competing_titles || []).map(c =>
-    `<div class="mini-card"><div class="mini-card-title">${internalSearchLink(c.title)}</div><div class="field-value">${c.strength_vs_searched || ''}</div></div>`
-  ).join('');
-  const competitorsBlock = competitors
-    ? `<div class="field"><div class="field-label">Competing against</div><div class="card-list">${competitors}</div></div>` : '';
-  el.innerHTML = `
-    <h2>${brief.headline || ''}</h2>
-    <div class="tile-row">
-      <div class="tile tone-${tone}">
-        <div class="tile-label">${riskLabel}</div>
-        <div class="tile-value">${brief.competitive_risk || 'unclear'}</div>
-        <div class="tile-sub">${riskLegend}</div>
+function sourceLink(url) {
+  return url ? ` <a href="${url}" target="_blank" rel="noopener">source</a>` : '';
+}
+
+const VERDICT_LABELS = {
+  greenlight: 'GREENLIGHT',
+  greenlight_with_changes: 'GREENLIGHT WITH CHANGES',
+  hold: 'HOLD',
+  pass: 'PASS',
+  insufficient_data: 'NOT ENOUGH DATA',
+};
+
+// Matches sources_used values from main_synthesis.py's prompt sections
+// (SENTIMENT SYNTHESIS / COMPETITIVE LANDSCAPE / PRODUCTION-CAST NEWS /
+// CAST RECEPTION / MARKETING ANALYSIS) to plain labels for display.
+const SOURCE_LABELS = {
+  sentiment: 'sentiment', web: 'web sentiment', youtube: 'YouTube',
+  competitive: 'competitive landscape', news: 'production/cast news',
+  cast: 'cast reception', marketing: 'marketing analysis',
+};
+
+const ROLE_META = {
+  director: { icon: '\u{1F3AC}', label: 'The Director' },
+  producer: { icon: '\u{1F3AF}', label: 'The Producer' },
+  marketing_chief: { icon: '\u{1F4E3}', label: 'The Marketing Chief' },
+  casting_executive: { icon: '\u{1F3AD}', label: 'The Casting Executive' },
+  distribution_executive: { icon: '\u{1F5D3}\uFE0F', label: 'The Distribution Executive' },
+  analyst: { icon: '\u{1F4CA}', label: 'The Analyst' },
+};
+
+function typewriterInto(el, text, speedMs) {
+  // Respects prefers-reduced-motion — for that audience, just show the
+  // full text immediately rather than animating it in.
+  const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (reduceMotion || !text) { el.textContent = text || ''; return; }
+  el.textContent = '';
+  const cursor = document.createElement('span');
+  cursor.className = 'typewriter-cursor';
+  let i = 0;
+  const tick = () => {
+    el.textContent = text.slice(0, i);
+    el.appendChild(cursor);
+    i++;
+    if (i <= text.length) {
+      setTimeout(tick, speedMs || 14);
+    } else {
+      cursor.remove();
+    }
+  };
+  tick();
+}
+
+function renderGreenlightMemo(memo, releaseStatus, entity, youtubeData) {
+  if (!memo) {
+    greenlightCard.innerHTML = '<p class="empty-state">No memo was returned for this run.</p>';
+    greenlightCard.classList.add('visible');
+    memoBodyCard.classList.remove('visible');
+    memoSynthCard.classList.remove('visible');
+    return;
+  }
+  const tone = verdictTone(memo.verdict);
+  greenlightCard.className = `greenlight-card visible tone-${tone}`;
+  memoBodyCard.className = `greenlight-card visible tone-${tone}`;
+  memoSynthCard.className = 'visible';
+
+  const why = (memo.why || []).map(w => `<li>${w}</li>`).join('') || '<li>No specific reasons surfaced.</li>';
+  const changeLabel = releaseStatus === 'released' ? 'Lessons learned' : "What we'd change";
+  const changeItems = releaseStatus === 'released' ? (memo.lessons_learned || []) : (memo.what_we_would_change || []);
+  const changesBlock = changeItems.length
+    ? `<div class="field"><div class="field-label">${changeLabel}</div><ul class="plain">${changeItems.map(c => `<li>${c}</li>`).join('')}</ul></div>` : '';
+
+  const notableNews = (memo.notable_news || []).map(n => `<li>${n.claim}${sourceLink(n.url)}</li>`).join('');
+  const newsBlock = notableNews ? `<div class="field"><div class="field-label">Notable news</div><ul class="plain">${notableNews}</ul></div>` : '';
+
+  const sourcesUsed = memo.sources_used || [];
+  const sourcesLabel = sourcesUsed.length
+    ? sourcesUsed.map(s => SOURCE_LABELS[s] || s).join(', ')
+    : 'no upstream sources recorded';
+  const confidenceBasisParts = [];
+  if (memo.confidence_rationale) confidenceBasisParts.push(memo.confidence_rationale);
+  confidenceBasisParts.push(`Based on ${sourcesUsed.length}/5 sources: ${sourcesLabel}.`);
+  const confidenceBasis = confidenceBasisParts.join(' ');
+
+  // Small thumbnail only, using the real YouTube trailer thumbnail
+  // (16:9, its true shape) — no TMDB poster lookup, per request. Sized
+  // large enough to actually convey something about the film, not a
+  // token icon.
+  const thumbUrl = youtubeData ? Object.values(youtubeData).map(v => v.thumbnail_url).find(u => u) : null;
+  const posterHtml = thumbUrl
+    ? `<img class="memo-poster" src="${thumbUrl}" alt="${(entity && entity.title) || ''}">`
+    : `<div class="memo-poster-fallback">${(entity && entity.title) || 'FILM'}</div>`;
+  const metaPillsHtml = entity ? buildMetaPills(entity) : '';
+
+  // Now that the real movie is actually known, theme the marquee with
+  // its real trailer thumbnail instead of leaving it neutral.
+  applyMoviePhoto(thumbUrl);
+
+  // --- Header: thumbnail + verdict + confidence + opportunity/risk +
+  // release-context pills. Everything someone needs at a glance. ---
+  greenlightCard.innerHTML = `
+    <div class="memo-header-row">
+      ${posterHtml}
+      <div class="memo-header-right">
+        <div class="verdict-row">
+          <span class="verdict-badge tone-${tone}"><span class="verdict-dot"></span>${VERDICT_LABELS[memo.verdict] || 'VERDICT UNCLEAR'}</span>
+          <span class="confidence-wrap">
+            Confidence: ${memo.confidence}%
+            <span class="confidence-bar"><span class="confidence-bar-fill tone-${tone}" style="width:${memo.confidence}%"></span></span>
+          </span>
+        </div>
+        <div class="memo-meta-pills">${metaPillsHtml}</div>
+        <div class="opp-risk-row" style="margin-bottom:0;">
+          <div class="opp-risk-tile opportunity"><div class="opp-risk-label">Biggest opportunity</div><div class="field-value">${memo.biggest_opportunity || ''}</div></div>
+          <div class="opp-risk-tile risk"><div class="opp-risk-label">Biggest risk</div><div class="field-value">${memo.biggest_risk || ''}</div></div>
+        </div>
       </div>
-      <div class="tile tone-unclear"><div class="tile-label">Sentiment</div><div class="tile-sub">${brief.sentiment_summary || ''}</div></div>
     </div>
-    ${competitorsBlock}
-    <div class="field"><div class="field-label">Notable news</div><ul class="plain">${news}</ul></div>
-    ${lessons}
-    ${recommendation}
   `;
+
+  // --- Synthesizing-agent callout: its own card, positioned directly
+  // before Release Window Advisory in the DOM, so that's the very next
+  // thing after it — not after the whole written case. ---
+  memoSynthCard.innerHTML = `
+    <div class="synth-callout">
+      <span class="synth-tag">Synthesizing agent</span>
+      <span id="synth-callout-text"></span>
+    </div>
+  `;
+
+  // --- Body: the rest of the written case — confidence basis, why,
+  // recommended action, changes, notable news. Sits after Release
+  // Window Advisory in the DOM. ---
+  memoBodyCard.innerHTML = `
+    <div class="confidence-basis">${confidenceBasis}</div>
+
+    <div class="field"><div class="field-label">Why</div><ul class="plain">${why}</ul></div>
+    <div class="field"><div class="field-label">Recommended action</div><div class="field-value">${memo.recommended_action || ''}</div></div>
+    ${changesBlock}
+    ${newsBlock}
+  `;
+
+  const synthTextEl = document.getElementById('synth-callout-text');
+  if (synthTextEl) typewriterInto(synthTextEl, memo.headline || '', 12);
+}
+
+// Cheap, honest keyword read on each persona's REAL sentence (never on
+// invented text) — just enough to decide bubble color and to flag when
+// two consecutive real voices are pulling in different directions, so
+// the room visually reads as people disagreeing rather than a lineup of
+// identical-looking cards.
+const TONE_WORDS = {
+  positive: ['strong', 'confiden', 'soar', 'win', 'hit', 'buzz', 'excit', 'love', 'praise', 'positive', 'boost', 'anticipat', 'momentum', 'favorable', 'promis'],
+  negative: ['risk', 'concern', 'weak', 'struggl', 'underwhelm', 'crowd', 'congest', 'doubt', 'soften', 'backlash', 'negative', 'miss', 'fade', 'thin', 'uncertain', 'shaky', 'skeptic'],
+};
+function guessTone(text) {
+  const t = String(text || '').toLowerCase();
+  let pos = 0, neg = 0;
+  TONE_WORDS.positive.forEach(w => { if (t.includes(w)) pos++; });
+  TONE_WORDS.negative.forEach(w => { if (t.includes(w)) neg++; });
+  if (pos > neg) return 'positive';
+  if (neg > pos) return 'negative';
+  return 'neutral';
+}
+
+// Live, staggered reveal shared by both render paths below — a typing
+// indicator briefly stands in for each persona before their real text
+// types itself out, so the room reads as a conversation happening in
+// front of you, not a pre-rendered dump of cards at once.
+function revealChatItems(reveal, onComplete) {
+  warRoom.classList.add('visible');
+  const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (reduceMotion) {
+    reveal.forEach(r => {
+      r.el.classList.add('show');
+      if (r.textEl) r.textEl.textContent = r.text;
+    });
+    if (onComplete) setTimeout(onComplete, 0);
+    return;
+  }
+  let delay = 200;
+  reveal.forEach(r => {
+    if (r.typing) {
+      const indicator = document.createElement('div');
+      indicator.className = 'chat-typing';
+      indicator.innerHTML = '<span></span><span></span><span></span>';
+      r.el.style.display = 'none';
+      r.el.parentNode.insertBefore(indicator, r.el);
+      setTimeout(() => { indicator.remove(); r.el.style.display = ''; r.el.classList.add('show'); typewriterInto(r.textEl, r.text || '', 10); }, delay);
+      delay += 550 + Math.min(1400, (r.text || '').length * 11);
+    } else {
+      setTimeout(() => r.el.classList.add('show'), delay);
+      delay += 400;
+    }
+  });
+  if (onComplete) setTimeout(onComplete, delay + 400);
+}
+
+// Preferred path: main_synthesis_agent now writes war_room_transcript —
+// a REAL multi-turn discussion it authors from the same five upstream
+// JSON sections it already receives (see main_synthesis.py). It decides
+// disagreement itself, grounded in an actual conflict between two real
+// sources (e.g. cast reception vs. news facts about the same person) —
+// nothing here is guessed or invented on the frontend.
+function renderWarRoomTranscript(turns) {
+  warRoomChat.innerHTML = '';
+  const team = turns.filter(t => t.role !== 'analyst');
+  const analystTurn = [...turns].reverse().find(t => t.role === 'analyst');
+
+  const reveal = [];
+  team.forEach((t, i) => {
+    const meta = ROLE_META[t.role] || { icon: '\u{1F4AC}', label: t.role };
+    const respondingMeta = t.responding_to ? ROLE_META[t.responding_to] : null;
+    if (t.disagreement) {
+      const flag = document.createElement('div');
+      flag.className = 'chat-disagree-flag';
+      flag.textContent = respondingMeta ? `⚡ pushes back on ${respondingMeta.label}` : '⚡ pushes back';
+      warRoomChat.appendChild(flag);
+      reveal.push({ el: flag, typing: false });
+    }
+    const row = document.createElement('div');
+    row.className = `chat-row role-${t.role} ${i % 2 === 0 ? 'offset-a' : 'offset-b'}` + (t.disagreement ? ' tone-negative' : '');
+    const replyLine = respondingMeta
+      ? `<div class="chat-reply-to">${t.disagreement ? '💥' : '↳'} replying to ${respondingMeta.label}</div>`
+      : '';
+    row.innerHTML = `
+      <div class="chat-avatar">${meta.icon}</div>
+      <div class="chat-bubble">
+        <div class="chat-name">${meta.label}</div>
+        ${replyLine}
+        <div class="chat-text"></div>
+      </div>
+    `;
+    warRoomChat.appendChild(row);
+    reveal.push({ el: row, typing: true, text: t.message, textEl: row.querySelector('.chat-text') });
+  });
+
+  if (analystTurn) {
+    const finalRow = document.createElement('div');
+    finalRow.className = 'chat-final';
+    finalRow.innerHTML = `
+      <div class="chat-final-tag">\u{1F4CA} The Analyst — bringing it together</div>
+      <div class="chat-text"></div>
+    `;
+    warRoomChat.appendChild(finalRow);
+    reveal.push({ el: finalRow, typing: true, text: analystTurn.message, textEl: finalRow.querySelector('.chat-text') });
+  }
+
+  return reveal;
+}
+
+// Fallback path: older cached memos (released titles are cached
+// indefinitely, see orchestration/memo_cache.py) were generated before
+// war_room_transcript existed and only have the flat one-line-per-role
+// war_room. For those, fall back to a cheap keyword tone read on each
+// persona's real sentence, just enough to flag when two consecutive
+// real voices are pulling in different directions.
+function renderWarRoomFromVoices(voices) {
+  warRoomChat.innerHTML = '';
+  const team = voices.filter(v => v.role !== 'analyst');
+  const analystVoice = voices.find(v => v.role === 'analyst');
+
+  let prevTone = null;
+  const items = team.map(v => {
+    const meta = ROLE_META[v.role] || { icon: '\u{1F4AC}', label: v.role };
+    const tone = guessTone(v.insight);
+    const disagreesWithPrev = prevTone && tone !== 'neutral' && prevTone !== 'neutral' && tone !== prevTone;
+    prevTone = tone;
+    return { v, meta, tone, disagreesWithPrev };
+  });
+
+  const reveal = [];
+  items.forEach((item, i) => {
+    if (item.disagreesWithPrev) {
+      const flag = document.createElement('div');
+      flag.className = 'chat-disagree-flag';
+      flag.textContent = '⚡ pushes back';
+      warRoomChat.appendChild(flag);
+      reveal.push({ el: flag, typing: false });
+    }
+    const row = document.createElement('div');
+    row.className = `chat-row role-${item.v.role} tone-${item.tone} ${i % 2 === 0 ? 'offset-a' : 'offset-b'}`;
+    row.innerHTML = `
+      <div class="chat-avatar">${item.meta.icon}</div>
+      <div class="chat-bubble">
+        <div class="chat-name">${item.meta.label}</div>
+        <div class="chat-text"></div>
+      </div>
+    `;
+    warRoomChat.appendChild(row);
+    reveal.push({ el: row, typing: true, text: item.v.insight, textEl: row.querySelector('.chat-text') });
+  });
+
+  if (analystVoice) {
+    const finalRow = document.createElement('div');
+    finalRow.className = 'chat-final';
+    finalRow.innerHTML = `
+      <div class="chat-final-tag">\u{1F4CA} The Analyst — bringing it together</div>
+      <div class="chat-text"></div>
+    `;
+    warRoomChat.appendChild(finalRow);
+    reveal.push({ el: finalRow, typing: true, text: analystVoice.insight, textEl: finalRow.querySelector('.chat-text') });
+  }
+
+  return reveal;
+}
+
+// Builds the War Room chat DOM (bubbles hidden, not yet revealed) and
+// stores the reveal sequence in pendingWarRoomReveal for
+// beginWarRoomDiscussion() to play once the reader clicks in / scrolls
+// to the section — see the start-discussion-row button wiring below.
+function renderWarRoomChat(voices, transcript) {
+  let reveal = null;
+  if (Array.isArray(transcript) && transcript.length) {
+    reveal = renderWarRoomTranscript(transcript);
+  } else if (voices && voices.length) {
+    reveal = renderWarRoomFromVoices(voices);
+  } else {
+    warRoom.classList.remove('visible');
+  }
+  pendingWarRoomReveal = reveal;
+}
+
+// Kicks off the actual chat playback: makes the (still-empty-looking)
+// War Room container visible so it has real layout to scroll to, scrolls
+// it into view, then waits for it to actually be on-screen (via
+// IntersectionObserver, with a timeout fallback) before starting the
+// typing/reveal sequence — so "the room starts talking" genuinely lines
+// up with the reader actually looking at it, not with the click itself.
+function beginWarRoomDiscussion() {
+  if (!pendingWarRoomReveal || !pendingWarRoomReveal.length) return;
+  startDiscussionRow.classList.remove('visible');
+  warRoom.classList.add('visible');
+  warRoom.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  const startReveal = () => {
+    if (!pendingWarRoomReveal) return;
+    const reveal = pendingWarRoomReveal;
+    pendingWarRoomReveal = null;
+    revealChatItems(reveal, revealRestOfReport);
+  };
+
+  if (warRoomObserver) { warRoomObserver.disconnect(); warRoomObserver = null; }
+  if ('IntersectionObserver' in window) {
+    warRoomObserver = new IntersectionObserver((entries) => {
+      const entry = entries[0];
+      if (entry && entry.isIntersecting) {
+        warRoomObserver.disconnect();
+        warRoomObserver = null;
+        startReveal();
+      }
+    }, { threshold: 0.2 });
+    warRoomObserver.observe(warRoom);
+    // Safety net — don't leave the room silently empty if the
+    // intersection callback is slow to fire or never crosses threshold
+    // (e.g. a very short page where it's already fully in view).
+    setTimeout(() => { if (pendingWarRoomReveal) startReveal(); }, 1200);
+  } else {
+    setTimeout(startReveal, 500);
+  }
+}
+
+// Reveals everything held back behind the War Room discussion — each
+// section was already fully rendered, just hidden via .pending-reveal,
+// so removing that class both shows it and (since display:none -> block
+// retriggers CSS animations) plays its entrance animation.
+function revealRestOfReport() {
+  ['timeline-card', 'memo-synth-card', 'release-window-card', 'memo-body-card', 'export-row'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.remove('pending-reveal');
+  });
+}
+
+startDiscussionBtn.addEventListener('click', beginWarRoomDiscussion);
+
+function renderTimeline(timeline) {
+  const el = document.getElementById('timeline-card');
+  if (!timeline || !timeline.length) {
+    el.classList.remove('visible');
+    return;
+  }
+  // Milestones are no longer a fixed 5-phase enum, so just sort
+  // chronologically by date — the schema normalizes date to YYYY-MM-DD
+  // specifically so this lexicographic sort is also a correct date sort.
+  const sorted = [...timeline].sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+  el.innerHTML = `
+    <div class="timeline-title">The Life of Its Reputation</div>
+    <div class="timeline-track">
+      <div class="timeline-spine"></div>
+      ${sorted.map((entry, i) => {
+        const side = i % 2 === 0 ? 'side-right' : 'side-left';
+        return `
+        <div class="timeline-row ${side}">
+          <div class="timeline-stop tone-${sentimentTone(entry.sentiment)}">
+            <div class="timeline-phase-label">${entry.milestone || 'Milestone'}${entry.date ? ` — ${entry.date}` : ''}</div>
+            <div class="timeline-note">${entry.note || ''}</div>
+          </div>
+          <div class="timeline-dot tone-${sentimentTone(entry.sentiment)}"></div>
+        </div>`;
+      }).join('')}
+    </div>
+    <div class="timeline-newest-label">↓ newest so far</div>
+  `;
+  el.classList.add('visible');
+}
+
+function renderReleaseWindow(competitive) {
+  const rw = competitive && competitive.release_window;
+  if (!rw || (rw.congestion === 'unclear' && rw.suggested_direction === 'unclear')) {
+    releaseWindowCard.classList.remove('visible');
+    return;
+  }
+  const congestionTone = riskTone(rw.congestion);
+  const DIRECTION_LABELS = {
+    keep_current_window: 'Keep current window',
+    consider_earlier: 'Consider shifting earlier',
+    consider_later: 'Consider shifting later',
+    unclear: 'Direction unclear',
+  };
+  releaseWindowCard.innerHTML = `
+    <div class="rw-header">
+      <span class="rw-title">\u{1F5D3}\uFE0F Release Window Advisory</span>
+      <span class="pill tone-${congestionTone}" style="font-family:var(--font-mono);font-size:0.78rem;padding:3px 10px;border-radius:20px;border:1px solid currentColor;">${rw.congestion} congestion</span>
+    </div>
+    <div class="field-value">${rw.reasoning || ''}</div>
+    <div class="field-value" style="margin-top:8px;font-weight:600;">${DIRECTION_LABELS[rw.suggested_direction] || ''}</div>
+    <div class="rw-caveat">Directional read based on real competing titles found this run — not a projection of what a different date would actually produce.</div>
+  `;
+  releaseWindowCard.classList.add('visible');
 }
 
 function marketingLabels(releaseStatus) {
@@ -635,32 +2042,8 @@ function marketingLabels(releaseStatus) {
   return { worked: 'Positive signals so far', under: 'Concerns so far' };
 }
 
-function sourceLink(url) {
-  return url ? ` <a href="${url}" target="_blank" rel="noopener">source</a>` : '';
-}
-
-const RISK_LEGEND = {
-  upcoming: {
-    low: 'unlikely to have attention split by competing releases',
-    moderate: 'some competition, may share attention',
-    high: 'facing direct, high-profile competition in the same window',
-    unclear: 'not enough data to assess',
-  },
-  released: {
-    low: 'held its own or outperformed its competition',
-    moderate: 'mixed performance against competition',
-    high: 'was notably outcompeted at the box office',
-    unclear: 'not enough data to assess',
-  },
-};
-
-function riskLegendText(releaseStatus, level) {
-  const table = RISK_LEGEND[releaseStatus] || RISK_LEGEND.upcoming;
-  return table[(level || 'unclear').toLowerCase()] || table.unclear;
-}
-
-function renderStudioMarketing(marketing, releaseStatus) {
-  const el = document.getElementById('studio-marketing');
+function renderMarketing(marketing, releaseStatus) {
+  const el = document.getElementById('evidence-marketing');
   if (!marketing) { el.innerHTML = '<h2>Marketing</h2><p class="empty-state">No marketing coverage surfaced for this run.</p>'; return; }
   const labels = marketingLabels(releaseStatus);
   const strategies = (marketing.strategies_observed || []).map(s =>
@@ -679,8 +2062,8 @@ function renderStudioMarketing(marketing, releaseStatus) {
   `;
 }
 
-function renderStudioCast(cast) {
-  const el = document.getElementById('studio-cast');
+function renderCast(cast) {
+  const el = document.getElementById('evidence-cast');
   if (!cast) { el.innerHTML = '<h2>Cast reception</h2><p class="empty-state">No cast-specific coverage surfaced for this run.</p>'; return; }
   const perf = (cast.performances || []).map(p => `
     <div class="mini-card cast-accent">
@@ -704,6 +2087,29 @@ function renderStudioCast(cast) {
   `;
 }
 
+function renderNews(news) {
+  const el = document.getElementById('evidence-news');
+  if (!news || (!news.facts?.length && !news.rumors?.length)) {
+    el.innerHTML = '<h2>Production &amp; cast news</h2><p class="empty-state">No news surfaced for this run.</p>';
+    return;
+  }
+  const CATEGORY_LABELS = { casting: 'Casting', production: 'Production', release: 'Release', box_office: 'Box office', other: 'Other' };
+  const grouped = {};
+  [...(news.facts || []), ...(news.rumors || []).map(r => ({ ...r, isRumor: true }))].forEach(item => {
+    const cat = item.category || 'other';
+    (grouped[cat] = grouped[cat] || []).push(item);
+  });
+  const sections = Object.keys(CATEGORY_LABELS)
+    .filter(cat => grouped[cat] && grouped[cat].length)
+    .map(cat => {
+      const items = grouped[cat].map(item =>
+        `<div class="mini-card news-accent"><div class="field-value">${item.claim}${item.isRumor ? ' <span style="color:var(--text-muted)">(rumor)</span>' : ''}${sourceLink(item.url)}</div></div>`
+      ).join('');
+      return `<div class="field"><div class="field-label">${CATEGORY_LABELS[cat]}</div><div class="card-list">${items}</div></div>`;
+    }).join('');
+  el.innerHTML = `<h2>Production &amp; cast news</h2>${sections}`;
+}
+
 function computeYoutubeStats(youtubeData) {
   if (!youtubeData || !Object.keys(youtubeData).length) return null;
   let totalViews = 0, totalLikes = 0, totalComments = 0;
@@ -723,82 +2129,6 @@ function formatCount(n) {
   if (n >= 1e6) return (n / 1e6).toFixed(1).replace(/\.0$/, '') + 'M';
   if (n >= 1e3) return (n / 1e3).toFixed(1).replace(/\.0$/, '') + 'K';
   return String(n);
-}
-
-function renderFanOverview(brief, youtubeData) {
-  const el = document.getElementById('fan-overview');
-  if (!brief) { el.innerHTML = '<p class="empty-state">No fan pulse was returned for this run.</p>'; return; }
-  const tone = excitementTone(brief.excitement_level);
-  const themes = (brief.top_themes || []).map(t => `<span class="chip">${t}</span>`).join('') || '<span class="empty-state">None surfaced.</span>';
-  const worth = brief.worth_watching
-    ? `<div class="tile tone-unclear"><div class="tile-label">Worth watching?</div><div class="tile-sub">${brief.worth_watching}</div></div>`
-    : `<div class="tile tone-unclear"><div class="tile-label">Fun fact</div><div class="tile-sub">${brief.fun_fact_or_news || '\u2014'}</div></div>`;
-  const hypeQuote = brief.hype_quote
-    ? `<div class="hype-quote">"${brief.hype_quote}"</div>` : '';
-  const standout = brief.standout_moment
-    ? `<div class="field"><div class="field-label">Standout moment</div><div class="field-value">${brief.standout_moment}</div></div>` : '';
-
-  const ytStats = computeYoutubeStats(youtubeData);
-  const ytBlock = ytStats ? `
-    <div class="field" style="margin-top:26px;padding-top:20px;border-top:1px solid var(--border);">
-      <div class="field-label">Trailer stats</div>
-      <div class="tile-row">
-        <div class="tile tone-unclear"><div class="tile-label">Views</div><div class="tile-value">${formatCount(ytStats.totalViews)}</div></div>
-        <div class="tile tone-unclear"><div class="tile-label">Likes</div><div class="tile-value">${formatCount(ytStats.totalLikes)}</div></div>
-      </div>
-      ${ytStats.topComment ? `<div class="field"><div class="field-label">Top comment (${formatCount(ytStats.topComment.like_count || 0)} likes)</div><div class="field-value">"${ytStats.topComment.text}"</div></div>` : ''}
-    </div>
-  ` : '';
-
-  el.innerHTML = `
-    <h2>${brief.headline || ''}</h2>
-    ${hypeQuote}
-    <div class="tile-row">
-      <div class="tile tone-${tone}">
-        <div class="tile-label">Excitement level</div>
-        <div class="tile-value">${brief.excitement_level || 'unclear'}</div>
-        <div class="tile-sub">${brief.excitement_reason || ''}</div>
-      </div>
-      ${worth}
-    </div>
-    ${standout}
-    <div class="field"><div class="field-label">What fans are talking about</div><div class="chip-row">${themes}</div></div>
-    ${ytBlock}
-  `;
-}
-
-function renderFanNews(news) {
-  const el = document.getElementById('fan-news');
-  if (!news || (!news.facts?.length && !news.rumors?.length)) {
-    el.innerHTML = '<h2>Cast &amp; production news</h2><p class="empty-state">No news surfaced for this run.</p>';
-    return;
-  }
-  const CATEGORY_LABELS = { casting: 'Casting', production: 'Production', release: 'Release', box_office: 'Box office', other: 'Other' };
-  const grouped = {};
-  [...(news.facts || []), ...(news.rumors || []).map(r => ({ ...r, isRumor: true }))].forEach(item => {
-    const cat = item.category || 'other';
-    (grouped[cat] = grouped[cat] || []).push(item);
-  });
-  const sections = Object.keys(CATEGORY_LABELS)
-    .filter(cat => grouped[cat] && grouped[cat].length)
-    .map(cat => {
-      const items = grouped[cat].map(item =>
-        `<div class="mini-card news-accent"><div class="field-value">${item.claim}${item.isRumor ? ' <span style="color:var(--text-muted)">(rumor)</span>' : ''}${sourceLink(item.url)}</div></div>`
-      ).join('');
-      return `<div class="field"><div class="field-label">${CATEGORY_LABELS[cat]}</div><div class="card-list">${items}</div></div>`;
-    }).join('');
-  el.innerHTML = `<h2>Cast &amp; production news</h2>${sections}`;
-}
-
-function verdictTone(verdict) {
-  switch ((verdict || 'unclear').toLowerCase()) {
-    case 'blockbuster':
-    case 'hit': return 'positive';
-    case 'average': return 'neutral';
-    case 'underperformed':
-    case 'flop': return 'negative';
-    default: return 'unclear';
-  }
 }
 
 function renderCollections(competitive, youtubeData) {
@@ -845,35 +2175,29 @@ function renderCollections(competitive, youtubeData) {
       </div>
     </div>` : '';
 
-  collectionsContent.innerHTML = `
+  const franchiseHistory = (competitive && competitive.franchise_history || []);
+  const franchiseBlock = franchiseHistory.length ? `
+    <div class="field">
+      <div class="field-label">Franchise history</div>
+      <div class="tile-row">
+        ${franchiseHistory.map(f => `
+          <div class="tile tone-neutral">
+            <div class="tile-label">${f.title}${f.year ? ` (${f.year})` : ''}</div>
+            <div class="tile-value" style="font-size:1rem">${f.box_office || '—'}</div>
+            ${f.reception_note ? `<div class="tile-sub">${f.reception_note}</div>` : ''}
+          </div>
+        `).join('')}
+      </div>
+    </div>` : '';
+
+  evidenceCollections.innerHTML = `
     <h2>Collections &amp; comparative performance</h2>
+    ${franchiseBlock}
     ${verdictBlock}
     <div class="field"><div class="field-label">Box office</div>${boTiles}</div>
     ${ytBlock}
     ${compTable}
   `;
-}
-
-function renderHero(entity, youtubeData) {
-  const label = releaseLabel(entity);
-  const titleHtml = `${label}: ${entity.title || ''}`;
-  const metaHtml = buildMetaPills(entity);
-
-  const firstThumb = youtubeData ? Object.values(youtubeData).map(v => v.thumbnail_url).find(u => u) : null;
-
-  if (firstThumb) {
-    heroBannerImg.src = firstThumb;
-    heroBannerImg.alt = entity.title || '';
-    heroBannerTitle.textContent = titleHtml;
-    heroBannerMeta.innerHTML = metaHtml;
-    heroBanner.classList.add('visible');
-    marqueeFallback.classList.remove('visible');
-  } else {
-    marqueeFallbackTitle.textContent = titleHtml;
-    marqueeFallbackMeta.innerHTML = metaHtml;
-    marqueeFallback.classList.add('visible');
-    heroBanner.classList.remove('visible');
-  }
 }
 
 function renderConfidenceNote(entity, result) {
@@ -897,17 +2221,37 @@ function renderConfidenceNote(entity, result) {
   status.classList.add('visible');
 }
 
-function showView(view) {
-  currentView = view;
-  document.querySelectorAll('.tab-btn').forEach(btn => { btn.dataset.active = String(btn.dataset.view === view); });
-  studioPanel.classList.toggle('visible', view === 'studio');
-  fanPanel.classList.toggle('visible', view === 'fan');
-  collectionsPanel.classList.toggle('visible', view === 'collections');
+function renderCacheNote(entity, data) {
+  // Both released and upcoming/unclear titles are cached now (see
+  // orchestration/memo_cache.py) — released permanently, upcoming/
+  // unclear for a short window to avoid the answer visibly changing
+  // between back-to-back searches. Phrasing differs so it's clear which
+  // kind of caching is in play.
+  const isReleased = entity.release_status === 'released';
+  let text;
+  if (isReleased) {
+    text = data.served_from_cache
+      ? `Showing the frozen memo for this released title, originally computed ${new Date(data.cached_at).toLocaleString()}. Released titles aren't re-researched on every search.`
+      : `This memo is now frozen as the standing result for this released title — future searches will serve this same version.`;
+  } else {
+    text = data.served_from_cache
+      ? `Showing a recently computed memo, from ${new Date(data.cached_at).toLocaleString()}. Repeat searches for this title are cached briefly so the answer doesn't shift between back-to-back queries.`
+      : `This memo will be served back for repeat searches of this title for a short while, so results stay consistent between queries.`;
+  }
+  cacheNote.innerHTML = `
+    <span class="cache-note-text">${text}</span>
+    <button id="refresh-btn">Refresh this memo</button>
+  `;
+  cacheNote.classList.add('visible');
 }
 
-tabs.addEventListener('click', (e) => {
-  const btn = e.target.closest('.tab-btn');
-  if (btn) showView(btn.dataset.view);
+cacheNote.addEventListener('click', (e) => {
+  if (!e.target.closest('#refresh-btn')) return;
+  const btn = e.target.closest('#refresh-btn');
+  btn.disabled = true;
+  btn.textContent = 'Refreshing...';
+  titleInput.value = lastSearchedTitle;
+  runBrief(true);
 });
 
 function getRegionHint() {
@@ -920,22 +2264,68 @@ function getRegionHint() {
   }
 }
 
-async function runBrief() {
+// The page's "themed by the movie" backdrop is the REAL YouTube trailer
+// thumbnail for this run — not a guessed color. Faking a per-title color
+// (e.g. hashing the title into a hue) was tried and rejected: it
+// produces a real gradient, but one with no actual relationship to the
+// movie, which reads as arbitrary. Using the actual thumbnail as a
+// heavily-blurred backdrop-image avoids that (and avoids the
+// canvas-pixel-read CORS problem too, since this only sets it as a CSS
+// background-image — no pixel access needed). Every glass card on the
+// page (see the shared backdrop-filter rule) blurs THIS layer, which is
+// what makes them read as clear glass instead of flat translucent
+// panels floating over nothing. The tradeoff is honest: the thumbnail
+// isn't known until results land, so the page stays on the neutral
+// pastel wash / dark glass until then, rather than faking a movie color
+// before the real one exists.
+function applyMoviePhoto(url) {
+  const marquee = document.getElementById('marqueePhoto');
+  const page = document.getElementById('pageBackdrop');
+  if (!url) {
+    if (marquee) { marquee.classList.remove('visible'); marquee.style.backgroundImage = ''; }
+    if (page) { page.classList.remove('visible'); page.style.backgroundImage = ''; }
+    return;
+  }
+  const cssUrl = `url("${url}")`;
+  if (marquee) { marquee.style.backgroundImage = cssUrl; marquee.classList.add('visible'); }
+  if (page) { page.style.backgroundImage = cssUrl; page.classList.add('visible'); }
+}
+
+async function runBrief(forceRefresh = false) {
   const title = titleInput.value.trim();
   if (!title) { status.textContent = 'Enter a title first.'; status.classList.add('visible'); return; }
+
+  addToSearchHistory(title);
+  applyMoviePhoto(null);
 
   if (activeSource) { activeSource.close(); activeSource = null; }
 
   searchBtn.disabled = true;
   exampleChips.style.display = 'none';
   exportRow.style.display = 'none';
-  heroBanner.classList.remove('visible');
-  marqueeFallback.classList.remove('visible');
-  tabs.classList.remove('visible');
-  studioPanel.classList.remove('visible');
-  fanPanel.classList.remove('visible');
-  collectionsPanel.classList.remove('visible');
-  collectionsTabBtn.style.display = 'none';
+  cacheNote.classList.remove('visible');
+  lastPayloadData = null;
+  lastSearchedTitle = title;
+  const studioFilmTitle = document.getElementById('studio-film-title');
+  if (studioFilmTitle) studioFilmTitle.textContent = title;
+  const studioTagline = document.getElementById('studio-tagline');
+  if (studioTagline) studioTagline.textContent = 'Your AI production room is investigating...';
+  greenlightCard.classList.remove('visible');
+  memoBodyCard.classList.remove('visible');
+  memoSynthCard.classList.remove('visible');
+  warRoom.classList.remove('visible');
+  document.getElementById('timeline-card').classList.remove('visible');
+  releaseWindowCard.classList.remove('visible');
+  evidenceSection.classList.remove('visible');
+  evidenceCollectionsBtn.style.display = 'none';
+  startDiscussionRow.classList.remove('visible');
+  ['timeline-card', 'memo-synth-card', 'release-window-card', 'memo-body-card', 'export-row'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.remove('pending-reveal');
+  });
+  if (warRoomObserver) { warRoomObserver.disconnect(); warRoomObserver = null; }
+  pendingWarRoomReveal = null;
+  if (detailToggleBtn) detailToggleBtn.textContent = 'Detailed report ↓';
   status.classList.remove('visible');
   resetProgress();
   progress.classList.add('visible');
@@ -943,6 +2333,7 @@ async function runBrief() {
   const regionHint = getRegionHint();
   const source = new EventSource(
     `/api/brief/stream?title=${encodeURIComponent(title)}&region_hint=${encodeURIComponent(regionHint)}`
+    + (forceRefresh ? '&force_refresh=true' : '')
   );
   activeSource = source;
 
@@ -950,7 +2341,20 @@ async function runBrief() {
     let payload;
     try { payload = JSON.parse(raw.data); } catch { return; }
 
-    if (payload.event === 'stage') { markStage(payload.stage); return; }
+    if (payload.event === 'stage') {
+      if (payload.stage === 'cache_hit' || payload.stage === 'cache_refresh') {
+        progressTimerText.textContent = payload.message;
+        const studioTagline = document.getElementById('studio-tagline');
+        if (studioTagline) {
+          studioTagline.textContent = payload.stage === 'cache_hit'
+            ? 'Recalling the studio\u2019s records...'
+            : 'Reopening the file for a fresh read...';
+        }
+      }
+      markStage(payload.stage);
+      return;
+    }
+    if (payload.event === 'activity') { appendActivity(payload.stage, payload.log); return; }
 
     if (payload.event === 'error') {
       progress.classList.remove('visible');
@@ -967,29 +2371,68 @@ async function runBrief() {
       stopTimer();
 
       const data = payload.data;
+      lastPayloadData = data;
       const entity = data.entity || {};
       const result = data.result || {};
 
-      renderHero(entity, data.youtube);
       renderConfidenceNote(entity, result);
 
-      renderStudioOverview(result.studio_brief, entity.release_status, data.competitive);
-      renderStudioMarketing(data.marketing, entity.release_status);
-      renderStudioCast(data.cast);
-      renderFanOverview(result.fan_pulse, data.youtube);
-      renderFanNews(data.news);
+      renderGreenlightMemo(result, entity.release_status, entity, data.youtube);
+      renderTimeline(data.sentiment_synthesis && data.sentiment_synthesis.timeline);
+      renderWarRoomChat(result.war_room, result.war_room_transcript);
+      renderReleaseWindow(data.competitive);
+
+      renderMarketing(data.marketing, entity.release_status);
+      renderCast(data.cast);
+      renderNews(data.news);
 
       const isReleased = entity.release_status === 'released';
-      collectionsTabBtn.style.display = isReleased ? '' : 'none';
-      if (isReleased) {
+      const hasFranchiseHistory = !!(data.competitive && data.competitive.franchise_history && data.competitive.franchise_history.length);
+      evidenceCollectionsBtn.style.display = (isReleased || hasFranchiseHistory) ? '' : 'none';
+      // Name the tab for what it actually contains this run — an
+      // upcoming sequel with no box office of its own yet shouldn't be
+      // labeled "Collections" (which reads as this title's own numbers).
+      evidenceCollectionsBtn.textContent = isReleased
+        ? (hasFranchiseHistory ? 'Collections & Franchise' : 'Collections')
+        : 'Franchise History';
+      if (isReleased || hasFranchiseHistory) {
         renderCollections(data.competitive, data.youtube);
-      } else if (currentView === 'collections') {
-        currentView = 'studio';
+      } else {
+        // If a previous (released) run left Collections as the active
+        // sub-tab, fall back to Marketing rather than showing an empty
+        // conditional tab for this (upcoming) title.
+        const activeBtn = evidenceSection.querySelector('.subtab-btn[data-active="true"]');
+        if (activeBtn && activeBtn.dataset.sub === 'evidence-collections') {
+          evidenceSection.querySelectorAll('.subtab-btn').forEach(b => b.dataset.active = String(b.dataset.sub === 'evidence-marketing'));
+          evidenceSection.querySelectorAll('.subpanel').forEach(p => p.classList.toggle('visible', p.id === 'evidence-marketing'));
+        }
       }
 
-      tabs.classList.add('visible');
-      exportRow.style.display = '';
-      showView(currentView);
+      // Evidence tabs are populated above but stay hidden by default —
+      // the memo card is meant to be the complete glanceable artifact;
+      // #detail-toggle-btn (wired below) reveals this on demand.
+      exportRow.style.display = 'flex';
+
+      // Everything past the verdict-first summary is fully rendered by
+      // now but held back behind .pending-reveal — the reader sees the
+      // headline verdict immediately, then chooses when to step into
+      // the War Room discussion; the rest of the report (timeline,
+      // synth callout, release window, written case, export) reveals
+      // itself once that discussion actually finishes playing. If there
+      // was no real discussion to show (e.g. insufficient_data), skip
+      // the gate entirely rather than hiding real content behind a
+      // button with nothing to click through to.
+      ['timeline-card', 'memo-synth-card', 'release-window-card', 'memo-body-card', 'export-row'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.classList.add('pending-reveal');
+      });
+      if (pendingWarRoomReveal && pendingWarRoomReveal.length) {
+        startDiscussionRow.classList.add('visible');
+      } else {
+        revealRestOfReport();
+      }
+
+      renderCacheNote(entity, data);
     }
   };
 
@@ -997,7 +2440,7 @@ async function runBrief() {
     if (activeSource !== source) return;
     source.close(); activeSource = null;
     progress.classList.remove('visible');
-      stopTimer();
+    stopTimer();
     status.textContent = 'Connection lost while running the pipeline.';
     status.classList.add('visible');
     searchBtn.disabled = false;
@@ -1014,7 +2457,44 @@ exampleChips.addEventListener('click', (e) => {
   runBrief();
 });
 
-exportBtn.addEventListener('click', () => window.print());
+detailToggleBtn.addEventListener('click', () => {
+  const nowVisible = evidenceSection.classList.toggle('visible');
+  detailToggleBtn.textContent = nowVisible ? 'Detailed report ↑' : 'Detailed report ↓';
+  if (nowVisible) evidenceSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+});
+
+pdfBtn.addEventListener('click', async () => {
+  if (!lastPayloadData) return;
+  pdfBtn.disabled = true;
+  const originalLabel = pdfBtn.textContent;
+  pdfBtn.textContent = 'Generating...';
+  try {
+    const res = await fetch('/api/brief/pdf', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(lastPayloadData),
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body.detail || `Request failed (${res.status})`);
+    }
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const safeTitle = ((lastPayloadData.entity || {}).title || 'brief').replace(/[^A-Za-z0-9_-]+/g, '_');
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `filmecho-${safeTitle}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  } catch (err) {
+    alert(`PDF generation failed: ${err.message}`);
+  } finally {
+    pdfBtn.disabled = false;
+    pdfBtn.textContent = originalLabel;
+  }
+});
 
 status.addEventListener('click', (e) => {
   const chip = e.target.closest('.candidate-chip');
@@ -1022,6 +2502,8 @@ status.addEventListener('click', (e) => {
   titleInput.value = chip.dataset.title;
   runBrief();
 });
+
+renderExampleChips();
 
 // Deep-linking: a competing-title link opens /?title=X in a new tab, this
 // picks that up on load and runs the search immediately, so the new tab

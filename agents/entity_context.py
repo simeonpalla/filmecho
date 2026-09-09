@@ -39,6 +39,22 @@ from agents.schemas import EntityResolution
 # has already changed once during this project's build.
 GEMINI_MODEL = os.environ.get("FILMECHO_GEMINI_MODEL", "gemini-2.5-flash")
 
+# Every agent in this pipeline shares this temperature to cut down on
+# run-to-run variance for the SAME underlying data — e.g. the same
+# Avengers: Doomsday query producing noticeably different confidence
+# scores or verdicts within the same hour was traced partly to default
+# sampling temperature, not just to the web genuinely changing that fast.
+# Low, not zero: some structured-output tasks degrade at temperature=0
+# (repetition, refusal to pick between close-call verdicts), and the
+# Gemini API doesn't guarantee bit-exact reproducibility at any
+# temperature — this reduces variance, it does not eliminate it. The
+# remaining variance for "upcoming" titles is real and expected: Parallel
+# search is live, and view counts/trailer drops/new coverage genuinely
+# change between two runs an hour apart. That part isn't a bug to fix
+# here, see orchestration/memo_cache.py for how "released" titles (whose
+# facts truly are frozen) are handled instead.
+GROUNDING_TEMPERATURE = float(os.environ.get("FILMECHO_TEMPERATURE", "0.1"))
+
 
 @dataclass
 class EntityContext:
@@ -137,7 +153,11 @@ def _search_excerpts(parallel_client: Parallel, title: str, extra_hint: str = ""
             f"{title} release date",
             f"{title} based on remake adaptation",
         ],
-        mode="fast",
+        # "advanced" over "fast" — a weak entity resolution here (wrong
+        # release_status, low confidence) cascades into every downstream
+        # agent's framing, so the extra depth pays for itself more than
+        # anywhere else in the pipeline.
+        mode="advanced",
     )
     excerpts = "\n\n".join(
         excerpt[:500]
@@ -162,6 +182,7 @@ def _extract(genai_client: genai.Client, title: str, excerpts: str) -> Optional[
                 system_instruction=_EXTRACTION_INSTRUCTION,
                 response_mime_type="application/json",
                 response_schema=EntityResolution,
+                temperature=GROUNDING_TEMPERATURE,
             ),
         )
         return EntityResolution.model_validate_json(response.text)

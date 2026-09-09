@@ -41,7 +41,17 @@ class EntityResolution(BaseModel):
         description="Full release date as reported (e.g. 'September 11, 2026'), or null if only a year or nothing is known. Do not guess a date that wasn't in the excerpts.",
     )
     director: Optional[str] = Field(default=None, description="Director's name, or null if unknown.")
-    cast: list[str] = Field(default_factory=list, description="Up to 5 top-billed cast members.")
+    cast: list[str] = Field(
+        default_factory=list,
+        description=(
+            "The most prominent named cast members, typically up to 5. For a "
+            "genuine ensemble/crossover film with no clear top-5 (e.g. a "
+            "multi-hero team-up), list up to 10 of the most prominent named "
+            "actors instead of leaving this empty — a longer real list is "
+            "more useful downstream than an empty one, but every name must "
+            "still come from the excerpts, never guessed."
+        ),
+    )
     source_type: Literal[
         "original", "remake", "book_adaptation", "comic_adaptation",
         "true_story", "sequel", "reboot", "spinoff", "unclear",
@@ -141,6 +151,46 @@ class BoxOfficeInfo(BaseModel):
     )
 
 
+class ReleaseWindowAdvice(BaseModel):
+    """Grounded, directional read on release timing — never a fabricated
+    counterfactual. This does NOT project what would happen on a
+    different date (there is no search result for a hypothetical), it
+    only assesses how congested the ACTUAL known window is, based on the
+    real competing_titles already found, and gives a directional
+    suggestion (earlier/later/keep) grounded in which real competitors
+    that would avoid or encounter — never a specific alternate date, and
+    never an invented performance number for one."""
+
+    congestion: Literal["low", "moderate", "high", "unclear"] = Field(
+        description="How crowded the release window actually is, based on the real competing_titles found — not a guess."
+    )
+    reasoning: str = Field(
+        description="Why, citing the SPECIFIC competing titles and whatever release-timing/genre-overlap info the excerpts actually gave. Never invented."
+    )
+    suggested_direction: Literal["keep_current_window", "consider_earlier", "consider_later", "unclear"] = Field(
+        description=(
+            "A directional suggestion only, grounded in the real competitors found. "
+            "NEVER name a specific alternate date, and NEVER state or imply a "
+            "projected box-office outcome for a hypothetical date — there is no "
+            "real data for a counterfactual, only for what actually exists. "
+            "'unclear' if the excerpts don't give enough to support even a "
+            "direction."
+        )
+    )
+
+
+class FranchiseEntry(BaseModel):
+    """One prior installment in the same franchise/series — historical
+    grounding for a sequel/reboot/spinoff/remake, distinct from
+    competing_titles (which is about OTHER films competing for the same
+    release window, not this title's own history)."""
+
+    title: str = Field(description="The prior film's title.")
+    year: Optional[int] = Field(default=None, description="Release year, if the excerpts state one.")
+    box_office: Optional[str] = Field(default=None, description="Worldwide or domestic gross exactly as reported in the excerpts. Null if no figure was found — never estimate one.")
+    reception_note: str = Field(default="", description="One short phrase on how it was critically/commercially received, grounded in the excerpts. Empty string if not found.")
+
+
 class CompetitiveResult(BaseModel):
     competing_titles: list[CompetitorInfo] = Field(default_factory=list, max_length=5)
     attention_assessment: str = Field(description="1-2 sentences: is attention split, concentrated, or unaffected.")
@@ -161,6 +211,25 @@ class CompetitiveResult(BaseModel):
         default_factory=BoxOfficeInfo,
         description="ONLY populate meaningfully for released titles — for upcoming titles, leave every field at its default (null/'unclear'), there is no box office yet.",
     )
+    release_window: ReleaseWindowAdvice = Field(
+        default_factory=lambda: ReleaseWindowAdvice(congestion="unclear", reasoning="", suggested_direction="unclear"),
+        description="ONLY meaningful for upcoming titles — for released titles the window is already fixed, leave at defaults.",
+    )
+    franchise_history: list[FranchiseEntry] = Field(
+        default_factory=list, max_length=5,
+        description=(
+            "ONLY populate when the title is a sequel/reboot/spinoff/remake (you "
+            "are told this via source_type/based_on) — prior installments in the "
+            "SAME series and how they performed, e.g. for a sequel this is the "
+            "earlier film(s)' box office and reception, not unrelated competing "
+            "titles (those belong in competing_titles instead). Leave empty for "
+            "an original work with no franchise history, or if source_type is "
+            "sequel/reboot/spinoff/remake but the excerpts don't actually name a "
+            "specific prior film with real figures. Every figure must come from "
+            "the excerpts verbatim, never estimated, averaged, or extrapolated "
+            "from 'similar franchises usually do X.'"
+        ),
+    )
 
 
 class NewsItem(BaseModel):
@@ -169,7 +238,20 @@ class NewsItem(BaseModel):
 
     url: str = Field(description="Source URL the claim came from.")
     claim: str = Field(description="The specific claim, in your own words, not a verbatim quote.")
-    date: Optional[str] = Field(default=None, description="Date this was reported, if stated. Null if unknown.")
+    date: Optional[str] = Field(
+        default=None,
+        description=(
+            "The specific date this happened, normalized to YYYY-MM-DD when the "
+            "excerpt gives a full date, or just the year/month if that's all "
+            "that's stated. ACTIVELY extract this whenever the claim itself "
+            "names a date — 'production began in March 2025' has a date in it, "
+            "populate it, don't leave this null just because you didn't have "
+            "to look hard for it. This field is what lets a reputation timeline "
+            "get built from these facts downstream, so a populated date on an "
+            "ordinary production fact is more valuable than it looks in "
+            "isolation. Null only when the excerpt genuinely gives no date at all."
+        ),
+    )
     category: Literal["casting", "production", "release", "box_office", "other"] = Field(
         description="'casting' = who's in it or cast changes. 'production' = filming, crew, budget, behind-the-scenes logistics. 'release' = dates, distribution, platform. 'box_office' = ticket sales, revenue figures. 'other' = doesn't fit the above."
     )
@@ -180,6 +262,34 @@ class NewsResult(BaseModel):
     rumors: list[NewsItem] = Field(default_factory=list, max_length=4, description="Explicitly labeled rumor/speculation, categorized.")
 
 
+class ReputationTimelineEntry(BaseModel):
+    """One dated milestone in a title's public life — not restricted to a
+    fixed set of phases, so it can actually cover the whole arc
+    (announcement, casting reveals, each trailer, premiere, opening
+    weekend, long-tail reaction...), not just whichever YouTube videos
+    happened to get discovered. Only populate one when a real date
+    actually places it — never infer a milestone from guesswork."""
+
+    milestone: str = Field(
+        description=(
+            "A short, specific label for what this is — e.g. 'Casting "
+            "Announcement', 'First Trailer', 'Special Look', 'Premiere', "
+            "'Opening Weekend', 'Long-Tail Reaction'. Not restricted to a "
+            "fixed list; name it accurately for what actually happened."
+        )
+    )
+    date: str = Field(
+        description=(
+            "The real date this happened, normalized to YYYY-MM-DD "
+            "(date only — never include a time-of-day, even if the "
+            "source gave one). Convert whatever format the source used "
+            "into this format; never invent or estimate a date."
+        )
+    )
+    sentiment: Literal["positive", "mixed", "negative", "unclear"]
+    note: str = Field(description="What was actually being said/reported around this milestone, one sentence, grounded in dated sources.")
+
+
 class SentimentSynthesisResult(BaseModel):
     overall_sentiment: Literal["positive", "mixed", "negative", "unclear"]
     justification: str
@@ -187,6 +297,10 @@ class SentimentSynthesisResult(BaseModel):
     recurring_themes: list[str] = Field(default_factory=list)
     agreement_note: str = Field(description="Do sources agree or conflict, one sentence.")
     sources_available: list[str] = Field(description="Which of web/youtube/reddit actually had data this run.")
+    timeline: list[ReputationTimelineEntry] = Field(
+        default_factory=list, max_length=8,
+        description="Up to 8 dated milestones across the title's whole public life, drawn from YouTube publish dates AND dated news facts (announcement, casting reveals, each trailer, premiere, opening weekend, long-tail reaction, etc.) — as many distinct real-dated events as the sources actually support, sorted chronologically. Leave empty entirely if no dates are available to place anything — this is a bonus signal, not a required field.",
+    )
 
 
 class CastPerformanceNote(BaseModel):
@@ -251,45 +365,123 @@ class MarketingResult(BaseModel):
     )
 
 
-class StudioBrief(BaseModel):
+class WarRoomVoice(BaseModel):
+    """One persona's one-line take. These are NOT separate agent calls —
+    main_synthesis already has all five upstream agents' JSON, this just
+    forces it to distill each domain into a specific, attributable voice
+    instead of blending everything into one generic paragraph."""
+
+    role: Literal["director", "producer", "marketing_chief", "casting_executive", "distribution_executive", "analyst"]
+    insight: str = Field(
+        description="One sharp, specific sentence in this persona's voice, grounded in that persona's upstream data (director→sentiment/themes, producer→competitive, marketing_chief→marketing, casting_executive→cast, distribution_executive→release_window, analyst→overall confidence read). Never generic filler like 'the film looks promising.'"
+    )
+
+
+class WarRoomTurn(BaseModel):
+    """One beat in a real, grounded back-and-forth discussion between the
+    War Room personas. Still NOT a separate agent call — main_synthesis
+    already has all five upstream agents' full JSON in front of it; this
+    asks it to write the discussion those five real datasets would
+    actually produce, including genuine disagreement where two personas'
+    real upstream sources are actually in tension (e.g. cast reception
+    vs. news facts about the same actor's involvement, or positive
+    sentiment vs. a crowded competitive window) — never a scripted
+    argument bolted on for effect."""
+
+    role: Literal["director", "producer", "marketing_chief", "casting_executive", "distribution_executive", "analyst"]
+    message: str = Field(
+        description="One conversational beat, at most two sentences, in this persona's voice. Grounded strictly in that persona's own upstream section (see the war_room role→source mapping), or — for a rebuttal — in the specific other section it's disagreeing with. Never invent a fact not present in the upstream JSON given to you."
+    )
+    responding_to: Optional[Literal["director", "producer", "marketing_chief", "casting_executive", "distribution_executive"]] = Field(
+        default=None,
+        description="Set ONLY when this turn is directly reacting to (agreeing with or pushing back on) a specific earlier speaker's point in THIS transcript — the role that earlier turn belongs to. Leave null for a turn that's introducing its own domain's read rather than replying to someone.",
+    )
+    disagreement: bool = Field(
+        default=False,
+        description="True only when this turn genuinely contradicts or complicates a point another real speaker just made, because their two upstream data sections are actually in tension. Never set true just for dramatic effect when the underlying data doesn't actually conflict.",
+    )
+
+
+class GreenlightMemo(BaseModel):
+    """The single output of main_synthesis — one verdict-first memo,
+    not two audience-split briefs. Every field must trace back to the
+    five upstream agents' actual data; nothing here is a place to
+    editorialize beyond what the evidence supports."""
+
     headline: str
-    sentiment_summary: str
-    competitive_risk: Literal["low", "moderate", "high", "unclear"]
-    notable_news: list[SourceExcerpt] = Field(default_factory=list, max_length=4)
-    recommendation: str = Field(
+    verdict: Literal["greenlight", "greenlight_with_changes", "hold", "pass", "insufficient_data"] = Field(
+        description=(
+            "For upcoming titles: a genuine greenlight-style call. For released/retrospective titles, this reflects "
+            "how the release performed in hindsight (greenlight=clearly worked, greenlight_with_changes=worked with "
+            "real caveats, hold=mixed/underwhelming, pass=clearly underperformed) — reframe the label's meaning by "
+            "release_status, same pattern as competitive_risk. "
+            "insufficient_data is a DIFFERENT KIND of value, not a point on that same scale: it means don't produce "
+            "a recommendation at all this run — see the enforced threshold in the instruction below. This exists "
+            "specifically because a low confidence NUMBER next to a normal verdict badge still reads as a real "
+            "recommendation to someone skimming the memo — a bold 'GREENLIGHT' stamp at 35% confidence is a worse "
+            "failure than an honest 'not enough evidence yet' state, even though both are technically low-confidence."
+        )
+    )
+    confidence: int = Field(
+        ge=0, le=100,
+        description="0-100. Lower when upstream sources were sparse/unavailable or when signals conflict; do not default to a round number like 50 or 75 out of habit, base it on how much real evidence actually supports the verdict.",
+    )
+    confidence_rationale: str = Field(
         default="",
-        description="ONLY for upcoming titles: forward-looking, actionable business advice. For released/retrospective titles, leave this EMPTY — a forward recommendation for something that already happened and can't be changed (e.g. 'consider a re-release') is not useful advice, that's what lessons_learned is for instead.",
+        description=(
+            "One sentence stating WHY the confidence number is what it is — "
+            "name how many of the five upstream sources actually had data "
+            "(cross-check against sources_used) and whether they agreed or "
+            "conflicted. E.g. 'Based on 4 of 5 sources, which broadly "
+            "agreed; competitive data was unavailable this run.' This is "
+            "shown directly next to the confidence score, so it must "
+            "actually explain the number, not restate the verdict."
+        ),
+    )
+    why: list[str] = Field(max_length=3, min_length=1, description="Up to 3 short reasons for the verdict, each traceable to specific upstream data (sentiment, competitive, cast, marketing, or news).")
+    biggest_opportunity: str = Field(description="The single strongest positive lever, specific and named — not 'strong audience interest' but what specifically is driving it.")
+    biggest_risk: str = Field(description="The single biggest threat, specific and named.")
+    recommended_action: str = Field(description="ONE specific, forward-looking action. For released titles, reframe as the single biggest actionable lesson rather than a future action, since there's no release left to act on.")
+    what_we_would_change: list[str] = Field(
+        default_factory=list, max_length=3,
+        description="ONLY for upcoming titles — up to 3 concrete changes to make before release. Leave EMPTY for released titles, there's nothing left to change.",
     )
     lessons_learned: list[str] = Field(
+        default_factory=list, max_length=4,
+        description="ONLY for released titles — concrete takeaways for future decisions. Leave EMPTY for upcoming titles, there's no outcome yet to learn from.",
+    )
+    war_room: list[WarRoomVoice] = Field(
+        min_length=6, max_length=6,
+        description="Exactly 6 voices, one per role, in this order: director, producer, marketing_chief, casting_executive, distribution_executive, analyst.",
+    )
+    war_room_transcript: list[WarRoomTurn] = Field(
         default_factory=list,
-        max_length=4,
-        description="Up to 4 items. Only for released titles: concrete takeaways for future marketing/release decisions. Leave empty for upcoming titles.",
+        max_length=18,
+        description=(
+            "A real, continuous discussion among the War Room, grounded in "
+            "the SAME five upstream sections as war_room above but written "
+            "as an actual back-and-forth meeting rather than six isolated "
+            "lines: each of the five domain personas (director, producer, "
+            "marketing_chief, casting_executive, distribution_executive) "
+            "opens with their own real read, then AT LEAST TWO separate "
+            "exchanges have a later speaker directly respond to (via "
+            "responding_to) an earlier one — including at least one full "
+            "push-and-reply pair, not a one-sided objection left hanging. "
+            "disagreement=true ONLY where two personas' real upstream "
+            "sources are actually in tension this run (e.g. CAST RECEPTION "
+            "vs. PRODUCTION/CAST NEWS disagreeing about the same person, or "
+            "a positive SENTIMENT SYNTHESIS read against a crowded "
+            "release_window) — actively check for this before defaulting "
+            "to agreement, since independently researched sources often do "
+            "pull in different directions. If the real data has no such "
+            "tension this run, do not invent one — just let the room be "
+            "broadly aligned. The analyst ALWAYS speaks last, closing the "
+            "discussion by synthesizing what was actually said (including "
+            "what did and didn't get agreement) into the same "
+            "verdict/confidence as the rest of this memo. Leave this empty "
+            "only if there isn't enough real upstream data to support any "
+            "discussion (mirrors the insufficient_data case)."
+        ),
     )
-
-
-class FanPulse(BaseModel):
-    headline: str
-    excitement_level: Literal["high", "mixed", "low", "unclear"]
-    excitement_reason: str = Field(
-        description="One or two sentences on WHY this excitement level was assigned — the specific thing driving it (a scene, a reunion, a controversy), not a restatement of the level itself."
-    )
-    standout_moment: str = Field(
-        default="",
-        description="One specific moment, scene, reveal, or beat fans keep mentioning by name — something concrete a browsing fan would want to see for themselves, not a generic descriptor like 'great action.' Empty string if nothing specific enough surfaced.",
-    )
-    hype_quote: str = Field(
-        default="",
-        description="A short, punchy paraphrase (NOT a verbatim quote) that captures the actual energy/vibe of how fans are talking about this — written like a pull-quote, not a summary sentence. Empty string if the available reactions don't support one.",
-    )
-    top_themes: list[str] = Field(default_factory=list, max_length=4)
-    fun_fact_or_news: str = ""
-    worth_watching: str = Field(
-        default="",
-        description="Only for released titles: a brief, honest verdict on whether it's worth watching now. Leave empty for upcoming titles.",
-    )
-
-
-class FinalBrief(BaseModel):
-    studio_brief: StudioBrief
-    fan_pulse: FanPulse
-    sources_used: list[str] = Field(default_factory=list)
+    notable_news: list[SourceExcerpt] = Field(default_factory=list, max_length=4)
+    sources_used: list[str] = Field(default_factory=list, description="Which of the five upstream sections actually had data this run.")

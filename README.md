@@ -1,15 +1,19 @@
-# Filmecho
+# FilmECHO
 
-An agent pipeline that produces a two-audience brief (studio + fan) for a film title, upcoming or already released. Built for the Google Cloud Agentic Cinema Hackathon, Parallel track.
-
-Enter a title, and six agents run concurrently, backed by real-time Parallel Search and YouTube Data API calls, synthesized by Gemini through Google's Agent Development Kit (ADK), into:
-
-- **Studio brief** — sentiment summary, competitive risk, notable news, a recommendation, and (for already-released titles) concrete lessons learned.
-- **Fan pulse** — excitement level, recurring themes, a fun fact, and (for already-released titles) a "worth watching now?" verdict.
-- **Cast reception** — per-actor performance notes, not just aggregate sentiment.
-- **Marketing** — campaign strategies observed, what worked, what underperformed, and, for released titles, a genuine retrospective with lessons learned.
+An AI "studio intelligence room" for a film title, upcoming or already released. Enter a title and get a verdict-first **Greenlight Memo**: a recommendation, a confidence score with the reasoning behind it, the biggest opportunity and biggest risk, and a live-rendered "War Room" of six studio personas actually discussing the evidence — not six independent one-liners, a real multi-turn discussion the synthesis model authors from the same data every persona is grounded in. Built for the Google Cloud Agentic Cinema Hackathon, Parallel track.
 
 The pipeline is **release-status-aware**: it detects (grounded against today's actual date, not a guess) whether a title has already come out, and asks a fundamentally different question depending on the answer — "how's the trailer landing" for an upcoming title vs. "how did critical opinion hold up over time, and what can we learn from the campaign" for one that's already released.
+
+**[Try the FilmECHO →](https://filmecho-795628182324.asia-southeast1.run.app/)**
+
+## What you get
+
+- **Greenlight Memo** — verdict (`greenlight` / `greenlight_with_changes` / `hold` / `pass` / `insufficient_data`), a confidence score with a one-sentence rationale naming which sources it's actually based on, biggest opportunity, biggest risk, and a recommended action.
+- **The War Room** — a real, grounded multi-turn discussion among six personas (director, producer, marketing chief, casting executive, distribution executive, analyst), each speaking from their own upstream data, genuinely disagreeing when two sources' real data conflict — not scripted, not six isolated lines.
+- **Reputation timeline** — dated milestones (announcement, casting reveals, trailer drops) pulled from both YouTube and news sources.
+- **Release window advisory** — congestion read and a directional (not predictive) recommendation, checking both earlier *and* later release windows across the whole year, not just same-weekend competitors.
+- **Cast reception, marketing analysis, production/cast news, franchise history** — each with its own evidence tab, sourced and linkable.
+- **PDF export** — a real, laid-out document (ReportLab), not a browser print-to-PDF of the page.
 
 ## Architecture
 
@@ -18,39 +22,52 @@ Title input
     │
     ▼
 Entity resolution (Parallel search + Gemini, structured output)
-  → canonical title, year, director, cast, release_status,
-    confidence score, disambiguation note if the title is ambiguous
+  → canonical title, year, director, release_status, source_type
+    (sequel/reboot/spinoff/remake/original), confidence score,
+    disambiguation note if the title is ambiguous
     │
     ├─────────────┬─────────────┬─────────────┬─────────────┬─────────────┐
     ▼             ▼             ▼             ▼             ▼             ▼
 Web Sentiment  YouTube    Competitive    News & Cast    Cast        Marketing
-(Parallel)   (Discovery   (Parallel)     (Parallel,     (Parallel)  (Parallel,
-              → Data)                    extractive)                retrospective
-                                                                     if released)
+(Parallel     (Discovery  (Parallel,     (Parallel,     Reception   (Parallel,
+ search)      → Data,     year-wide +    extractive,    (Parallel   retrospective
+              plain API,  same-window,   conflict-      search)     if released)
+              no LLM)     + franchise    checked)
+                          history if
+                          sequel/reboot)
     │             │             │             │             │             │
     └─────────────┴─────────────┴─────┬───────┴─────────────┴─────────────┘
                                        ▼
-                          Sentiment Synthesis (web + YouTube)
+                          Sentiment Synthesis (web + YouTube + news dates)
                                        │
                                        ▼
                     Main Synthesis (sentiment + competitive + news
                                      + cast + marketing)
                                        │
                                        ▼
-                    { studio_brief, fan_pulse, sources_used }
+                 refusal_guard → evidence_guard → memo_cache
+                                       │
+                                       ▼
+                              { GreenlightMemo }
 ```
 
-Every agent's output is schema-enforced via ADK's `output_schema` (Pydantic models in `agents/schemas.py`), not free text parsed with regex — a version of this pipeline that did that drifted from its intended shape in testing, so structured output is enforced at the framework level throughout.
+Every agent's output is schema-enforced via ADK's `output_schema` (Pydantic models in `agents/schemas.py`), not free text parsed with regex. Progress streams to the frontend over Server-Sent Events as each concurrent branch genuinely finishes (true completion order, via `asyncio.as_completed`, not a fixed/guessed sequence).
 
-Progress streams to the frontend over Server-Sent Events as each of the six concurrent agents genuinely finishes (true completion order, via `asyncio.as_completed`, not a fixed/guessed sequence).
+### Guardrails (deterministic code, not just prompt instructions)
+
+An LLM instruction is a request, not an enforcement mechanism — these three modules are the actual, code-level backstops:
+
+- **`orchestration/refusal_guard.py`** — recursively scans every agent's dumped output for refusal-shaped text ("I can't...", "I don't have...") and drops that branch to `None`, the same degrade path as an API failure, so a model refusal never silently ends up looking like a real (if odd) answer.
+- **`orchestration/evidence_guard.py`** — after `main_synthesis` returns, counts how many of the 5 upstream sources actually had data. Below 3 of 5, it force-overrides the verdict to `insufficient_data` and caps confidence at 25, regardless of what the model produced — a low-confidence number next to a normal-looking verdict badge still reads as a real recommendation to someone skimming.
+- **`orchestration/memo_cache.py`** — released titles are cached indefinitely (nothing about the past changes); upcoming/unclear titles are cached for a short TTL (`FILMECHO_UPCOMING_CACHE_TTL_SECONDS`, default 20 min) so the same query doesn't visibly re-roll different results a minute apart. A "Refresh this memo" action in the UI bypasses the cache on demand.
 
 ## Repo structure
 
 ```
 filmecho/
-├── LICENSE                        # MIT — replace the placeholder name before submitting
 ├── README.md
 ├── requirements.txt
+├── .env.example                   # copy to .env and fill in real values
 ├── Dockerfile                     # Cloud Run build target
 ├── .dockerignore
 ├── .gitignore
@@ -58,56 +75,66 @@ filmecho/
 ├── agents/
 │   ├── __init__.py                # exposes each Agent for `adk web`/`adk run` discovery
 │   ├── schemas.py                 # Pydantic models — every agent's output_schema
-│   ├── entity_context.py          # title → EntityResolution (confidence, release_status)
+│   ├── entity_context.py          # title → EntityContext (confidence, release_status, source_type)
 │   ├── web_sentiment_agent.py     # Parallel search, release-status-aware
-│   ├── competitive_agent.py       # Parallel search, release-status-aware
-│   ├── news_cast_agent.py         # Parallel search, extractive-only
+│   ├── competitive_agent.py       # Parallel search — same-window + year-wide competition, franchise history
+│   ├── news_cast_agent.py         # Parallel search — extractive, cross-checks its own results for conflicts
 │   ├── cast_agent.py              # Parallel search — per-actor performance reception
 │   ├── marketing_agent.py         # Parallel search — campaign analysis + retrospective lessons
-│   ├── sentiment_synthesis.py     # combines web + YouTube sentiment feeds
-│   ├── main_synthesis.py          # combines everything into studio_brief/fan_pulse
-│   ├── youtube_discovery_agent.py # YouTube search.list → candidate trailer video IDs
-│   └── youtube_data_agent.py      # YouTube videos.list + commentThreads.list
+│   ├── sentiment_synthesis.py     # combines web + YouTube sentiment + news dates → timeline
+│   ├── main_synthesis.py          # combines everything into the Greenlight Memo + War Room discussion
+│   ├── youtube_discovery_agent.py # YouTube search.list → candidate trailer video IDs (plain API, no LLM)
+│   └── youtube_data_agent.py      # YouTube videos.list + commentThreads.list (plain API, no LLM)
 │
 ├── orchestration/
-│   └── pipeline.py                # stream_pipeline() (SSE source of truth) + run_pipeline()
+│   ├── pipeline.py                # stream_pipeline() (SSE source of truth) + run_pipeline()
+│   ├── memo_cache.py              # release-status-aware result cache
+│   ├── refusal_guard.py           # drops any branch whose output reads as a model refusal
+│   └── evidence_guard.py          # deterministic verdict/confidence override on thin evidence
 │
-└── backend/
-    ├── app.py                     # FastAPI: /api/brief, /api/brief/stream, serves static/
-    └── static/
-        └── index.html             # entire frontend, single file, no build step
+├── backend/
+│   ├── app.py                     # FastAPI: /api/brief, /api/brief/stream, /api/brief/pdf, /api/cache/stats, serves static/
+│   ├── pdf_report.py              # ReportLab PDF export, built from the same payload the frontend gets
+│   └── static/
+│       └── index.html             # entire frontend, single file, vanilla JS, no build step
+│
+└── tests/                         # pytest — schemas, guardrails, cache, entity resolution degrade paths
 ```
-
-**Not built**: Reddit Sentiment Agent (lowest priority per original build order — the six agents above already cover trailer/critic sentiment, YouTube comments, competitive positioning, production news, cast reception, and marketing, which is a complete submission on its own).
-
-`SUBMISSION_TEXT.md` at repo root has the Devpost text description (features, tech, findings) pre-drafted for copy-paste into the submission form.
 
 ## Setup
 
 ```bash
+git clone <this repo>
+cd filmecho
+python -m venv venv
+source venv/bin/activate        # Windows: venv\Scripts\activate
 pip install -r requirements.txt
+cp .env.example .env
 ```
 
-### Required environment variables (`.env`, never committed)
+Then fill in `.env` — see the table below and the comments in `.env.example` itself for what each variable does and where to get it.
 
-| Variable | Used by | Notes |
-|---|---|---|
-| `PARALLEL_API_KEY` | every `*_agent.py` that calls `parallel.search()` | From platform.parallel.ai |
-| `YOUTUBE_API_KEY` | `youtube_discovery_agent.py`, `youtube_data_agent.py` | YouTube Data API v3 must be enabled on the GCP project |
-| `GOOGLE_GENAI_USE_VERTEXAI` | Gemini calls (via ADK + `entity_context.py`) | `True` to route through Vertex AI + your GCP project's billing, instead of a separate AI Studio prepay balance |
-| `GOOGLE_CLOUD_PROJECT` | same | Your GCP project ID |
-| `GOOGLE_CLOUD_LOCATION` | same | e.g. `us-central1` |
-| `FILMECHO_GEMINI_MODEL` | same | **Verify this against your own project before trusting it** — model availability differs between AI Studio and Vertex, and between projects/regions. `gemini-2.5-flash` is confirmed working as of this project's testing; don't assume a newer-sounding name (`gemini-3.x`) is available to you without checking. |
+### Environment variables
 
-Local (non-Vertex) alternative: set `GEMINI_API_KEY` instead of the three `GOOGLE_*` Vertex variables, and omit `GOOGLE_GENAI_USE_VERTEXAI`. Note this uses AI Studio's separate prepay billing, which does **not** draw from Google Cloud promotional credits by default.
+| Variable | Required? | Used by | Notes |
+|---|---|---|---|
+| `PARALLEL_API_KEY` | **Yes** | every `agents/*_agent.py` that calls `parallel.search()` | From platform.parallel.ai |
+| `YOUTUBE_API_KEY` | **Yes** | `youtube_discovery_agent.py`, `youtube_data_agent.py` | YouTube Data API v3 must be enabled on the GCP project |
+| `GOOGLE_GENAI_USE_VERTEXAI` + `GOOGLE_CLOUD_PROJECT` + `GOOGLE_CLOUD_LOCATION` | **Yes** (Option A) | Every Gemini call, via ADK | Routes through Vertex AI + your GCP project's own billing |
+| `GEMINI_API_KEY` | **Yes** (Option B, instead of the three above) | Every Gemini call | AI Studio — a *separate* prepay balance, does not draw on Cloud Billing credit |
+| `FILMECHO_GEMINI_MODEL` | No (default `gemini-2.5-flash`) | Every agent | **Verify against your own project before trusting it** — model availability differs between AI Studio/Vertex and between projects/regions |
+| `FILMECHO_TEMPERATURE` | No (default `0.1`) | Every agent's `generate_content_config` | Lower = more consistent/grounded |
+| `FILMECHO_UPCOMING_CACHE_TTL_SECONDS` | No (default `1200`) | `memo_cache.py` | Only affects upcoming/unclear titles — released titles cache indefinitely regardless |
 
-For deployment, these become Cloud Run `--set-secrets` (for `PARALLEL_API_KEY`/`YOUTUBE_API_KEY`, via Secret Manager) and `--set-env-vars` (for the Vertex config) — see below.
+For deployment, the two secrets (`PARALLEL_API_KEY`, `YOUTUBE_API_KEY`) become Cloud Run `--set-secrets` via Secret Manager, and the rest become `--set-env-vars` — see [Deploy to Cloud Run](#deploy-to-cloud-run).
 
 ## Run locally
 
 ```bash
 uvicorn backend.app:app --reload --port 8080
 ```
+
+Then open `http://localhost:8080`.
 
 Or run the pipeline directly without the web layer:
 
@@ -123,47 +150,76 @@ python -m orchestration.pipeline
 python -m pytest tests/ -v
 ```
 
-20 tests, no API keys or network access required — they exercise the Pydantic schemas directly (rejecting invalid enum values, confirming `sources_used` can't drift back under the wrong parent) and `entity_context.resolve_entity`'s degrade paths via injected mock clients (`parallel_client`/`genai_client` params exist specifically for this). This does **not** test the live agent pipeline end to end, that still needs real API keys and is what `python -m orchestration.pipeline` is for.
+Exercises the Pydantic schemas directly (rejecting invalid enum values, structural constraints), the three guardrail modules (`refusal_guard`, `evidence_guard`, `memo_cache`) in isolation, and `entity_context.resolve_entity`'s degrade paths via injected mock clients (`parallel_client`/`genai_client` params exist specifically for this). No API keys or network access required for the test suite itself — but it does require `google-adk` and the rest of `requirements.txt` actually installed, since several agent modules import `google.adk.agents.Agent` at module load time.
+
+This does **not** test the live agent pipeline end to end — that needs real API keys and is what `python -m orchestration.pipeline` (or a real browser session against the running server) is for.
 
 ## API call volume — know this before a live demo
 
 One full `run_pipeline()` call makes:
 - **13-14 Gemini calls**: five agents use tools (`web_sentiment`, `competitive`, `news_cast`, `cast`, `marketing`), and ADK's function-calling is a two-turn round trip per tool-using agent (decide to call the tool, then produce the final answer once the tool result is back) — 2 calls × 5 agents = 10, plus entity resolution (1, or 2 if a disambiguation retry fires), plus sentiment synthesis (1), plus main synthesis (1).
-- **6-7 Parallel searches**: one per tool-using agent, plus entity resolution's search (plus its retry, if triggered).
-- YouTube: 1 `search.list` + 1 `videos.list` + up to 5 `commentThreads.list` calls.
+- **6-7 Parallel searches**: one per tool-using agent, plus entity resolution's own search (plus its retry, if triggered). The competitive agent alone fires 2-3 queries in one `search()` call (same-window + year-wide + franchise history if applicable) — still one billed search call, just a richer objective.
+- YouTube: 1 `search.list` + 1 `videos.list` + up to 5 `commentThreads.list` calls (plain REST, no LLM involved).
 
-Check actual per-call pricing on `platform.parallel.ai`'s dashboard and Vertex AI's billing page directly rather than assume, and budget test runs accordingly if you're demoing repeatedly against a limited credit.
+Check actual per-call pricing on `platform.parallel.ai`'s dashboard and Vertex AI's billing page directly rather than assume, and budget test runs accordingly if you're demoing repeatedly against a limited credit. `memo_cache.py` means repeat searches of the *same* title within its TTL don't re-spend any of this.
 
 ## Deploy to Cloud Run
+
+### 1. One-time GCP project setup
+
+Run this once per GCP project (needs `gcloud` installed and `gcloud auth login` already done):
+
+```bash
+# Point gcloud at the right project — everything below assumes this is set.
+export PROJECT_ID=your-gcp-project-id
+export REGION=us-central1
+gcloud config set project "$PROJECT_ID"
+
+# APIs this app actually needs at deploy/runtime.
+gcloud services enable \
+  run.googleapis.com \
+  cloudbuild.googleapis.com \
+  aiplatform.googleapis.com \
+  secretmanager.googleapis.com \
+  youtube.googleapis.com
+
+# Secrets — paste real key values when prompted, or use --data-file
+# instead of the interactive prompt if you're scripting this.
+printf '%s' "your-parallel-api-key" | gcloud secrets create parallel-api-key --data-file=-
+printf '%s' "your-youtube-api-key"  | gcloud secrets create youtube-api-key  --data-file=-
+# Re-running a search you already ran? Use `gcloud secrets versions add` instead of `create`.
+
+# Grant the Cloud Run service's own identity — the DEFAULT COMPUTE SERVICE
+# ACCOUNT, a different identity than your local `gcloud auth` user —
+# permission to read those secrets and to call Vertex AI.
+export PROJECT_NUMBER=$(gcloud projects describe "$PROJECT_ID" --format='value(projectNumber)')
+export SA="${PROJECT_NUMBER}-compute@developer.gserviceaccount.com"
+
+gcloud secrets add-iam-policy-binding parallel-api-key \
+  --member="serviceAccount:${SA}" --role="roles/secretmanager.secretAccessor"
+gcloud secrets add-iam-policy-binding youtube-api-key \
+  --member="serviceAccount:${SA}" --role="roles/secretmanager.secretAccessor"
+gcloud projects add-iam-policy-binding "$PROJECT_ID" \
+  --member="serviceAccount:${SA}" --role="roles/aiplatform.user"
+gcloud projects add-iam-policy-binding "$PROJECT_ID" \
+  --member="serviceAccount:${SA}" --role="roles/cloudbuild.builds.builder"
+```
+
+`roles/cloudbuild.builds.builder` specifically fixes a "could not resolve source" error you'll otherwise hit during the `--source .` build below; `roles/aiplatform.user` is what actually lets the deployed service call Gemini through Vertex AI, not just build successfully.
+
+### 2. Deploy
 
 ```bash
 gcloud run deploy filmecho \
   --source . \
-  --region us-central1 \
+  --region "$REGION" \
   --allow-unauthenticated \
-  --set-env-vars="GOOGLE_GENAI_USE_VERTEXAI=True,GOOGLE_CLOUD_PROJECT=YOUR_PROJECT_ID,GOOGLE_CLOUD_LOCATION=us-central1,FILMECHO_GEMINI_MODEL=gemini-2.5-flash" \
-  --set-secrets="PARALLEL_API_KEY=parallel-api-key:latest,YOUTUBE_API_KEY=youtube-api-key:latest"
+  --set-env-vars="GOOGLE_GENAI_USE_VERTEXAI=True,GOOGLE_CLOUD_PROJECT=${PROJECT_ID},GOOGLE_CLOUD_LOCATION=${REGION},FILMECHO_GEMINI_MODEL=gemini-2.5-flash" \
+  --set-secrets="PARALLEL_API_KEY=parallel-api-key:latest,YOUTUBE_API_KEY=youtube-api-key:latest" \
+  --memory 1Gi \
+  --timeout 300
 ```
 
-Requires: Vertex AI API and Secret Manager API enabled on the project, the two secrets already created in Secret Manager, and the Cloud Run service's own service account granted `roles/secretmanager.secretAccessor` on both secrets and `roles/aiplatform.user` on the project — this is a *different* identity than your local `gcloud auth` user, grant it explicitly, don't assume it inherits your permissions.
+The secret resource names (`parallel-api-key`, `youtube-api-key`) are lowercase-hyphenated and don't need to match the uppercase env var names the code actually reads (`PARALLEL_API_KEY`, `YOUTUBE_API_KEY`) — `--set-secrets` is what connects the two.
 
-**Test the actual deployed `*.run.app` URL after deploying**, not just a local/Cloud Shell preview — in particular, confirm the SSE progress stream (`/api/brief/stream`) delivers events incrementally on the deployed URL and not all at once at the end, some managed platforms buffer streaming responses differently than local dev servers do.
-
-## What's actually enforced vs. what to double-check yourself
-
-**Enforced by the code, not just hoped for:**
-- Every agent's output shape (Pydantic `output_schema`, framework-level validation)
-- Entity resolution confidence + disambiguation for ambiguous titles (e.g., a title shared by multiple real films)
-- `lessons_learned`/`worth_watching` only populate for confirmed-released titles, never guessed for something still upcoming
-- Graceful degradation: any single agent failing returns `None` for that field rather than crashing the whole run
-
-**Not independently verified — check before relying on them:**
-- ADK's `output_schema` + `tools` combination on the same agent (used by every fetch agent) is documented as supported but wasn't tested against every model/region combination
-- SSE streaming behavior specifically on Cloud Run's infrastructure (works locally; verify post-deploy)
-- Whether the six-agent, per-title API cost (3+ Parallel searches, ~7 Gemini calls) stays comfortably within your Google Cloud credit for repeated demo runs
-
-## Findings / learnings (useful for the Devpost submission text)
-
-- Google's Gemini Developer API (AI Studio) and Vertex AI are billed through **entirely separate systems** — a Google Cloud promotional credit does not apply to AI Studio's prepay balance unless you first fund that balance yourself, unlike Vertex AI billing, which draws on ordinary Cloud Billing credits directly. This is easy to miss and will silently 429 you.
-- `asyncio.as_completed` (vs. `asyncio.gather`) turned out to matter for more than just "how the code looks" — it's what lets the frontend show honest, real-time progress instead of a fixed timer that just guesses how long five parallel agents will take.
-- Structured output (`output_schema`) should have been the default from the start rather than added after a schema-drift bug surfaced in testing — free-text-then-regex-parse is exactly the kind of thing that looks fine until an LLM decides to nest a field somewhere slightly different.
+**Recommend adding `--min-instances 1` for a live demo specifically** — `MemoCache` and ADK's `InMemorySessionService` both live in process memory, so a Cloud Run cold start silently empties the cache and any in-flight session state.
