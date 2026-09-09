@@ -163,22 +163,63 @@ Check actual per-call pricing on `platform.parallel.ai`'s dashboard and Vertex A
 
 ## Deploy to Cloud Run
 
+### 1. One-time GCP project setup
+
+Run this once per GCP project (needs `gcloud` installed and `gcloud auth login` already done):
+
+```bash
+# Point gcloud at the right project — everything below assumes this is set.
+export PROJECT_ID=your-gcp-project-id
+export REGION=us-central1
+gcloud config set project "$PROJECT_ID"
+
+# APIs this app actually needs at deploy/runtime.
+gcloud services enable \
+  run.googleapis.com \
+  cloudbuild.googleapis.com \
+  aiplatform.googleapis.com \
+  secretmanager.googleapis.com \
+  youtube.googleapis.com
+
+# Secrets — paste real key values when prompted, or use --data-file
+# instead of the interactive prompt if you're scripting this.
+printf '%s' "your-parallel-api-key" | gcloud secrets create parallel-api-key --data-file=-
+printf '%s' "your-youtube-api-key"  | gcloud secrets create youtube-api-key  --data-file=-
+# Re-running a search you already ran? Use `gcloud secrets versions add` instead of `create`.
+
+# Grant the Cloud Run service's own identity — the DEFAULT COMPUTE SERVICE
+# ACCOUNT, a different identity than your local `gcloud auth` user —
+# permission to read those secrets and to call Vertex AI.
+export PROJECT_NUMBER=$(gcloud projects describe "$PROJECT_ID" --format='value(projectNumber)')
+export SA="${PROJECT_NUMBER}-compute@developer.gserviceaccount.com"
+
+gcloud secrets add-iam-policy-binding parallel-api-key \
+  --member="serviceAccount:${SA}" --role="roles/secretmanager.secretAccessor"
+gcloud secrets add-iam-policy-binding youtube-api-key \
+  --member="serviceAccount:${SA}" --role="roles/secretmanager.secretAccessor"
+gcloud projects add-iam-policy-binding "$PROJECT_ID" \
+  --member="serviceAccount:${SA}" --role="roles/aiplatform.user"
+gcloud projects add-iam-policy-binding "$PROJECT_ID" \
+  --member="serviceAccount:${SA}" --role="roles/cloudbuild.builds.builder"
+```
+
+`roles/cloudbuild.builds.builder` specifically fixes a "could not resolve source" error you'll otherwise hit during the `--source .` build below; `roles/aiplatform.user` is what actually lets the deployed service call Gemini through Vertex AI, not just build successfully.
+
+### 2. Deploy
+
 ```bash
 gcloud run deploy filmecho \
   --source . \
-  --region us-central1 \
+  --region "$REGION" \
   --allow-unauthenticated \
-  --set-env-vars="GOOGLE_GENAI_USE_VERTEXAI=True,GOOGLE_CLOUD_PROJECT=YOUR_PROJECT_ID,GOOGLE_CLOUD_LOCATION=us-central1,FILMECHO_GEMINI_MODEL=gemini-2.5-flash" \
+  --set-env-vars="GOOGLE_GENAI_USE_VERTEXAI=True,GOOGLE_CLOUD_PROJECT=${PROJECT_ID},GOOGLE_CLOUD_LOCATION=${REGION},FILMECHO_GEMINI_MODEL=gemini-2.5-flash" \
   --set-secrets="PARALLEL_API_KEY=parallel-api-key:latest,YOUTUBE_API_KEY=youtube-api-key:latest" \
   --memory 1Gi \
   --timeout 300
 ```
 
-Requires, before this will work:
-- Vertex AI API and Secret Manager API enabled on the project.
-- The two secrets already created in Secret Manager (`parallel-api-key`, `youtube-api-key` — the resource names are lowercase-hyphenated; they don't need to match the uppercase env var names the code reads, `--set-secrets` is what connects them).
-- The Cloud Run service's default compute service account (`{project-number}-compute@developer.gserviceaccount.com` — a *different* identity than your local `gcloud auth` user) granted `roles/secretmanager.secretAccessor` and `roles/cloudbuild.builds.builder` (the latter fixes a "could not resolve source" error during `--source .` builds).
+The secret resource names (`parallel-api-key`, `youtube-api-key`) are lowercase-hyphenated and don't need to match the uppercase env var names the code actually reads (`PARALLEL_API_KEY`, `YOUTUBE_API_KEY`) — `--set-secrets` is what connects the two.
 
-**Recommend `--min-instances 1` for a live demo specifically** — `MemoCache` and ADK's `InMemorySessionService` both live in process memory, so a Cloud Run cold start silently empties the cache and any in-flight session state.
+**Recommend adding `--min-instances 1` for a live demo specifically** — `MemoCache` and ADK's `InMemorySessionService` both live in process memory, so a Cloud Run cold start silently empties the cache and any in-flight session state.
 
 **Test the actual deployed `*.run.app` URL after deploying**, not just a local/Cloud Shell preview — in particular, confirm the SSE progress stream (`/api/brief/stream`) delivers events incrementally on the deployed URL and not all at once at the end; some managed platforms buffer streaming responses differently than local dev servers do. Also hard-refresh (or use a private/incognito window) when checking a redeploy — browsers can and do cache the static frontend bundle between deploys.
