@@ -1,10 +1,13 @@
-@"
 venv/
 __pycache__/
 *.pyc
 .env
+.env.example
 .git/
 .gitignore
-test_web_sentiment.py
-call/
-"@ | Out-File -FilePath .dockerignore -Encoding utf8
+.pytest_cache/
+tests/
+test/
+HANDOFF_CONTEXT.md
+README.md
+*.md
